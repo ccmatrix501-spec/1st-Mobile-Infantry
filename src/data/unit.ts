@@ -586,7 +586,7 @@ export const standingOrders = [
 ];
 
 export const navLinks = [
-  { to: "/", label: "Command", exact: true },
+  { to: "/", label: "Home", exact: true },
   { to: "/leadership", label: "Leadership" },
   { to: "/rules", label: "Rules" },
   { to: "/join", label: "Join now" },
