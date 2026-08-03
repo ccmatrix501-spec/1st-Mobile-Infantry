@@ -58,7 +58,7 @@ function LeadershipPage() {
 
         <div className="mt-12 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
           <Button asChild variant="secondary">
-            <Link to="/">Back to command</Link>
+            <Link to="/">Back to Home</Link>
           </Button>
           <Button asChild>
             <Link to="/rules">Read unit rules</Link>
