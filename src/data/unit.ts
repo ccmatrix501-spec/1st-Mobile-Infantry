@@ -163,7 +163,7 @@ export const roster = [
     name: "RickySpanish",
     billet: "Demon Company (A Co)",
     note: "Commands base construction and ARC defense. Owns the wire, the guns, and the ground the division stands on.",
-    tier: "Captain",
+    tier: "captain",
     company: "Demon",
   },
   {
