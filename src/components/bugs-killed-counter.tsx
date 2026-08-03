@@ -7,15 +7,9 @@ const formatter = new Intl.NumberFormat("en-US");
 
 /**
  * Shared kill tally with WebSocket real-time sync.
- *
- * Primary: `/ws/bugs-killed` — server broadcasts the authoritative count.
- * Fallback: world-clock formula + HTTP clock sync if the socket is down.
- * Either way the total keeps rising with nobody on the page (time-based).
- *
- * Always renders a number (never blank). Client ticks start immediately.
+ * Climbs slowly from the shared world-clock formula.
  */
 export function BugsKilledCounter() {
-  // Seed immediately so the UI is never blank ("—").
   const [count, setCount] = useState(BUGS_KILLED_BASE);
   const [offsetMs, setOffsetMs] = useState(0);
   const [source, setSource] = useState<"ws" | "fallback">("fallback");
@@ -25,11 +19,9 @@ export function BugsKilledCounter() {
 
   useEffect(() => {
     setMounted(true);
-    // Immediate client-side formula so value is correct even before WS/HTTP.
     setCount(getBugsKilledAt());
   }, []);
 
-  // WebSocket primary feed
   useEffect(() => {
     const dispose = connectBugsKilledWs(
       (state) => {
@@ -49,7 +41,6 @@ export function BugsKilledCounter() {
     return dispose;
   }, []);
 
-  // HTTP clock sync fallback / bootstrap
   useEffect(() => {
     let cancelled = false;
 
@@ -81,7 +72,6 @@ export function BugsKilledCounter() {
     };
   }, [wsConnected]);
 
-  // Local interpolation when WS is quiet / fallback mode
   useEffect(() => {
     if (!mounted) return;
     const tick = () => {
@@ -93,7 +83,8 @@ export function BugsKilledCounter() {
       setCount(getBugsKilledAt(Date.now() + offsetMs));
     };
     tick();
-    const id = window.setInterval(tick, 40);
+    // Match the slower climb — no need for 40ms thrash
+    const id = window.setInterval(tick, 200);
     return () => window.clearInterval(id);
   }, [offsetMs, wsConnected, mounted]);
 

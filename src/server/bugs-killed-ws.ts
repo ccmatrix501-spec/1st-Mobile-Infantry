@@ -76,8 +76,8 @@ export function attachBugsKilledWs(httpServer: HttpServer): () => void {
     });
   });
 
-  // ~20 Hz broadcast — smooth UI, low overhead
-  const interval = setInterval(broadcastTick, 50);
+  // ~8 Hz is enough for a slow counter
+  const interval = setInterval(broadcastTick, 120);
 
   return () => {
     clearInterval(interval);
