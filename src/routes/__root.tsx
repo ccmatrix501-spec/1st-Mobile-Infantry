@@ -11,7 +11,7 @@ export const Route = createRootRoute({
       {
         name: "description",
         content:
-          "1st Mobile Infantry, 1st Division. Doctrine, companies, theaters, roster, and enlist.",
+          "1st Mobile Infantry, 1st Division. Doctrine, Companies, Theaters, Roster, and Enlist.",
       },
       { property: "og:title", content: "1st Mobile Infantry" },
       {
