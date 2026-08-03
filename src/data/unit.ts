@@ -1,10 +1,10 @@
 export const unit = {
   designation: "1st Mobile Infantry",
   shortName: "1st M.I.",
-  division: "1st Division",
+  division: "1st M.I. Division",
   branch: "Federal Armed Services",
   motto: "The first to drop. The last to leave.",
-  tagline: "Service guarantees citizenship.",
+  tagline: "Service Guarantees Citizenship.",
   homebase: "San Diego Recruit Depot · Terra",
   status: "Active — Drop Ready",
   established: "Federal Year 2148",
@@ -27,7 +27,7 @@ export const bugsKilledBase = 2_345_870;
 export const doctrine = [
   {
     title: "Friendship",
-    body: "Your fireteam is family. Buddy checks before every push. No trooper left on the line. Trust is what holds the squad together when the swarm hits.",
+    body: "Your fireteam is family. Buddy checks before every push. No Trooper left on the line. Trust is what holds the squad together when the swarm hits.",
   },
   {
     title: "Honour",
@@ -64,7 +64,7 @@ export const companies = [
     logo: "/company-nightmare.png",
     traits: ["Convoy security", "Extraction", "Field refining", "Supply lines"],
     summary:
-      "Nightmare feeds the war machine. Gas, ore, and every critical resource the fleet and the line need. They secure extraction sites, run the convoys, and keep the pipeline open under bug pressure.",
+      "Nightmare feeds the war machine. Gas, ore, and every critical resource the Fleet and the Line need. They secure extraction sites, run the convoys, and keep the pipeline open under bug pressure.",
   },
   {
     callsign: "Cerberus",
@@ -116,7 +116,7 @@ export const campaigns = [
     outcome: "Ongoing",
     terrain: "Ice · methane · vertical canyons",
     brief:
-      "Frozen wasteland of deep blue ice, sparkling snow, and frozen methane — scarred by a Bug meteor that evolved extreme cold adaptations. Vertical canyons between plateaus demand tactical movement and class-specific shortcuts.",
+      "Frozen wasteland of deep blue ice, sparkling snow, and frozen methane — scarred by a Bug meteor that evolved extreme cold adaptations. The vertical canyons between plateaus demand tactical movement, mastered by Cerberus Company utilising their class-loadouts.",
   },
   {
     code: "OP-X11",
@@ -134,36 +134,36 @@ export const roster = [
     rank: "General",
     name: "Hatchet",
     billet: "Division command",
-    note: "Overall authority for the 1st Mobile Infantry. Sets strategic intent across all four theaters and companies.",
-    tier: "command",
+    note: "Overall authority for the 1st Mobile Infantry. Sets strategic intent across all four theaters and Companies.",
+    tier: "Command",
   },
   {
     rank: "Colonel",
     name: "Zakuria",
     billet: "Regimental command",
     note: "Executes General Hatchet’s intent on the ground. Coordinates multi-company operations and theater rotations.",
-    tier: "command",
+    tier: "Command",
   },
   {
     rank: "Lt. Colonel",
     name: "Kontra",
     billet: "Deputy / operations",
     note: "Plans drops, assigns company objectives, and keeps the division tempo high when contact is continuous.",
-    tier: "command",
+    tier: "Command",
   },
   {
     rank: "Warrant Officer",
     name: "Lustrati",
     billet: "Senior technical / training",
     note: "Master of systems, kit standards, and field craft. The bridge between officer intent and trooper execution.",
-    tier: "command",
+    tier: "Command",
   },
   {
     rank: "Captain",
     name: "RickySpanish",
     billet: "Demon Company (A Co)",
     note: "Commands base construction and ARC defense. Owns the wire, the guns, and the ground the division stands on.",
-    tier: "captain",
+    tier: "Captain",
     company: "Demon",
   },
   {
@@ -171,7 +171,7 @@ export const roster = [
     name: "Purplewolf",
     billet: "Nightmare Company (B Co)",
     note: "Commands resource and logistics warfare. Gas, ore, and every convoy that keeps the war machine alive.",
-    tier: "captain",
+    tier: "Captain",
     company: "Nightmare",
   },
   {
@@ -179,7 +179,7 @@ export const roster = [
     name: "KnightBear",
     billet: "Cerberus Company (C Co)",
     note: "Commands the Quick Reaction Force. First to the breach when a squad is pinned or a gate fails.",
-    tier: "captain",
+    tier: "Captain",
     company: "Cerberus",
   },
   {
@@ -187,7 +187,7 @@ export const roster = [
     name: "Burster",
     billet: "Hellfire Company (D Co)",
     note: "Commands bug hunter kill teams. Nest clearance, tunnel denial, and the kill tally that never stops climbing.",
-    tier: "captain",
+    tier: "Captain",
     company: "Hellfire",
   },
 ];
@@ -277,7 +277,7 @@ export const standingOrders = [
   {
     number: 1,
     title: "Companies",
-    body: "While we are separated into companies, no one company is better than any other company or receives special treatment. We are first and foremost one community, and any action that counters this will be treated as a severe offence.",
+    body: "While we are separated into Companies, no one Company is better than any other Company or receives special treatment. We are first and foremost one community, and any action that counters this will be treated as a severe offence.",
     subsections: [],
   },
   {
@@ -457,7 +457,7 @@ export const standingOrders = [
     subsections: [
       {
         label: "a",
-        text: "Activity checks are overseen and done by the companies’ Senior Sergeants.",
+        text: "Activity checks are overseen and done by the Companies’ Senior Sergeants.",
       },
       {
         label: "b",
@@ -465,7 +465,7 @@ export const standingOrders = [
       },
       {
         label: "c",
-        text: "It is a responsibility of the officers and ultimately the captain of the companies to ensure Activity Checks are done and reported; there are no exemptions.",
+        text: "It is a responsibility of the officers and ultimately the captain of the Companies to ensure Activity Checks are done and reported; there are no exemptions.",
       },
       {
         label: "d",
