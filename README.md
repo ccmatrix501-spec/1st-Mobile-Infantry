@@ -41,3 +41,22 @@ App runs at `http://localhost:8080`.
 - Bugs-killed counter is a shared world-clock tally (with WebSocket in long-running servers)
 
 Unofficial fan tribute. Not affiliated with any studio or publisher.
+
+## Live dropship total (Discord AAR bot)
+
+The home page **Total dropships** stat is pulled from your Discord bot's HTTP API:
+
+```
+GET /stats  →  { "totalDropships": number, "totalPoints": number }
+```
+
+1. Host the bot so `/stats` is reachable on the public internet (Railway, Render, VPS, etc.)
+2. In Vercel → Project → Settings → Environment Variables, set:
+
+```
+DROPSHIP_STATS_URL=https://YOUR-BOT-PUBLIC-URL/stats
+```
+
+3. Redeploy the site.
+
+Until that variable is set, the dropship tile shows "—" and "Connect bot API".

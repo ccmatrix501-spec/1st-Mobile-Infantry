@@ -18,7 +18,7 @@ export const stats = [
   { id: "troopers", label: "Active troopers", value: "1,800" },
   { id: "companies", label: "Companies", value: "4" },
   { id: "bugs", label: "Bugs killed", value: "live" },
-  { id: "ammo", label: "Ammo count", value: "1000%" },
+  { id: "dropships", label: "Total dropships completed", value: "live" },
 ] as const;
 
 // bugsKilledBase kept for any legacy imports — live tally lives in lib/bugs-killed.ts

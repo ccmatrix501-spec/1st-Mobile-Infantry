@@ -15,6 +15,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { AppShell, SectionHeading } from "@/components/app-shell";
 import { BugsKilledCounter } from "@/components/bugs-killed-counter";
+import { DropshipCounter } from "@/components/dropship-counter";
 import { Button } from "@/components/ui/button";
 import {
   campaigns,
@@ -149,6 +150,8 @@ function StatsStrip() {
           <div key={stat.id} className={`bento-stat reveal stagger-${i + 1} px-5 py-6 sm:px-6`}>
             {stat.id === "bugs" ? (
               <BugsKilledCounter />
+            ) : stat.id === "dropships" ? (
+              <DropshipCounter />
             ) : (
               <p className="metric-value text-3xl text-fg sm:text-4xl">{stat.value}</p>
             )}
