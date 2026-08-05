@@ -7,22 +7,25 @@ export type DropshipStats = {
   source: "live" | "unconfigured" | "error";
 };
 
+/** Live AAR bot stats (Railway). Override with DROPSHIP_STATS_URL if it changes. */
+const DEFAULT_DROPSHIP_STATS_URL =
+  "https://1st-mi-aar-production-1522.up.railway.app/stats";
+
 /**
  * Proxy the Discord AAR bot stats API so the browser never needs CORS
  * and the bot URL stays server-side.
  *
- * Set on Vercel / host:
+ * Optional override on Vercel / host:
  *   DROPSHIP_STATS_URL=https://your-bot-host.example.com/stats
  *
- * The bot must expose GET /stats → { totalDropships, totalPoints }
- * (see the AAR bot's LIVE STATS API).
+ * Bot GET /stats → { totalDropships, totalPoints }
  */
 export const fetchDropshipStats = createServerFn({ method: "GET" }).handler(
   async (): Promise<DropshipStats> => {
     const url =
       process.env.DROPSHIP_STATS_URL?.trim() ||
       process.env.VITE_DROPSHIP_STATS_URL?.trim() ||
-      "";
+      DEFAULT_DROPSHIP_STATS_URL;
 
     if (!url) {
       return {
@@ -36,8 +39,8 @@ export const fetchDropshipStats = createServerFn({ method: "GET" }).handler(
     try {
       const res = await fetch(url, {
         headers: { accept: "application/json" },
-        // Bot is external; short timeout so the page never hangs
         signal: AbortSignal.timeout(6_000),
+        cache: "no-store",
       });
       if (!res.ok) {
         return {
@@ -50,7 +53,6 @@ export const fetchDropshipStats = createServerFn({ method: "GET" }).handler(
       const data = (await res.json()) as {
         totalDropships?: number;
         totalPoints?: number;
-        // older/local shape from bot file
         totalOperations?: number;
       };
       const totalDropships = Number(
