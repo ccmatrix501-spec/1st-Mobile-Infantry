@@ -22,7 +22,7 @@ export const stats = [
 ] as const;
 
 // bugsKilledBase kept for any legacy imports — live tally lives in lib/bugs-killed.ts
-export const bugsKilledBase = 2_345_870;
+export const bugsKilledBase = 2_778_110;
 
 export const doctrine = [
   {

@@ -52,7 +52,7 @@ export function SiteFooter() {
               to="/"
               className="mt-4 inline-block stencil text-[11px] tracking-[0.12em] text-muted transition-colors hover:text-primary"
             >
-              Return to Home
+              Return to home
             </Link>
           </div>
         </div>

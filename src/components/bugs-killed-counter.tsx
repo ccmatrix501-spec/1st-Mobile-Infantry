@@ -7,7 +7,7 @@ const formatter = new Intl.NumberFormat("en-US");
 
 /**
  * Shared kill tally with WebSocket real-time sync.
- * Climbs slowly from the shared world-clock formula.
+ * Display is monotonic: never steps backward.
  */
 export function BugsKilledCounter() {
   const [count, setCount] = useState(BUGS_KILLED_BASE);
@@ -15,23 +15,31 @@ export function BugsKilledCounter() {
   const [source, setSource] = useState<"ws" | "fallback">("fallback");
   const [wsConnected, setWsConnected] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const lastWsCount = useRef<number | null>(null);
+  const highWater = useRef(BUGS_KILLED_BASE);
+
+  function commit(next: number) {
+    // Never display a lower value than we already showed this session
+    // (guards against brief WS/formula skew without fighting re-anchors forever:
+    // high-water only ratchets up within the tab session).
+    if (next > highWater.current) highWater.current = next;
+    setCount(highWater.current);
+  }
 
   useEffect(() => {
     setMounted(true);
-    setCount(getBugsKilledAt());
+    const n = getBugsKilledAt();
+    highWater.current = n;
+    setCount(n);
   }, []);
 
+  // WebSocket: use for clock offset + count; never apply a lower count
   useEffect(() => {
     const dispose = connectBugsKilledWs(
       (state) => {
-        if (state.count >= 0) {
-          lastWsCount.current = state.count;
-          setCount(state.count);
-        }
         setOffsetMs(state.offsetMs);
         setSource("ws");
         setWsConnected(true);
+        if (state.count >= 0) commit(state.count);
       },
       (connected) => {
         setWsConnected(connected);
@@ -41,6 +49,7 @@ export function BugsKilledCounter() {
     return dispose;
   }, []);
 
+  // HTTP clock sync fallback
   useEffect(() => {
     let cancelled = false;
 
@@ -53,13 +62,13 @@ export function BugsKilledCounter() {
         const clientMid = (t0 + t1) / 2;
         if (!cancelled) {
           setOffsetMs(serverTime - clientMid);
-          setCount(serverCount);
           setSource("fallback");
+          commit(serverCount);
         }
       } catch {
         if (!cancelled) {
-          setCount(getBugsKilledAt());
           setSource("fallback");
+          commit(getBugsKilledAt());
         }
       }
     }
@@ -72,21 +81,16 @@ export function BugsKilledCounter() {
     };
   }, [wsConnected]);
 
+  // Local formula ticks — always monotonic via high-water
   useEffect(() => {
     if (!mounted) return;
     const tick = () => {
-      if (wsConnected && lastWsCount.current !== null) {
-        const formula = getBugsKilledAt(Date.now() + offsetMs);
-        setCount(Math.max(lastWsCount.current, formula));
-        return;
-      }
-      setCount(getBugsKilledAt(Date.now() + offsetMs));
+      commit(getBugsKilledAt(Date.now() + offsetMs));
     };
     tick();
-    // Match the slower climb — no need for 40ms thrash
     const id = window.setInterval(tick, 200);
     return () => window.clearInterval(id);
-  }, [offsetMs, wsConnected, mounted]);
+  }, [offsetMs, mounted]);
 
   const liveLabel =
     source === "ws" && wsConnected ? "Live · WebSocket" : "Live · world clock";

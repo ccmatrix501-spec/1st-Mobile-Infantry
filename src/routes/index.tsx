@@ -27,7 +27,7 @@ import {
 export const Route = createFileRoute("/")({
   component: HomePage,
   head: () => ({
-    meta: [{ title: "Command — 1st Mobile Infantry" }],
+    meta: [{ title: "Home — 1st Mobile Infantry" }],
   }),
 });
 

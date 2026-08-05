@@ -133,7 +133,7 @@ function RulesPage() {
                 <Link to="/join">Join now</Link>
               </Button>
               <Button asChild variant="secondary" size="lg">
-                <Link to="/">Return to command</Link>
+                <Link to="/">Return to home</Link>
               </Button>
             </div>
           </div>

@@ -11,8 +11,14 @@ export const Route = createFileRoute("/leadership")({
 });
 
 function LeadershipPage() {
-  const command = roster.filter((p) => p.tier === "command");
-  const captains = roster.filter((p) => p.tier === "captain");
+  // Normalize tier so "Command"/"command" both work (capitalization mismatch was
+  // hiding the entire roster on production deploys).
+  const command = roster.filter(
+    (p) => String(p.tier).toLowerCase() === "command",
+  );
+  const captains = roster.filter(
+    (p) => String(p.tier).toLowerCase() === "captain",
+  );
 
   return (
     <AppShell>
@@ -38,9 +44,16 @@ function LeadershipPage() {
           body="General through warrant — the staff that owns the whole division."
         />
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          {command.map((person) => (
-            <OfficerCard key={person.name} person={person} featured />
-          ))}
+          {command.length === 0 ? (
+            <p className="text-sm text-muted sm:col-span-2">
+              No senior command entries found. Check roster tiers in{" "}
+              <code className="font-mono text-primary">src/data/unit.ts</code>.
+            </p>
+          ) : (
+            command.map((person) => (
+              <OfficerCard key={person.name} person={person} featured />
+            ))
+          )}
         </div>
 
         <div className="mt-16">
@@ -50,9 +63,16 @@ function LeadershipPage() {
             body="Four captains. Four missions. Report up the chain; own the ground under your boots."
           />
           <div className="mt-8 grid gap-4 sm:grid-cols-2">
-            {captains.map((person) => (
-              <OfficerCard key={person.name} person={person} />
-            ))}
+            {captains.length === 0 ? (
+              <p className="text-sm text-muted sm:col-span-2">
+                No company captains found. Check roster tiers in{" "}
+                <code className="font-mono text-primary">src/data/unit.ts</code>.
+              </p>
+            ) : (
+              captains.map((person) => (
+                <OfficerCard key={person.name} person={person} />
+              ))
+            )}
           </div>
         </div>
 
