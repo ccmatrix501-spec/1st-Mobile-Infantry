@@ -40,13 +40,13 @@ function LeadershipPage() {
 
         <SectionHeading
           kicker="Division HQ"
-          title="Senior command"
+          title="Division command"
           body="General through warrant — the staff that owns the whole division."
         />
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           {command.length === 0 ? (
             <p className="text-sm text-muted sm:col-span-2">
-              No senior command entries found. Check roster tiers in{" "}
+              No division command entries found. Check roster tiers in{" "}
               <code className="font-mono text-primary">src/data/unit.ts</code>.
             </p>
           ) : (
@@ -105,15 +105,29 @@ function OfficerCard({
     .slice(0, 2)
     .toUpperCase();
 
+  const portrait =
+    "portrait" in person && person.portrait ? person.portrait : null;
+
   const companyLogo =
-    "company" in person && person.company
+    !portrait && "company" in person && person.company
       ? companies.find((c) => c.callsign === person.company)?.logo
       : null;
 
   return (
     <article className={`panel panel-lift p-6 ${featured ? "sm:p-7" : ""}`}>
       <div className="flex items-center gap-3">
-        {companyLogo ? (
+        {portrait ? (
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border-strong bg-black shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-primary)_25%,transparent)]">
+            <img
+              src={portrait}
+              alt={`${person.rank} ${person.name}`}
+              width={56}
+              height={56}
+              className="h-full w-full object-cover object-top"
+              decoding="async"
+            />
+          </span>
+        ) : companyLogo ? (
           <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border-strong bg-black">
             <img
               src={companyLogo}
@@ -136,6 +150,18 @@ function OfficerCard({
           </h2>
         </div>
       </div>
+      {portrait ? (
+        <div className="mt-4 overflow-hidden rounded-md border border-border bg-black/60">
+          <img
+            src={portrait}
+            alt=""
+            width={480}
+            height={480}
+            className="aspect-[4/5] w-full object-cover object-top"
+            decoding="async"
+          />
+        </div>
+      ) : null}
       <p className="mt-3 font-mono text-xs text-muted">{person.billet}</p>
       {"company" in person && person.company ? (
         <p className="mt-2 inline-flex rounded-sm border border-primary/30 bg-primary/10 px-2 py-0.5 stencil text-[10px] tracking-[0.1em] text-primary">

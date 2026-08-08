@@ -1,4 +1,4 @@
-nsexport const unit = {
+export const unit = {
   designation: "1st Mobile Infantry",
   shortName: "1st M.I.",
   division: "1st M.I. Division",
@@ -17,8 +17,8 @@ nsexport const unit = {
 export const stats = [
   { id: "troopers", label: "Active troopers", value: "1,800" },
   { id: "companies", label: "Companies", value: "4" },
-  { id: "bugs", label: "Bugs Killed", value: "live" },
-  { id: "dropships", label: "Total Operations Completed", value: "live" },
+  { id: "bugs", label: "Bugs killed", value: "live" },
+  { id: "dropships", label: "Total dropships completed", value: "live" },
 ] as const;
 
 // bugsKilledBase kept for any legacy imports — live tally lives in lib/bugs-killed.ts
@@ -136,6 +136,7 @@ export const roster = [
     billet: "Division command",
     note: "Overall authority for the 1st Mobile Infantry. Sets strategic intent across all four theaters and Companies.",
     tier: "command",
+    portrait: "/roster-hatchet.jpg",
   },
   {
     rank: "Colonel",
@@ -143,6 +144,7 @@ export const roster = [
     billet: "Regimental command",
     note: "Executes General Hatchet’s intent on the ground. Coordinates multi-company operations and theater rotations.",
     tier: "command",
+    portrait: "/roster-zakuria.jpg",
   },
   {
     rank: "Lt. Colonel",
@@ -150,6 +152,7 @@ export const roster = [
     billet: "Deputy / operations",
     note: "Plans drops, assigns company objectives, and keeps the division tempo high when contact is continuous.",
     tier: "command",
+    portrait: "/roster-kontra.jpg",
   },
   {
     rank: "Warrant Officer",
@@ -157,6 +160,23 @@ export const roster = [
     billet: "Senior technical / training",
     note: "Master of systems, kit standards, and field craft. The bridge between officer intent and trooper execution.",
     tier: "command",
+    portrait: "/roster-lustrati.jpg",
+  },
+  {
+    rank: "Warrant Officer",
+    name: "Matrix",
+    billet: "Division staff / technical command",
+    note: "Division command warrant. Owns systems coordination, readiness tracking, and the tools that keep HQ and the line aligned.",
+    tier: "command",
+    portrait: "/roster-matrix.jpg",
+  },
+  {
+    rank: "Command Sergeant",
+    name: "Ripper",
+    billet: "Division senior enlisted",
+    note: "Senior enlisted voice of Division command. Enforces standards, keeps the NCOs tight, and makes sure every order from HQ hits the line clean.",
+    tier: "command",
+    portrait: "/roster-ripper.jpg",
   },
   {
     rank: "Captain",
