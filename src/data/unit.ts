@@ -1,4 +1,4 @@
-nsexport const unit = {
+nsexport; const unit = {
   designation: "1st Mobile Infantry",
   shortName: "1st M.I.",
   division: "1st M.I. Division",
