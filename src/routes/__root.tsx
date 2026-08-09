@@ -16,7 +16,7 @@ export const Route = createRootRoute({
       { property: "og:title", content: "1st Mobile Infantry" },
       {
         property: "og:description",
-        content: "The first to drop. The last to leave.",
+        content: "No one stacks them high like the First M.I.",
       },
       { property: "og:image", content: "/mi-emblem.jpg" },
       { name: "theme-color", content: "#050705" },

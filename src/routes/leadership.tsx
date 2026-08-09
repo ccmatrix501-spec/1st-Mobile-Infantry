@@ -11,8 +11,6 @@ export const Route = createFileRoute("/leadership")({
 });
 
 function LeadershipPage() {
-  // Normalize tier so "Command"/"command" both work (capitalization mismatch was
-  // hiding the entire roster on production deploys).
   const command = roster.filter(
     (p) => String(p.tier).toLowerCase() === "command",
   );
@@ -108,15 +106,31 @@ function OfficerCard({
   const portrait =
     "portrait" in person && person.portrait ? person.portrait : null;
 
+  // Captains always keep their company icon next to the name
   const companyLogo =
-    !portrait && "company" in person && person.company
+    "company" in person && person.company
       ? companies.find((c) => c.callsign === person.company)?.logo
       : null;
 
   return (
     <article className={`panel panel-lift p-6 ${featured ? "sm:p-7" : ""}`}>
       <div className="flex items-center gap-3">
-        {portrait ? (
+        {companyLogo ? (
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border-strong bg-black">
+            <img
+              src={companyLogo}
+              alt={
+                "company" in person && person.company
+                  ? `${person.company} company logo`
+                  : ""
+              }
+              width={48}
+              height={48}
+              className="h-full w-full object-cover"
+              decoding="async"
+            />
+          </span>
+        ) : portrait ? (
           <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border-strong bg-black shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-primary)_25%,transparent)]">
             <img
               src={portrait}
@@ -124,17 +138,6 @@ function OfficerCard({
               width={56}
               height={56}
               className="h-full w-full object-cover object-top"
-              decoding="async"
-            />
-          </span>
-        ) : companyLogo ? (
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border-strong bg-black">
-            <img
-              src={companyLogo}
-              alt=""
-              width={48}
-              height={48}
-              className="h-full w-full object-cover"
               decoding="async"
             />
           </span>
