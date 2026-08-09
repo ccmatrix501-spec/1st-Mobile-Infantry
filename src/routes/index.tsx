@@ -16,6 +16,7 @@ import type { LucideIcon } from "lucide-react";
 import { AppShell, SectionHeading } from "@/components/app-shell";
 import { BugsKilledCounter } from "@/components/bugs-killed-counter";
 import { DropshipCounter } from "@/components/dropship-counter";
+import { TroopersCounter } from "@/components/troopers-counter";
 import { Button } from "@/components/ui/button";
 import {
   campaigns,
