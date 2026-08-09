@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 export type DropshipStats = {
   totalDropships: number | null;
   totalPoints: number | null;
+  totalMembers: number | null;  // ADD THIS
   ok: boolean;
   source: "live" | "unconfigured" | "error";
 };
@@ -54,15 +55,20 @@ export const fetchDropshipStats = createServerFn({ method: "GET" }).handler(
         totalDropships?: number;
         totalPoints?: number;
         totalOperations?: number;
+        totalMembers?: number;
       };
+      
       const totalDropships = Number(
         data.totalDropships ?? data.totalOperations ?? NaN,
       );
       const totalPoints = Number(data.totalPoints ?? NaN);
+      const totalMembers = Number(data.totalMembers ?? NaN);
+      
       return {
         totalDropships: Number.isFinite(totalDropships) ? totalDropships : null,
         totalPoints: Number.isFinite(totalPoints) ? totalPoints : null,
-        ok: Number.isFinite(totalDropships),
+        totalMembers: Number.isFinite(totalMembers) ? totalMembers : null,
+        ok: Number.isFinite(totalDropships) || Number.isFinite(totalMembers),
         source: "live",
       };
     } catch {
