@@ -3,7 +3,8 @@ export const unit = {
   shortName: "1st M.I.",
   division: "1st M.I. Division",
   branch: "Federal Armed Services",
-  motto: "The first to drop. The last to leave.",
+  motto: "No one stacks them high like the First M.I.",
+  secondaryMotto: "The first to drop. The last to leave.",
   tagline: "Service Guarantees Citizenship.",
   homebase: "San Diego Recruit Depot · Terra",
   status: "Active — Drop Ready",
@@ -179,12 +180,21 @@ export const roster = [
     portrait: "/roster-ripper.jpg",
   },
   {
+    rank: "Sergeant Major",
+    name: "Talmor",
+    billet: "Division sergeant major",
+    note: "Top enlisted advisor to Division command. Owns discipline, NCO development, and the hard standard every company is measured against.",
+    tier: "command",
+    portrait: "/roster-talmor.jpg",
+  },
+  {
     rank: "Captain",
     name: "RickySpanish",
     billet: "Demon Company (A Co)",
     note: "Commands base construction and ARC defense. Owns the wire, the guns, and the ground the division stands on.",
     tier: "captain",
     company: "Demon",
+    portrait: "/roster-ricky.jpg",
   },
   {
     rank: "Captain",
@@ -193,6 +203,7 @@ export const roster = [
     note: "Commands resource and logistics warfare. Gas, ore, and every convoy that keeps the war machine alive.",
     tier: "captain",
     company: "Nightmare",
+    portrait: "/roster-purplewolf.jpg",
   },
   {
     rank: "Captain",
@@ -201,6 +212,7 @@ export const roster = [
     note: "Commands the Quick Reaction Force. First to the breach when a squad is pinned or a gate fails.",
     tier: "captain",
     company: "Cerberus",
+    portrait: "/roster-knightbear.jpg",
   },
   {
     rank: "Captain",
@@ -209,6 +221,7 @@ export const roster = [
     note: "Commands bug hunter kill teams. Nest clearance, tunnel denial, and the kill tally that never stops climbing.",
     tier: "captain",
     company: "Hellfire",
+    portrait: "/roster-burster.jpg",
   },
 ];
 

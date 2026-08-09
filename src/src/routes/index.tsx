@@ -66,8 +66,11 @@ function Hero() {
             <br />
             <span className="text-primary">Infantry</span>
           </h1>
-          <p className="mt-4 font-display text-lg font-semibold uppercase tracking-[0.1em] text-primary sm:text-xl">
+          <p className="motto-banner mt-5 max-w-2xl rounded-sm border border-primary/60 bg-primary px-4 py-3.5 font-display text-[clamp(1.2rem,3.4vw,1.85rem)] font-bold uppercase leading-[1.15] tracking-[0.05em] text-black shadow-[0_0_48px_color-mix(in_oklab,var(--color-primary)_60%,transparent),inset_0_1px_0_color-mix(in_oklab,white_40%,transparent)] sm:px-5 sm:py-4">
             {unit.motto}
+          </p>
+          <p className="mt-3 font-display text-lg font-semibold uppercase tracking-[0.1em] text-muted sm:text-xl">
+            {unit.secondaryMotto}
           </p>
           <p className="mt-4 max-w-xl text-base leading-relaxed text-muted sm:text-lg">
             Four companies. Four active theaters. Demon holds the ARC, Nightmare

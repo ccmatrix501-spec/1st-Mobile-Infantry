@@ -46,8 +46,9 @@ export function SiteFooter() {
           </div>
           <div className="sm:col-span-2">
             <p className="stencil text-[10px] tracking-[0.14em] text-subtle">Standing order</p>
-            <p className="mt-3 font-mono text-xs text-muted">{unit.tagline}</p>
-            <p className="mt-2 text-sm text-muted">{unit.motto}</p>
+            <p className="mt-3 text-sm font-semibold uppercase tracking-wide text-fg">{unit.motto}</p>
+            <p className="mt-2 font-mono text-xs text-muted">{unit.secondaryMotto}</p>
+            <p className="mt-2 font-mono text-xs text-muted">{unit.tagline}</p>
             <Link
               to="/"
               className="mt-4 inline-block stencil text-[11px] tracking-[0.12em] text-muted transition-colors hover:text-primary"
