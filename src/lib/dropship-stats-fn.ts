@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 export type DropshipStats = {
   totalDropships: number | null;
   totalPoints: number | null;
+  totalMembers: number | null;
   ok: boolean;
   source: "live" | "unconfigured" | "error";
 };
@@ -18,7 +19,7 @@ const DEFAULT_DROPSHIP_STATS_URL =
  * Optional override on Vercel / host:
  *   DROPSHIP_STATS_URL=https://your-bot-host.example.com/stats
  *
- * Bot GET /stats → { totalDropships, totalPoints }
+ * Bot GET /stats → { totalDropships, totalPoints, totalMembers }
  */
 export const fetchDropshipStats = createServerFn({ method: "GET" }).handler(
   async (): Promise<DropshipStats> => {
@@ -31,6 +32,7 @@ export const fetchDropshipStats = createServerFn({ method: "GET" }).handler(
       return {
         totalDropships: null,
         totalPoints: null,
+        totalMembers: null,
         ok: false,
         source: "unconfigured",
       };
@@ -46,6 +48,7 @@ export const fetchDropshipStats = createServerFn({ method: "GET" }).handler(
         return {
           totalDropships: null,
           totalPoints: null,
+          totalMembers: null,
           ok: false,
           source: "error",
         };
@@ -53,22 +56,30 @@ export const fetchDropshipStats = createServerFn({ method: "GET" }).handler(
       const data = (await res.json()) as {
         totalDropships?: number;
         totalPoints?: number;
+        totalMembers?: number;
+        totalTroopers?: number;
         totalOperations?: number;
       };
       const totalDropships = Number(
         data.totalDropships ?? data.totalOperations ?? NaN,
       );
       const totalPoints = Number(data.totalPoints ?? NaN);
+      const totalMembers = Number(
+        data.totalMembers ?? data.totalTroopers ?? NaN,
+      );
       return {
         totalDropships: Number.isFinite(totalDropships) ? totalDropships : null,
         totalPoints: Number.isFinite(totalPoints) ? totalPoints : null,
-        ok: Number.isFinite(totalDropships),
+        totalMembers: Number.isFinite(totalMembers) ? totalMembers : null,
+        ok:
+          Number.isFinite(totalDropships) || Number.isFinite(totalMembers),
         source: "live",
       };
     } catch {
       return {
         totalDropships: null,
         totalPoints: null,
+        totalMembers: null,
         ok: false,
         source: "error",
       };

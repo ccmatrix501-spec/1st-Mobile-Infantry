@@ -16,6 +16,7 @@ import type { LucideIcon } from "lucide-react";
 import { AppShell, SectionHeading } from "@/components/app-shell";
 import { BugsKilledCounter } from "@/components/bugs-killed-counter";
 import { DropshipCounter } from "@/components/dropship-counter";
+import { TrooperCounter } from "@/components/trooper-counter";
 import { Button } from "@/components/ui/button";
 import {
   campaigns,
@@ -73,8 +74,8 @@ function Hero() {
             {unit.secondaryMotto}
           </p>
           <p className="mt-4 max-w-xl text-base leading-relaxed text-muted sm:text-lg">
-            Four companies. Four active theaters. Demon holds the ARC, Nightmare
-            fuels the war, Cerberus answers the call, Hellfire ends the bugs.{" "}
+            Four companies. Four active theaters. Demon holds the ARC, Cerberus
+            answers the call, Nightmare fuels the war, Hellfire ends the bugs.{" "}
             {unit.tagline}
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -101,43 +102,133 @@ function Hero() {
         </div>
 
         <div className="reveal stagger-2">
-          <div className="panel panel-feature p-5 sm:p-6">
-            <div className="flex items-center justify-between border-b border-border pb-4">
-              <div>
-                <p className="stencil text-[10px] tracking-[0.14em] text-subtle">Unit emblem</p>
-                <p className="font-display text-xl font-semibold uppercase tracking-wide text-fg">
-                  1st Division
+          <div className="emblem-id relative overflow-hidden rounded-sm border border-primary/35 bg-bg-elevated">
+            {/* top status bar */}
+            <div className="relative flex items-center justify-between gap-3 border-b border-primary/25 bg-primary/10 px-4 py-2.5 sm:px-5">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                </span>
+                <p className="stencil text-[10px] tracking-[0.16em] text-primary">Unit ID · live</p>
+              </div>
+              <p className="font-mono text-[10px] tracking-wider text-muted">FILE · MI-1ST-DIV</p>
+            </div>
+
+            <div className="relative p-5 sm:p-6">
+              {/* soft grid */}
+              <div
+                className="pointer-events-none absolute inset-0 opacity-[0.04]"
+                aria-hidden
+                style={{
+                  backgroundImage:
+                    "linear-gradient(color-mix(in oklab, var(--color-primary) 50%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in oklab, var(--color-primary) 50%, transparent) 1px, transparent 1px)",
+                  backgroundSize: "22px 22px",
+                }}
+              />
+
+              <div className="relative flex items-start justify-between gap-3">
+                <div>
+                  <p className="stencil text-[10px] tracking-[0.16em] text-subtle">Command plate</p>
+                  <p className="mt-1 font-display text-2xl font-bold uppercase tracking-wide text-fg sm:text-3xl">
+                    1st Division
+                  </p>
+                  <p className="mt-1 font-mono text-xs text-muted">{unit.designation}</p>
+                </div>
+                <div className="flex flex-col items-end gap-1.5">
+                  <span className="rounded-sm border border-primary bg-primary px-2.5 py-1 font-mono text-[10px] font-bold tracking-[0.12em] text-black">
+                    MI · 1ST DIV
+                  </span>
+                  <span className="stencil text-[9px] tracking-[0.14em] text-primary">Drop ready</span>
+                </div>
+              </div>
+
+              {/* emblem focal */}
+              <div className="relative mt-6 flex flex-col items-center">
+                <div
+                  className="pointer-events-none absolute top-1/2 h-40 w-40 -translate-y-1/2 rounded-full opacity-70 sm:h-48 sm:w-48"
+                  aria-hidden
+                  style={{
+                    background:
+                      "radial-gradient(circle, color-mix(in oklab, var(--color-primary) 40%, transparent) 0%, transparent 70%)",
+                  }}
+                />
+                <div className="relative rounded-sm border border-primary/60 bg-black p-1.5 shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-primary)_30%,transparent),0_0_48px_color-mix(in_oklab,var(--color-primary)_30%,transparent)]">
+                  {/* inner frame ticks */}
+                  <div className="relative overflow-hidden rounded-[2px] border border-border-strong bg-black">
+                    <img
+                      src="/mi-emblem.jpg"
+                      alt="1st Mobile Infantry emblem"
+                      width={280}
+                      height={280}
+                      className="aspect-square w-44 object-cover sm:w-52"
+                      decoding="async"
+                    />
+                    <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-primary/20" />
+                  </div>
+                </div>
+                <p className="mt-3 font-display text-sm font-bold uppercase tracking-[0.22em] text-fg">
+                  Mobile Infantry
+                </p>
+                <p className="mt-1 max-w-[16rem] text-center font-mono text-[10px] leading-relaxed tracking-wide text-muted">
+                  {unit.motto}
                 </p>
               </div>
-              <span className="font-mono text-xs text-muted">MI · 1ST DIV</span>
-            </div>
-            <div className="mt-6 flex justify-center">
-              <div className="overflow-hidden rounded-md border border-border-strong bg-black p-2 shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-primary)_30%,transparent),0_0_40px_color-mix(in_oklab,var(--color-primary)_20%,transparent)]">
-                <img
-                  src="/mi-emblem.jpg"
-                  alt="1st Mobile Infantry emblem"
-                  width={240}
-                  height={240}
-                  className="aspect-square w-52 object-cover sm:w-56"
-                  decoding="async"
-                />
+
+              {/* capability matrix */}
+              <div className="relative mt-6 grid gap-2">
+                {[
+                  { icon: Crosshair, label: "Order of battle", text: "Four specialized line companies" },
+                  { icon: Target, label: "Mission set", text: "ARC · logistics · QRF · hunt" },
+                  { icon: Radio, label: "Comms net", text: "Division net integrated" },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-center gap-3 rounded-sm border border-border bg-bg/55 px-3 py-2.5 transition-colors hover:border-primary/45 hover:bg-primary/[0.06]"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm border border-primary/35 bg-primary/10 text-primary">
+                      <item.icon className="h-4 w-4" aria-hidden />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="stencil text-[9px] tracking-[0.14em] text-primary">{item.label}</p>
+                      <p className="mt-0.5 text-sm text-fg">{item.text}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* company strip with logos */}
+              <div className="relative mt-5 border-t border-primary/20 pt-4">
+                <p className="stencil mb-2.5 text-[9px] tracking-[0.14em] text-subtle">Companies · active</p>
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { name: "Demon", logo: "/company-demon.png" },
+                    { name: "Cerberus", logo: "/company-cerberus.png" },
+                    { name: "Nightmare", logo: "/company-nightmare.png" },
+                    { name: "Hellfire", logo: "/company-hellfire.png" },
+                  ].map((co) => (
+                    <div
+                      key={co.name}
+                      className="flex flex-col items-center gap-1.5 rounded-sm border border-border bg-bg/50 p-2"
+                    >
+                      <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-sm border border-border-strong bg-black">
+                        <img
+                          src={co.logo}
+                          alt=""
+                          width={36}
+                          height={36}
+                          className="h-full w-full object-cover"
+                          decoding="async"
+                        />
+                      </span>
+                      <span className="font-mono text-[8px] tracking-[0.08em] text-muted">
+                        {co.name.toUpperCase()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-            <ul className="mt-6 space-y-2 border-t border-border pt-4">
-              {[
-                { icon: Crosshair, text: "Four specialized line companies" },
-                { icon: Target, text: "ARC · logistics · QRF · hunt" },
-                { icon: Radio, text: "Division net integrated" },
-              ].map((item) => (
-                <li
-                  key={item.text}
-                  className="flex items-center gap-3 rounded-md bg-bg/40 px-3 py-2.5 text-sm text-muted"
-                >
-                  <item.icon className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-                  {item.text}
-                </li>
-              ))}
-            </ul>
           </div>
         </div>
       </div>
@@ -155,6 +246,8 @@ function StatsStrip() {
               <BugsKilledCounter />
             ) : stat.id === "dropships" ? (
               <DropshipCounter />
+            ) : stat.id === "troopers" ? (
+              <TrooperCounter />
             ) : (
               <p className="metric-value text-3xl text-fg sm:text-4xl">{stat.value}</p>
             )}
@@ -176,28 +269,68 @@ function DoctrineSection() {
   return (
     <section id="doctrine" className="scroll-mt-24 border-b border-border">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-        <SectionHeading
-          kicker="Core values"
-          title="How the 1st stands"
-          body="Four pillars drilled from boot through senior command."
-        />
-        <div className="mt-10 grid gap-4 sm:grid-cols-2">
+        <div className="mb-10 flex flex-col gap-4 border-b border-primary/20 pb-8 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="section-kicker">Core values</p>
+            <h2 className="mt-2 font-display text-[clamp(2rem,5vw,3rem)] font-bold uppercase leading-[0.95] tracking-wide text-fg">
+              How the 1st{" "}
+              <span className="text-primary">stands</span>
+            </h2>
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted sm:text-base">
+              Four pillars drilled from boot through senior command. Non-negotiable under fire.
+            </p>
+          </div>
+          <div className="shrink-0 rounded-sm border border-primary/35 bg-primary/10 px-4 py-3 text-left sm:text-right">
+            <p className="font-mono text-[10px] tracking-[0.16em] text-primary">Doctrine · 1ST MI DIV</p>
+            <p className="mt-1 font-display text-sm font-semibold uppercase tracking-wide text-fg">
+              Hold the line
+            </p>
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {doctrine.map((item, i) => {
             const Icon = icons[i] ?? Shield;
+            const n = String(i + 1).padStart(2, "0");
             return (
-              <article key={item.title} className="panel panel-lift p-5 sm:p-6">
-                <div className="flex items-start gap-4">
-                  <span className="icon-bubble h-11 w-11 shrink-0">
-                    <Icon className="h-4 w-4" aria-hidden />
+              <article
+                key={item.title}
+                className="group relative flex flex-col overflow-hidden rounded-sm border border-border bg-bg-elevated transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-1 hover:border-primary/55 hover:shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-primary)_25%,transparent),0_20px_48px_color-mix(in_oklab,black_50%,transparent)]"
+              >
+                {/* top rail */}
+                <div className="flex items-center justify-between border-b border-primary/20 bg-primary/10 px-4 py-2.5">
+                  <span className="font-mono text-[11px] font-bold tracking-[0.2em] text-primary">
+                    {n}
                   </span>
-                  <div>
-                    <p className="stencil text-[10px] tracking-[0.14em] text-subtle">
-                      0{i + 1}
-                    </p>
-                    <h2 className="mt-1 font-display text-xl font-semibold uppercase tracking-wide text-fg sm:text-2xl">
-                      {item.title}
-                    </h2>
-                    <p className="mt-2.5 text-sm leading-relaxed text-muted">{item.body}</p>
+                  <span className="stencil text-[9px] tracking-[0.14em] text-subtle">
+                    Pillar
+                  </span>
+                </div>
+
+                <div className="relative flex flex-1 flex-col p-5">
+                  <span
+                    className="pointer-events-none absolute -right-2 bottom-0 font-display text-[6.5rem] font-bold leading-none text-primary/[0.05] transition-colors group-hover:text-primary/[0.1]"
+                    aria-hidden
+                  >
+                    {n}
+                  </span>
+
+                  <span className="relative mb-4 flex h-12 w-12 items-center justify-center rounded-sm border border-primary/45 bg-primary text-black shadow-[0_0_24px_color-mix(in_oklab,var(--color-primary)_35%,transparent)]">
+                    <Icon className="h-5 w-5" aria-hidden />
+                  </span>
+
+                  <h3 className="relative font-display text-xl font-bold uppercase tracking-wide text-fg sm:text-2xl">
+                    {item.title}
+                  </h3>
+                  <p className="relative mt-3 flex-1 text-sm leading-relaxed text-muted">
+                    {item.body}
+                  </p>
+
+                  <div className="relative mt-5 flex items-center gap-2 border-t border-border pt-3">
+                    <span className="h-px flex-1 bg-primary/30" aria-hidden />
+                    <span className="font-mono text-[9px] tracking-[0.16em] text-primary/80">
+                      1ST MI
+                    </span>
                   </div>
                 </div>
               </article>
@@ -208,6 +341,7 @@ function DoctrineSection() {
     </section>
   );
 }
+
 
 function CompanyMark({
   logo,
