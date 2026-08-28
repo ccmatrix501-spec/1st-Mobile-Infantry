@@ -91,10 +91,11 @@ function RootDocument() {
             background-image:
               linear-gradient(
                 180deg,
-                rgba(0, 0, 0, 0.12) 0%,
-                rgba(0, 0, 0, 0.08) 38%,
-                rgba(0, 0, 0, 0.70) 72%,
-                rgba(0, 0, 0, 0.94) 100%
+                rgba(0, 0, 0, 0.22) 0%,
+                rgba(0, 0, 0, 0.20) 34%,
+                rgba(0, 0, 0, 0.68) 60%,
+                rgba(0, 0, 0, 0.88) 78%,
+                rgba(0, 0, 0, 0.97) 100%
               ),
               var(--planet-art, linear-gradient(145deg, #111811, #070907));
             background-size: cover;
@@ -109,8 +110,8 @@ function RootDocument() {
             z-index: 1;
             pointer-events: none;
             box-shadow:
-              inset 0 0 0 1px rgba(255, 255, 255, 0.04),
-              inset 0 -80px 90px rgba(0, 0, 0, 0.18);
+              inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+              inset 0 -110px 120px rgba(0, 0, 0, 0.26);
           }
 
           #theaters .mt-10.space-y-4 > article > div:first-child {
@@ -118,14 +119,40 @@ function RootDocument() {
             top: 1.25rem;
             left: 1.25rem;
             z-index: 2;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95);
+            text-shadow:
+              0 2px 4px rgba(0, 0, 0, 1),
+              0 0 12px rgba(0, 0, 0, 0.95);
+          }
+
+          #theaters .mt-10.space-y-4 > article > div:first-child p:first-child {
+            font-weight: 700;
+          }
+
+          #theaters .mt-10.space-y-4 > article > div:first-child p:nth-child(2) {
+            color: rgba(244, 246, 243, 0.84) !important;
+            font-weight: 500;
           }
 
           #theaters .mt-10.space-y-4 > article > div:nth-child(2) {
             position: relative;
             z-index: 2;
             margin-top: auto;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.98);
+            text-shadow:
+              0 2px 4px rgba(0, 0, 0, 1),
+              0 0 14px rgba(0, 0, 0, 1);
+          }
+
+          #theaters .mt-10.space-y-4 > article > div:nth-child(2) h2 {
+            color: #ffffff !important;
+            font-weight: 700;
+            text-shadow:
+              0 2px 3px rgba(0, 0, 0, 1),
+              0 0 12px rgba(0, 0, 0, 1);
+          }
+
+          #theaters .mt-10.space-y-4 > article > div:nth-child(2) p.font-mono {
+            color: rgba(244, 246, 243, 0.78) !important;
+            font-weight: 500;
           }
 
           #theaters .mt-10.space-y-4 > article > span {
@@ -133,9 +160,10 @@ function RootDocument() {
             top: 1.25rem;
             right: 1.25rem;
             z-index: 2;
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            background: rgba(0, 0, 0, 0.48) !important;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            background: rgba(0, 0, 0, 0.64) !important;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.55);
           }
 
           #theaters .mt-10.space-y-4 > article p.mt-2\\.5 {
@@ -143,7 +171,11 @@ function RootDocument() {
             overflow: hidden;
             -webkit-box-orient: vertical;
             -webkit-line-clamp: 4;
-            color: rgba(244, 246, 243, 0.9) !important;
+            color: rgba(255, 255, 255, 0.96) !important;
+            font-weight: 500;
+            text-shadow:
+              0 2px 3px rgba(0, 0, 0, 1),
+              0 0 10px rgba(0, 0, 0, 1);
           }
 
           #theaters .planet-valaka {
