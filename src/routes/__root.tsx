@@ -69,6 +69,97 @@ function RootDocument() {
               ),
               url("/site-bg.png") !important;
           }
+
+          /* Active theater cards: square image-ready planet tiles. */
+          #theaters .mt-10.space-y-4 {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 1rem;
+          }
+
+          #theaters .mt-10.space-y-4 > article {
+            position: relative;
+            display: flex !important;
+            aspect-ratio: 1 / 1;
+            min-width: 0;
+            flex-direction: column;
+            justify-content: flex-end;
+            overflow: hidden;
+            margin: 0 !important;
+            padding: 1.25rem !important;
+            isolation: isolate;
+            background-image:
+              linear-gradient(
+                180deg,
+                rgba(0, 0, 0, 0.28) 0%,
+                rgba(0, 0, 0, 0.18) 36%,
+                rgba(0, 0, 0, 0.82) 78%,
+                rgba(0, 0, 0, 0.94) 100%
+              ),
+              var(--planet-art, linear-gradient(145deg, #111811, #070907));
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+          }
+
+          #theaters .mt-10.space-y-4 > article > div:first-child {
+            position: absolute;
+            top: 1.25rem;
+            left: 1.25rem;
+            z-index: 2;
+          }
+
+          #theaters .mt-10.space-y-4 > article > div:nth-child(2) {
+            position: relative;
+            z-index: 2;
+            margin-top: auto;
+          }
+
+          #theaters .mt-10.space-y-4 > article > span {
+            position: absolute;
+            top: 1.25rem;
+            right: 1.25rem;
+            z-index: 2;
+          }
+
+          #theaters .mt-10.space-y-4 > article p.mt-2\\.5 {
+            display: -webkit-box;
+            overflow: hidden;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 4;
+          }
+
+          /* Image hooks for the planet artwork you upload next. */
+          #theaters .planet-valaka { --planet-art: linear-gradient(145deg, #171510, #080807); }
+          #theaters .planet-agni { --planet-art: linear-gradient(145deg, #1a100c, #080706); }
+          #theaters .planet-boreas { --planet-art: linear-gradient(145deg, #0e171b, #07090a); }
+          #theaters .planet-x11 { --planet-art: linear-gradient(145deg, #151515, #070707); }
+
+          @media (min-width: 640px) {
+            #theaters .mt-10.space-y-4 {
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+          }
+
+          @media (min-width: 1024px) {
+            #theaters .mt-10.space-y-4 {
+              grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
+
+            #theaters .mt-10.space-y-4 > article {
+              padding: 1rem !important;
+            }
+
+            #theaters .mt-10.space-y-4 > article > div:first-child {
+              top: 1rem;
+              left: 1rem;
+            }
+
+            #theaters .mt-10.space-y-4 > article > span {
+              top: 1rem;
+              right: 1rem;
+            }
+          }
         `}</style>
       </head>
       <body className="field-texture antialiased">
