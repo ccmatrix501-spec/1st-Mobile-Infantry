@@ -94,29 +94,29 @@
   }
 }
 
-/* Full-site MI emblem plate — fixed cover + dark scrim for readable UI */
+/* Full-site split battle background — visible art with a restrained readability scrim */
 .field-texture {
   background-color: #050505;
   background-image:
-    /* Soft green bloom for brand */
+    /* Very light green brand bloom without hiding the artwork */
     radial-gradient(
       ellipse 70% 45% at 12% 0%,
-      color-mix(in oklab, var(--color-primary) 12%, transparent),
+      color-mix(in oklab, var(--color-primary) 6%, transparent),
       transparent 55%
     ),
-    /* Center vignette so the crest can show through lightly */
+    /* Gentle edge vignette to frame content while keeping both soldiers visible */
     radial-gradient(
-      ellipse 55% 60% at 50% 42%,
+      ellipse 70% 68% at 50% 42%,
       transparent 0%,
-      color-mix(in oklab, #000 35%, transparent) 55%,
-      color-mix(in oklab, #000 72%, transparent) 100%
+      color-mix(in oklab, #000 10%, transparent) 65%,
+      color-mix(in oklab, #000 32%, transparent) 100%
     ),
-    /* Readability scrim over art */
+    /* Lighter readability scrim so the new artwork remains clearly visible */
     linear-gradient(
       180deg,
-      color-mix(in oklab, #000 55%, transparent) 0%,
-      color-mix(in oklab, #000 48%, transparent) 40%,
-      color-mix(in oklab, #000 62%, transparent) 100%
+      color-mix(in oklab, #000 24%, transparent) 0%,
+      color-mix(in oklab, #000 18%, transparent) 42%,
+      color-mix(in oklab, #000 32%, transparent) 100%
     ),
     url("/site-bg.png");
   background-size: auto, auto, auto, cover;
