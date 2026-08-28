@@ -12,7 +12,9 @@ export const Route = createFileRoute("/leadership")({
 
 function LeadershipPage() {
   const command = roster.filter(
-    (p) => String(p.tier).toLowerCase() === "command",
+    (p) =>
+      String(p.tier).toLowerCase() === "command" &&
+      String(p.name).toLowerCase() !== "ripper",
   );
   const captains = roster.filter(
     (p) => String(p.tier).toLowerCase() === "captain",
