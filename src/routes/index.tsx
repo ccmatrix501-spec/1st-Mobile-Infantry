@@ -74,7 +74,7 @@ function Hero() {
             {unit.secondaryMotto}
           </p>
           <p className="mt-4 max-w-xl text-base leading-relaxed text-muted sm:text-lg">
-            Four companies. Four active theaters. Demon holds the ARC, Cerberus
+            Five companies. Four active theaters. Demon holds the ARC, Cerberus
             answers the call, Nightmare fuels the war, Hellfire ends the bugs.{" "}
             {unit.tagline}
           </p>
@@ -178,7 +178,7 @@ function Hero() {
               {/* capability matrix */}
               <div className="relative mt-6 grid gap-2">
                 {[
-                  { icon: Crosshair, label: "Order of battle", text: "Four specialized line companies" },
+                  { icon: Crosshair, label: "Order of battle", text: "Five specialized line companies" },
                   { icon: Target, label: "Mission set", text: "ARC · logistics · QRF · hunt" },
                   { icon: Radio, label: "Comms net", text: "Division net integrated" },
                 ].map((item) => (
@@ -248,10 +248,14 @@ function StatsStrip() {
               <DropshipCounter />
             ) : stat.id === "troopers" ? (
               <TrooperCounter />
+            ) : stat.id === "companies" ? (
+              <p className="metric-value text-3xl text-fg sm:text-4xl">5</p>
             ) : (
               <p className="metric-value text-3xl text-fg sm:text-4xl">{stat.value}</p>
             )}
-            <p className="stencil mt-3 text-[11px] tracking-[0.12em] text-muted">{stat.label}</p>
+            <p className="stencil mt-3 text-[11px] tracking-[0.12em] text-muted">
+              {stat.id === "dropships" ? "Total Operations completed" : stat.label}
+            </p>
             {stat.id === "bugs" ? (
               <p className="badge-live mt-2 stencil text-[10px] tracking-[0.12em] text-primary">
                 Live feed · real-time
@@ -380,7 +384,7 @@ function CompaniesSection() {
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
         <SectionHeading
           kicker="Order of battle"
-          title="The four companies"
+          title="The five companies"
           body="Each company owns a warfighting mission. Together they build, feed, reinforce, and burn the enemy off the map."
         />
         <div className="mt-10 grid gap-4 sm:grid-cols-2">
