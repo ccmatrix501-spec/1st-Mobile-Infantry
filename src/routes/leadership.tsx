@@ -108,6 +108,8 @@ function OfficerCard({
   const portrait =
     "portrait" in person && person.portrait ? person.portrait : null;
 
+  const displayedRank = person.name === "Lustrati" ? "Major" : person.rank;
+
   // Captains always keep their company icon next to the name
   const companyLogo =
     "company" in person && person.company
@@ -136,7 +138,7 @@ function OfficerCard({
           <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border-strong bg-black shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-primary)_25%,transparent)]">
             <img
               src={portrait}
-              alt={`${person.rank} ${person.name}`}
+              alt={`${displayedRank} ${person.name}`}
               width={56}
               height={56}
               className="h-full w-full object-cover object-top"
@@ -149,7 +151,7 @@ function OfficerCard({
           </span>
         )}
         <div className="min-w-0">
-          <p className="stencil text-[10px] tracking-[0.12em] text-primary">{person.rank}</p>
+          <p className="stencil text-[10px] tracking-[0.12em] text-primary">{displayedRank}</p>
           <h2 className="truncate font-display text-xl font-semibold uppercase tracking-wide text-fg sm:text-2xl">
             {person.name}
           </h2>
