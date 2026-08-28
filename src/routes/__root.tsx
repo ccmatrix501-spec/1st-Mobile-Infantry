@@ -41,6 +41,7 @@ function RootDocument() {
     <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
+        <style>{`#companies { display: none !important; }`}</style>
       </head>
       <body className="field-texture antialiased">
         <AuthProvider>
