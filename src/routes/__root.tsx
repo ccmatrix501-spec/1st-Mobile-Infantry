@@ -41,7 +41,35 @@ function RootDocument() {
     <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
-        <style>{`#companies { display: none !important; }`}</style>
+        <style>{`
+          /* Keep the large homepage company / Order of Battle section removed. */
+          #companies {
+            display: none !important;
+          }
+
+          /* Darken the site artwork itself instead of putting panels behind text. */
+          .field-texture {
+            background-image:
+              radial-gradient(
+                ellipse 70% 45% at 12% 0%,
+                color-mix(in oklab, var(--color-primary) 4%, transparent),
+                transparent 55%
+              ),
+              radial-gradient(
+                ellipse 70% 68% at 50% 42%,
+                transparent 0%,
+                rgba(0, 0, 0, 0.16) 62%,
+                rgba(0, 0, 0, 0.46) 100%
+              ),
+              linear-gradient(
+                180deg,
+                rgba(0, 0, 0, 0.48) 0%,
+                rgba(0, 0, 0, 0.44) 42%,
+                rgba(0, 0, 0, 0.55) 100%
+              ),
+              url("/site-bg.png") !important;
+          }
+        `}</style>
       </head>
       <body className="field-texture antialiased">
         <AuthProvider>
