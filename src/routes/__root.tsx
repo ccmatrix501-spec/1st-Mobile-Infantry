@@ -70,7 +70,7 @@ function RootDocument() {
               url("/site-bg.png") !important;
           }
 
-          /* Active theater cards: square image-ready planet tiles. */
+          /* Active theater cards: square planet-image tiles. */
           #theaters .mt-10.space-y-4 {
             display: grid !important;
             grid-template-columns: minmax(0, 1fr);
@@ -91,15 +91,24 @@ function RootDocument() {
             background-image:
               linear-gradient(
                 180deg,
-                rgba(0, 0, 0, 0.28) 0%,
-                rgba(0, 0, 0, 0.18) 36%,
-                rgba(0, 0, 0, 0.82) 78%,
+                rgba(0, 0, 0, 0.14) 0%,
+                rgba(0, 0, 0, 0.08) 38%,
+                rgba(0, 0, 0, 0.72) 72%,
                 rgba(0, 0, 0, 0.94) 100%
               ),
               var(--planet-art, linear-gradient(145deg, #111811, #070907));
-            background-size: cover;
-            background-position: center;
+            background-size: cover, cover, cover, cover;
+            background-position: center, center, center, center;
             background-repeat: no-repeat;
+          }
+
+          #theaters .mt-10.space-y-4 > article::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04), inset 0 -80px 90px rgba(0,0,0,0.18);
           }
 
           #theaters .mt-10.space-y-4 > article > div:first-child {
@@ -107,12 +116,14 @@ function RootDocument() {
             top: 1.25rem;
             left: 1.25rem;
             z-index: 2;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.95);
           }
 
           #theaters .mt-10.space-y-4 > article > div:nth-child(2) {
             position: relative;
             z-index: 2;
             margin-top: auto;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.98);
           }
 
           #theaters .mt-10.space-y-4 > article > span {
@@ -120,6 +131,9 @@ function RootDocument() {
             top: 1.25rem;
             right: 1.25rem;
             z-index: 2;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            background: rgba(0,0,0,0.48) !important;
           }
 
           #theaters .mt-10.space-y-4 > article p.mt-2\\.5 {
@@ -127,13 +141,37 @@ function RootDocument() {
             overflow: hidden;
             -webkit-box-orient: vertical;
             -webkit-line-clamp: 4;
+            color: rgba(244,246,243,0.88) !important;
           }
 
-          /* Image hooks for the planet artwork you upload next. */
-          #theaters .planet-valaka { --planet-art: linear-gradient(145deg, #171510, #080807); }
-          #theaters .planet-agni { --planet-art: linear-gradient(145deg, #1a100c, #080706); }
-          #theaters .planet-boreas { --planet-art: linear-gradient(145deg, #0e171b, #07090a); }
-          #theaters .planet-x11 { --planet-art: linear-gradient(145deg, #151515, #070707); }
+          /* Planet artwork. The second URL is a fallback for the original upload filename. */
+          #theaters .planet-valaka {
+            --planet-art:
+              url("/planet-valaka.png"),
+              url("/T_MenuValaka.png"),
+              linear-gradient(145deg, #171510, #080807);
+          }
+
+          #theaters .planet-agni {
+            --planet-art:
+              url("/planet-agni.png"),
+              url("/T_MenuAgni.png"),
+              linear-gradient(145deg, #1a100c, #080706);
+          }
+
+          #theaters .planet-boreas {
+            --planet-art:
+              url("/planet-boreas.png"),
+              url("/T_MenuBoreas.png"),
+              linear-gradient(145deg, #0e171b, #07090a);
+          }
+
+          #theaters .planet-x11 {
+            --planet-art:
+              url("/planet-x11.png"),
+              url("/T_MenuPX11.png"),
+              linear-gradient(145deg, #151515, #070707);
+          }
 
           @media (min-width: 640px) {
             #theaters .mt-10.space-y-4 {
