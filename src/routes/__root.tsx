@@ -41,76 +41,7 @@ function RootDocument() {
     <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
-        <style>{`
-          /* Keep the large homepage company / Order of Battle section removed. */
-          #companies {
-            display: none !important;
-          }
-
-          /* Homepage readability layer: darken only behind the hero copy. */
-          section:has(.hero-title)::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-            background: linear-gradient(
-              90deg,
-              rgba(0, 0, 0, 0.68) 0%,
-              rgba(0, 0, 0, 0.5) 36%,
-              rgba(0, 0, 0, 0.2) 62%,
-              rgba(0, 0, 0, 0) 100%
-            );
-          }
-
-          section:has(.hero-title) > div.relative {
-            position: relative;
-            z-index: 1;
-          }
-
-          section:has(.hero-title) div.reveal:has(.hero-title) {
-            padding: 1.5rem;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 0.75rem;
-            background: rgba(0, 0, 0, 0.3);
-            box-shadow: 0 12px 42px rgba(0, 0, 0, 0.38);
-            backdrop-filter: blur(3px);
-            -webkit-backdrop-filter: blur(3px);
-          }
-
-          .hero-title {
-            text-shadow: 0 3px 14px rgba(0, 0, 0, 0.95);
-          }
-
-          section:has(.hero-title) div.reveal:has(.hero-title) > p:nth-of-type(3),
-          section:has(.hero-title) div.reveal:has(.hero-title) > p:nth-of-type(4) {
-            color: rgba(244, 246, 243, 0.96) !important;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.95);
-          }
-
-          section:has(.hero-title) div.reveal:has(.hero-title) > p:nth-of-type(4) {
-            font-weight: 500;
-          }
-
-          section:has(.hero-title) div.reveal:has(.hero-title) dt {
-            color: rgba(244, 246, 243, 0.78) !important;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
-          }
-
-          section:has(.hero-title) div.reveal:has(.hero-title) dd {
-            font-weight: 500;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
-          }
-
-          section[aria-label="Unit statistics"] .stencil {
-            color: rgba(244, 246, 243, 0.82) !important;
-          }
-
-          @media (max-width: 640px) {
-            section:has(.hero-title) div.reveal:has(.hero-title) {
-              padding: 1rem;
-            }
-          }
-        `}</style>
+        <style>{`#companies { display: none !important; }`}</style>
       </head>
       <body className="field-texture antialiased">
         <AuthProvider>
