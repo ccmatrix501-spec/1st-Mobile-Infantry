@@ -122,10 +122,11 @@ function OfficerCard({
 
   const displayedRank = person.name === "Lustrati" ? "Major" : person.rank;
 
-  // Captains always keep their company icon next to the name
   const companyLogo =
     "company" in person && person.company
-      ? companies.find((c) => c.callsign === person.company)?.logo
+      ? person.company === "Alpha"
+        ? "/company-alpha.png"
+        : companies.find((c) => c.callsign === person.company)?.logo
       : null;
 
   return (
@@ -142,7 +143,7 @@ function OfficerCard({
               }
               width={48}
               height={48}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-contain"
               decoding="async"
             />
           </span>
