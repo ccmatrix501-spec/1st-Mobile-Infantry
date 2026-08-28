@@ -41,7 +41,7 @@ export function SiteHeader() {
         "sticky top-0 z-50 transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300",
         scrolled || open
           ? "border-b border-border/80 glass shadow-[0_12px_36px_color-mix(in_oklab,#000_40%,transparent)]"
-          : "border-b border-transparent bg-transparent",
+          : "border-b border-white/10 bg-black/20 backdrop-blur-[6px]",
       )}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:h-[4.25rem] sm:px-6">
@@ -72,7 +72,7 @@ export function SiteHeader() {
                 key={link.to}
                 to={link.to}
                 className={cn(
-                  "stencil rounded-md px-3 py-2 text-xs tracking-[0.12em] text-muted transition-colors hover:bg-surface-hover hover:text-fg",
+                  "stencil rounded-md px-3 py-2 text-xs tracking-[0.12em] text-fg/90 drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)] transition-colors hover:bg-surface-hover hover:text-white",
                   active && "nav-link-active",
                 )}
               >
