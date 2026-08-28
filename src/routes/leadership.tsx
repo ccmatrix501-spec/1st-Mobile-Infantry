@@ -16,9 +16,21 @@ function LeadershipPage() {
       String(p.tier).toLowerCase() === "command" &&
       String(p.name).toLowerCase() !== "ripper",
   );
-  const captains = roster.filter(
-    (p) => String(p.tier).toLowerCase() === "captain",
-  );
+
+  const alphaCaptain = {
+    rank: "Captain",
+    name: "HooknGaffe",
+    billet: "Alpha Company · Fifth Company",
+    note: "Commands Alpha Company, the fifth company of the 1st Mobile Infantry.",
+    tier: "captain",
+    company: "Alpha",
+    portrait: "",
+  } as (typeof roster)[number];
+
+  const captains = [
+    ...roster.filter((p) => String(p.tier).toLowerCase() === "captain"),
+    alphaCaptain,
+  ];
 
   return (
     <AppShell>
@@ -60,7 +72,7 @@ function LeadershipPage() {
           <SectionHeading
             kicker="Company command"
             title="Company captains"
-            body="Four captains. Four missions. Report up the chain; own the ground under your boots."
+            body="Five captains. Five companies. Report up the chain; own the ground under your boots."
           />
           <div className="mt-8 grid gap-4 sm:grid-cols-2">
             {captains.length === 0 ? (
