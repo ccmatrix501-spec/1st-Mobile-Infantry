@@ -58,14 +58,14 @@ function RootDocument() {
               radial-gradient(
                 ellipse 70% 68% at 50% 42%,
                 transparent 0%,
-                rgba(0, 0, 0, 0.16) 62%,
-                rgba(0, 0, 0, 0.46) 100%
+                rgba(0, 0, 0, 0.20) 62%,
+                rgba(0, 0, 0, 0.50) 100%
               ),
               linear-gradient(
                 180deg,
-                rgba(0, 0, 0, 0.48) 0%,
-                rgba(0, 0, 0, 0.44) 42%,
-                rgba(0, 0, 0, 0.55) 100%
+                rgba(0, 0, 0, 0.52) 0%,
+                rgba(0, 0, 0, 0.48) 42%,
+                rgba(0, 0, 0, 0.60) 100%
               ),
               url("/site-bg.png") !important;
           }
