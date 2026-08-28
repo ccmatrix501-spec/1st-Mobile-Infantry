@@ -1,1 +1,0 @@
-Alpha Company logo asset is managed as public/company-alpha.png.
