@@ -177,13 +177,21 @@ function OfficerCard({
         </div>
       </div>
       {portrait ? (
-        <div className="mt-4 overflow-hidden rounded-md border border-border bg-black/60">
+        <div
+          className={`mt-4 overflow-hidden rounded-md border border-border bg-black/60 ${
+            isAlpha ? "aspect-[16/10] sm:aspect-[16/9]" : ""
+          }`}
+        >
           <img
             src={portrait}
             alt=""
-            width={480}
-            height={600}
-            className="aspect-[4/5] w-full object-cover object-top"
+            width={isAlpha ? 720 : 480}
+            height={isAlpha ? 405 : 600}
+            className={
+              isAlpha
+                ? "h-full w-full object-cover object-[50%_22%]"
+                : "aspect-[4/5] w-full object-cover object-top"
+            }
             decoding="async"
           />
         </div>
