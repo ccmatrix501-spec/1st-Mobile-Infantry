@@ -24,7 +24,7 @@ function LeadershipPage() {
     note: "Commands Alpha Company, the fifth company of the 1st Mobile Infantry.",
     tier: "captain",
     company: "Alpha",
-    portrait: "/roster-hookngaffe.jpg?v=2",
+    portrait: "/roster-hookngaffe.svg?v=1",
   } as (typeof roster)[number];
 
   const captains = [
