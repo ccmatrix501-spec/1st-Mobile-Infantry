@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell, PageHero, SectionHeading } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { companies, roster, unit } from "@/data/unit";
-import { hooknGaffePortrait } from "@/data/hookngaffe-portrait";
 
 export const Route = createFileRoute("/leadership")({
   component: LeadershipPage,
@@ -25,7 +24,7 @@ function LeadershipPage() {
     note: "Commands Alpha Company, the fifth company of the 1st Mobile Infantry.",
     tier: "captain",
     company: "Alpha",
-    portrait: hooknGaffePortrait,
+    portrait: "/roster-hookngaffe.webp",
   } as (typeof roster)[number];
 
   const captains = [
@@ -179,17 +178,17 @@ function OfficerCard({
       {portrait ? (
         <div
           className={`mt-4 overflow-hidden rounded-md border border-border bg-black/60 ${
-            isAlpha ? "aspect-[16/10] sm:aspect-[16/9]" : ""
+            isAlpha ? "mx-auto aspect-[4/5] w-full max-w-[420px]" : ""
           }`}
         >
           <img
             src={portrait}
-            alt=""
-            width={isAlpha ? 720 : 480}
-            height={isAlpha ? 405 : 600}
+            alt={`${displayedRank} ${person.name}`}
+            width={isAlpha ? 420 : 480}
+            height={isAlpha ? 525 : 600}
             className={
               isAlpha
-                ? "h-full w-full object-cover object-[50%_22%]"
+                ? "h-full w-full object-cover object-center"
                 : "aspect-[4/5] w-full object-cover object-top"
             }
             decoding="async"
