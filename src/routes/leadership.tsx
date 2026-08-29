@@ -126,7 +126,7 @@ function OfficerCard({
   const companyLogo =
     "company" in person && person.company
       ? isAlpha
-        ? "/company-alpha.png?v=3"
+        ? "/company-alpha.png?v=4"
         : companies.find((c) => c.callsign === person.company)?.logo
       : null;
 
@@ -136,7 +136,7 @@ function OfficerCard({
         {companyLogo ? (
           <span
             className={`flex shrink-0 items-center justify-center overflow-hidden rounded-md border border-border-strong shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-primary)_18%,transparent)] ${
-              isAlpha ? "h-16 w-16 bg-white/10 p-1.5" : "h-12 w-12 bg-black"
+              isAlpha ? "h-16 w-16 bg-black/50 p-1.5" : "h-12 w-12 bg-black"
             }`}
           >
             <img
@@ -148,7 +148,7 @@ function OfficerCard({
               }
               width={isAlpha ? 64 : 48}
               height={isAlpha ? 64 : 48}
-              className={`h-full w-full object-contain ${isAlpha ? "brightness-125 saturate-125" : ""}`}
+              className="h-full w-full object-contain"
               decoding="async"
             />
           </span>
