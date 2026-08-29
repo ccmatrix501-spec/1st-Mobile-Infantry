@@ -225,6 +225,34 @@ function RootDocument() {
               linear-gradient(145deg, #151515, #070707);
           }
 
+          /* Final card-fit pass: keep the square layout while making more copy visible. */
+          #theaters .mt-10.space-y-4 > article > div:nth-child(2) {
+            margin: auto -0.35rem -0.35rem;
+            padding: 0.62rem 0.68rem 0.7rem;
+          }
+
+          #theaters .mt-10.space-y-4 > article > div:nth-child(2) h2 {
+            margin: 0;
+            font-size: 1.18rem;
+            line-height: 1.05;
+          }
+
+          #theaters .mt-10.space-y-4 > article > div:nth-child(2) p.font-mono {
+            margin-top: 0.38rem !important;
+            overflow: hidden;
+            font-size: 0.67rem;
+            line-height: 1.25;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          #theaters .mt-10.space-y-4 > article p.mt-2\\.5 {
+            margin-top: 0.52rem !important;
+            font-size: 0.82rem;
+            line-height: 1.42;
+            -webkit-line-clamp: 5;
+          }
+
           @media (min-width: 640px) {
             #theaters .mt-10.space-y-4 {
               grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -237,17 +265,36 @@ function RootDocument() {
             }
 
             #theaters .mt-10.space-y-4 > article {
-              padding: 1rem !important;
+              padding: 0.85rem !important;
             }
 
             #theaters .mt-10.space-y-4 > article > div:first-child {
-              top: 0.85rem;
-              left: 0.85rem;
+              top: 0.72rem;
+              left: 0.72rem;
+              padding: 0.38rem 0.5rem;
             }
 
             #theaters .mt-10.space-y-4 > article > span {
-              top: 0.85rem;
-              right: 0.85rem;
+              top: 0.72rem;
+              right: 0.72rem;
+            }
+
+            #theaters .mt-10.space-y-4 > article > div:nth-child(2) {
+              margin: auto -0.22rem -0.22rem;
+              padding: 0.58rem 0.62rem 0.64rem;
+            }
+
+            #theaters .mt-10.space-y-4 > article > div:nth-child(2) h2 {
+              font-size: 1.12rem;
+            }
+
+            #theaters .mt-10.space-y-4 > article > div:nth-child(2) p.font-mono {
+              font-size: 0.64rem;
+            }
+
+            #theaters .mt-10.space-y-4 > article p.mt-2\\.5 {
+              font-size: 0.78rem;
+              line-height: 1.4;
             }
           }
         `}</style>
