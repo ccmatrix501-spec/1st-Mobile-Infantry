@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell, PageHero, SectionHeading } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { companies, roster, unit } from "@/data/unit";
+import { hooknGaffePortrait } from "@/data/hookngaffe-portrait";
 
 export const Route = createFileRoute("/leadership")({
   component: LeadershipPage,
@@ -24,7 +25,7 @@ function LeadershipPage() {
     note: "Commands Alpha Company, the fifth company of the 1st Mobile Infantry.",
     tier: "captain",
     company: "Alpha",
-    portrait: "/roster-hookngaffe.svg?v=1",
+    portrait: hooknGaffePortrait,
   } as (typeof roster)[number];
 
   const captains = [
