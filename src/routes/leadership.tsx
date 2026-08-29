@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell, PageHero, SectionHeading } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
+import { hooknGaffePortraitV2 } from "@/data/hookngaffe-portrait-v2";
 import { companies, roster, unit } from "@/data/unit";
 
 export const Route = createFileRoute("/leadership")({
@@ -25,7 +25,7 @@ function LeadershipPage() {
     note: "Commands Alpha Company, the fifth company of the 1st Mobile Infantry.",
     tier: "captain",
     company: "Alpha",
-    portrait: "/roster-hookngaffe-v4.jpg.b64",
+    portrait: hooknGaffePortraitV2,
   } as (typeof roster)[number];
 
   const captains = [
@@ -99,60 +99,6 @@ function LeadershipPage() {
         </div>
       </section>
     </AppShell>
-  );
-}
-
-function Base64Portrait({ src, alt }: { src: string; alt: string }) {
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    fetch(src, { cache: "no-store" })
-      .then((response) => {
-        if (!response.ok) throw new Error(`Portrait request failed: ${response.status}`);
-        return response.text();
-      })
-      .then((base64) => {
-        if (cancelled) return;
-        const clean = base64.replace(/\s+/g, "").trim();
-        setImageSrc(`data:image/jpeg;base64,${clean}`);
-      })
-      .catch(() => {
-        if (!cancelled) setFailed(true);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [src]);
-
-  if (failed) {
-    return (
-      <div className="flex aspect-[4/5] w-full items-center justify-center bg-black/70 px-6 text-center font-mono text-xs text-muted">
-        Portrait unavailable
-      </div>
-    );
-  }
-
-  if (!imageSrc) {
-    return (
-      <div className="flex aspect-[4/5] w-full items-center justify-center bg-black/70 font-mono text-xs text-muted">
-        Loading portrait…
-      </div>
-    );
-  }
-
-  return (
-    <img
-      src={imageSrc}
-      alt={alt}
-      width={480}
-      height={600}
-      className="aspect-[4/5] w-full object-cover object-top"
-      decoding="async"
-    />
   );
 }
 
@@ -231,26 +177,26 @@ function OfficerCard({
           </h2>
         </div>
       </div>
+
       {portrait ? (
         <div
           className={`mt-4 overflow-hidden rounded-md border border-border bg-black/60 ${
-            isHooknGaffe ? "mx-auto max-w-[420px]" : ""
+            isHooknGaffe ? "mx-auto max-w-[360px]" : ""
           }`}
         >
-          {isHooknGaffe ? (
-            <Base64Portrait src={portrait} alt="Captain HooknGaffe" />
-          ) : (
-            <img
-              src={portrait}
-              alt=""
-              width={480}
-              height={600}
-              className="aspect-[4/5] w-full object-cover object-top"
-              decoding="async"
-            />
-          )}
+          <img
+            src={portrait}
+            alt={isHooknGaffe ? "Captain HooknGaffe" : ""}
+            width={isHooknGaffe ? 320 : 480}
+            height={isHooknGaffe ? 400 : 600}
+            className={`aspect-[4/5] w-full object-cover ${
+              isHooknGaffe ? "object-center" : "object-top"
+            }`}
+            decoding="async"
+          />
         </div>
       ) : null}
+
       <p className="mt-3 font-mono text-xs text-muted">{person.billet}</p>
       {"company" in person && person.company ? (
         <p className="mt-2 inline-flex rounded-sm border border-primary/30 bg-primary/10 px-2 py-0.5 stencil text-[10px] tracking-[0.1em] text-primary">
