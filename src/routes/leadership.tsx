@@ -121,11 +121,12 @@ function OfficerCard({
     "portrait" in person && person.portrait ? person.portrait : null;
 
   const displayedRank = person.name === "Lustrati" ? "Major" : person.rank;
+  const isAlpha = "company" in person && person.company === "Alpha";
 
   const companyLogo =
     "company" in person && person.company
-      ? person.company === "Alpha"
-        ? "/company-alpha.png"
+      ? isAlpha
+        ? "/company-alpha.png?v=3"
         : companies.find((c) => c.callsign === person.company)?.logo
       : null;
 
@@ -133,7 +134,11 @@ function OfficerCard({
     <article className={`panel panel-lift p-6 ${featured ? "sm:p-7" : ""}`}>
       <div className="flex items-center gap-3">
         {companyLogo ? (
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border-strong bg-black">
+          <span
+            className={`flex shrink-0 items-center justify-center overflow-hidden rounded-md border border-border-strong shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-primary)_18%,transparent)] ${
+              isAlpha ? "h-16 w-16 bg-white/10 p-1.5" : "h-12 w-12 bg-black"
+            }`}
+          >
             <img
               src={companyLogo}
               alt={
@@ -141,9 +146,9 @@ function OfficerCard({
                   ? `${person.company} company logo`
                   : ""
               }
-              width={48}
-              height={48}
-              className="h-full w-full object-contain"
+              width={isAlpha ? 64 : 48}
+              height={isAlpha ? 64 : 48}
+              className={`h-full w-full object-contain ${isAlpha ? "brightness-125 saturate-125" : ""}`}
               decoding="async"
             />
           </span>
