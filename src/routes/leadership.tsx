@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell, PageHero, SectionHeading } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
-import { hooknGaffePortraitV2 } from "@/data/hookngaffe-portrait-v2";
+import { hooknGaffePortraitHQ } from "@/data/hookngaffe-portrait-hq";
 import { companies, roster, unit } from "@/data/unit";
 
 export const Route = createFileRoute("/leadership")({
@@ -25,7 +25,7 @@ function LeadershipPage() {
     note: "Commands Alpha Company, the fifth company of the 1st Mobile Infantry.",
     tier: "captain",
     company: "Alpha",
-    portrait: hooknGaffePortraitV2,
+    portrait: hooknGaffePortraitHQ,
   } as (typeof roster)[number];
 
   const captains = [
@@ -187,8 +187,8 @@ function OfficerCard({
           <img
             src={portrait}
             alt={isHooknGaffe ? "Captain HooknGaffe" : ""}
-            width={isHooknGaffe ? 320 : 480}
-            height={isHooknGaffe ? 400 : 600}
+            width={isHooknGaffe ? 480 : 480}
+            height={isHooknGaffe ? 600 : 600}
             className={`aspect-[4/5] w-full object-cover ${
               isHooknGaffe ? "object-center" : "object-top"
             }`}
