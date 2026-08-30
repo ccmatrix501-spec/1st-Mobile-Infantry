@@ -6,18 +6,28 @@
  * in ../migrations to DATABASE_URL. Each file is applied in one transaction and
  * recorded in a `_migrations` table, so it runs once and is safe to re-run.
  *
- * No DATABASE_URL (local / preview builds) -> skip; the PGLite fallback applies
- * the same files at startup instead (see src/lib/db.ts).
+ * Local development may omit DATABASE_URL and use the PGLite fallback. Vercel
+ * production must use a persistent external Postgres database.
  */
 import { readdir, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import pg from "pg";
 
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl = process.env.DATABASE_URL?.trim();
+const runningOnVercel =
+  process.env.VERCEL === "1" || Boolean(process.env.VERCEL_ENV);
+
 if (!databaseUrl) {
+  if (runningOnVercel) {
+    console.error(
+      "[migrate] DATABASE_URL is required for Vercel deployments. Add a persistent Postgres/Neon database to the Vercel project and redeploy.",
+    );
+    process.exit(1);
+  }
+
   console.log(
-    "[migrate] DATABASE_URL not set — skipping (the PGLite fallback migrates itself).",
+    "[migrate] DATABASE_URL not set — skipping for local development (PGLite will migrate itself).",
   );
   process.exit(0);
 }
