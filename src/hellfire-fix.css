@@ -1,0 +1,9 @@
+/* Hellfire source art contains more transparent padding than the other company emblems.
+   Force a fresh asset request and crop it slightly so the orange mark remains visible
+   inside the compact Companies · Active tile. */
+img[src="/company-hellfire.png"] {
+  content: url("/company-hellfire.png?v=20260830-2");
+  object-fit: cover !important;
+  transform: scale(1.28);
+  transform-origin: center;
+}
