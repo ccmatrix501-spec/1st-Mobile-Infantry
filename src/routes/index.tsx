@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowRight,
@@ -74,9 +75,9 @@ function Hero() {
             {unit.secondaryMotto}
           </p>
           <p className="mt-4 max-w-xl text-base leading-relaxed text-muted sm:text-lg">
-            Five companies. Four active theaters. Demon holds the ARC, Cerberus
-            answers the call, Nightmare fuels the war, Hellfire ends the bugs.{" "}
-            {unit.tagline}
+            Five companies. Five active theaters. Demon holds the ARC, Cerberus
+            answers the call, Nightmare fuels the war, Hellfire hunts the enemy,
+            and Alpha drives the fifth line. {unit.tagline}
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg">
@@ -103,7 +104,6 @@ function Hero() {
 
         <div className="reveal stagger-2">
           <div className="emblem-id relative overflow-hidden rounded-sm border border-primary/35 bg-bg-elevated">
-            {/* top status bar */}
             <div className="relative flex items-center justify-between gap-3 border-b border-primary/25 bg-primary/10 px-4 py-2.5 sm:px-5">
               <div className="flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
@@ -116,7 +116,6 @@ function Hero() {
             </div>
 
             <div className="relative p-5 sm:p-6">
-              {/* soft grid */}
               <div
                 className="pointer-events-none absolute inset-0 opacity-[0.04]"
                 aria-hidden
@@ -143,7 +142,6 @@ function Hero() {
                 </div>
               </div>
 
-              {/* emblem focal */}
               <div className="relative mt-6 flex flex-col items-center">
                 <div
                   className="pointer-events-none absolute top-1/2 h-40 w-40 -translate-y-1/2 rounded-full opacity-70 sm:h-48 sm:w-48"
@@ -154,7 +152,6 @@ function Hero() {
                   }}
                 />
                 <div className="relative rounded-sm border border-primary/60 bg-black p-1.5 shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-primary)_30%,transparent),0_0_48px_color-mix(in_oklab,var(--color-primary)_30%,transparent)]">
-                  {/* inner frame ticks */}
                   <div className="relative overflow-hidden rounded-[2px] border border-border-strong bg-black">
                     <img
                       src="/mi-emblem.jpg"
@@ -175,7 +172,6 @@ function Hero() {
                 </p>
               </div>
 
-              {/* capability matrix */}
               <div className="relative mt-6 grid gap-2">
                 {[
                   { icon: Crosshair, label: "Order of battle", text: "Five specialized line companies" },
@@ -197,31 +193,31 @@ function Hero() {
                 ))}
               </div>
 
-              {/* company strip with logos */}
               <div className="relative mt-5 border-t border-primary/20 pt-4">
                 <p className="stencil mb-2.5 text-[9px] tracking-[0.14em] text-subtle">Companies · active</p>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-5 gap-2">
                   {[
                     { name: "Demon", logo: "/company-demon.png" },
                     { name: "Cerberus", logo: "/company-cerberus.png" },
                     { name: "Nightmare", logo: "/company-nightmare.png" },
                     { name: "Hellfire", logo: "/company-hellfire.png" },
+                    { name: "Alpha", logo: "/company-alpha.png" },
                   ].map((co) => (
                     <div
                       key={co.name}
-                      className="flex flex-col items-center gap-1.5 rounded-sm border border-border bg-bg/50 p-2"
+                      className="flex min-w-0 flex-col items-center gap-1.5 rounded-sm border border-border bg-bg/50 p-1.5 sm:p-2"
                     >
-                      <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-sm border border-border-strong bg-black">
+                      <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-sm border border-border-strong bg-black sm:h-9 sm:w-9">
                         <img
                           src={co.logo}
                           alt=""
                           width={36}
                           height={36}
-                          className="h-full w-full object-cover"
+                          className="h-full w-full object-contain"
                           decoding="async"
                         />
                       </span>
-                      <span className="font-mono text-[8px] tracking-[0.08em] text-muted">
+                      <span className="max-w-full truncate font-mono text-[7px] tracking-[0.04em] text-muted sm:text-[8px] sm:tracking-[0.08em]">
                         {co.name.toUpperCase()}
                       </span>
                     </div>
@@ -301,7 +297,6 @@ function DoctrineSection() {
                 key={item.title}
                 className="group relative flex flex-col overflow-hidden rounded-sm border border-border bg-bg-elevated transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-1 hover:border-primary/55 hover:shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-primary)_25%,transparent),0_20px_48px_color-mix(in_oklab,black_50%,transparent)]"
               >
-                {/* top rail */}
                 <div className="flex items-center justify-between border-b border-primary/20 bg-primary/10 px-4 py-2.5">
                   <span className="font-mono text-[11px] font-bold tracking-[0.2em] text-primary">
                     {n}
@@ -345,7 +340,6 @@ function DoctrineSection() {
     </section>
   );
 }
-
 
 function CompanyMark({
   logo,
@@ -445,7 +439,20 @@ const planetClass: Record<string, string> = {
   "Agni Prime": "planet-agni",
   Boreas: "planet-boreas",
   "X-11": "planet-x11",
+  Vietnam: "planet-vietnam",
 };
+
+const vietnamCampaign = {
+  code: "AO-VIETNAM",
+  name: "Vietnam",
+  year: "FY 1968",
+  outcome: "Ongoing",
+  terrain: "Jungle · rivers · FOBs · air mobile",
+  brief:
+    "Dense jungle, muddy patrol routes, river crossings, fortified FOBs, and helicopter mobility define the Vietnam theater. Close-range firefights and coordinated air-mobile operations keep the 1st fighting across a very different battlefield.",
+};
+
+const activeCampaigns = [...campaigns, vietnamCampaign];
 
 function CampaignsSection() {
   return (
@@ -453,14 +460,22 @@ function CampaignsSection() {
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
         <SectionHeading
           kicker="Active theaters"
-          title="The four planets"
-          body="Valaka, Agni Prime, Boreas, and X-11. All ongoing."
+          title="The five theaters"
+          body="Valaka, Agni Prime, Boreas, X-11, and Vietnam. All ongoing."
         />
         <div className="mt-10 space-y-4">
-          {campaigns.map((c) => (
+          {activeCampaigns.map((c) => (
             <article
               key={c.code}
               className={`panel panel-lift planet-rail grid gap-4 p-5 sm:grid-cols-[140px_1fr_auto] sm:items-start sm:gap-6 sm:p-6 ${planetClass[c.name] ?? ""}`}
+              style={
+                c.name === "Vietnam"
+                  ? ({
+                      "--planet-art":
+                        'url("/site-bg.png"), linear-gradient(145deg, #122015, #050705)',
+                    } as CSSProperties)
+                  : undefined
+              }
             >
               <div>
                 <p className="font-mono text-xs text-primary">{c.code}</p>
