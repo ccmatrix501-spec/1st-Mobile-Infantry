@@ -11,6 +11,10 @@ type CredentialRow = {
   id: string;
 };
 
+type SuperAdminRow = {
+  username: string;
+};
+
 export type LeadershipProfile = {
   username: string;
   email: string;
@@ -45,9 +49,25 @@ function localEmail(username: string): string {
  * Create the first local leadership account from server-side deployment secrets.
  * The password is never returned to the browser and is never stored in Git.
  * Existing credential passwords are never overwritten by this bootstrap.
+ * Once a super-admin record exists, bootstrap is permanently considered complete
+ * even if that administrator later changes username or password.
  */
 export const ensureBootstrapLeadership = createServerFn({ method: "POST" }).handler(
   async (): Promise<BootstrapStatus> => {
+    const { getSql } = await import("@/lib/db");
+    const sql = await getSql();
+
+    const existingSuperAdmin = await sql.query<SuperAdminRow>(
+      `select username
+         from leadership_accounts
+        where is_super_admin = true and is_active = true
+        order by created_at asc
+        limit 1`,
+    );
+    if (existingSuperAdmin[0]) {
+      return { ready: true, username: existingSuperAdmin[0].username };
+    }
+
     const configuredUsername =
       process.env.LEADERSHIP_BOOTSTRAP_USERNAME?.trim() || "1stadmin";
     const username = validateUsername(configuredUsername);
@@ -68,10 +88,7 @@ export const ensureBootstrapLeadership = createServerFn({ method: "POST" }).hand
       };
     }
 
-    const { getSql } = await import("@/lib/db");
-    const sql = await getSql();
     const email = localEmail(username);
-
     let users = await sql.query<UserRow>(
       'select "id" as id, "email" as email, "name" as name from "user" where lower("email") = lower($1) limit 1',
       [email],
