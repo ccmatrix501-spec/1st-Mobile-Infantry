@@ -16,6 +16,10 @@ type UserRow = {
   email: string;
 };
 
+type AccountRow = {
+  providerId: string;
+};
+
 async function readSiteContent(): Promise<SiteContent> {
   const { getSql } = await import("@/lib/db");
   const sql = await getSql();
@@ -31,12 +35,12 @@ async function readSiteContent(): Promise<SiteContent> {
   return mergeSiteContent(values);
 }
 
-function normalizeAllowedEmails(): Set<string> {
-  const configured = process.env.LEADERSHIP_EMAILS?.trim() ?? "";
+function envSet(name: string): Set<string> {
+  const configured = process.env[name]?.trim() ?? "";
   return new Set(
     configured
       .split(",")
-      .map((email) => email.trim().toLowerCase())
+      .map((value) => value.trim().toLowerCase())
       .filter(Boolean),
   );
 }
@@ -46,18 +50,29 @@ async function requireLeadership(userId: string): Promise<void> {
 
   const { getSql } = await import("@/lib/db");
   const sql = await getSql();
-  const rows = await sql.query<UserRow>(
+  const users = await sql.query<UserRow>(
     'select "email" as email from "user" where "id" = $1 limit 1',
     [userId],
   );
-  const email = rows[0]?.email?.trim().toLowerCase();
+  const email = users[0]?.email?.trim().toLowerCase();
   if (!email) throw new Error("Leadership account not found.");
 
-  const allowed = normalizeAllowedEmails();
-  const isLocalLeadership = email.endsWith("@1stmid.local");
-  if (!isLocalLeadership && !allowed.has(email)) {
-    throw new Error("This account does not have leadership editing access.");
-  }
+  const allowedUserIds = envSet("LEADERSHIP_USER_IDS");
+  if (allowedUserIds.has(userId.toLowerCase())) return;
+
+  const accounts = await sql.query<AccountRow>(
+    'select "providerId" as "providerId" from "account" where "userId" = $1',
+    [userId],
+  );
+  const hasFederatedIdentity = accounts.some(
+    (account) => account.providerId !== "credential",
+  );
+  const allowedEmails = envSet("LEADERSHIP_EMAILS");
+  if (hasFederatedIdentity && allowedEmails.has(email)) return;
+
+  throw new Error(
+    "This account does not have leadership editing access. Add its email to LEADERSHIP_EMAILS (Google/X) or its user ID to LEADERSHIP_USER_IDS (username/password).",
+  );
 }
 
 export const fetchSiteContent = createServerFn({ method: "GET" }).handler(
