@@ -6,7 +6,10 @@ import { AppShell, PageHero } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { authClient, GROK_PROVIDERS, signIn } from "@/lib/auth/client";
 import { SignedIn, SignedOut, UserButton } from "@/lib/auth/gates";
-import { ensureBootstrapLeadership } from "@/lib/leadership-account-fn";
+import {
+  ensureBootstrapLeadership,
+  finalizeBootstrapLeadership,
+} from "@/lib/leadership-account-fn";
 
 export const Route = createFileRoute("/login")({
   component: LeadershipLoginPage,
@@ -48,15 +51,13 @@ function LeadershipLoginPage() {
 
     setCredentialLoading(true);
     try {
-      // Ensure the first command account exists without exposing its initial
-      // password to the client or storing that password in the public repo.
+      // Ensure or repair the one-time bootstrap credential using the server-side
+      // deployment secret. Better Auth itself performs the password hashing.
       const bootstrap = await ensureBootstrapLeadership();
       if (!bootstrap.ready && login === bootstrap.username.toLowerCase()) {
         throw new Error(bootstrap.message ?? "Initial leadership account is not configured.");
       }
 
-      // Local leadership usernames map to private pseudo-email identities used
-      // internally by Better Auth. Entering a real email continues to work.
       const email = login.includes("@") ? login : `${login}@1stmid.local`;
 
       const { error: signInError } = await authClient.signIn.email({
@@ -67,6 +68,15 @@ function LeadershipLoginPage() {
 
       if (signInError) {
         throw new Error(signInError.message ?? "Invalid username or password.");
+      }
+
+      // Lock the one-time bootstrap after the first successful credential login.
+      // If the session cookie is not visible until the next request, failure here
+      // is harmless; the next control-page request remains authenticated.
+      try {
+        await finalizeBootstrapLeadership();
+      } catch {
+        // Do not turn a successful sign-in into a visible error.
       }
 
       window.location.href = "/leadership-control";
