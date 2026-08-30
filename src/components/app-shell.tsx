@@ -5,6 +5,15 @@ import { SiteFooter } from "@/components/site-footer";
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col">
+      <style>{`
+        /* Let the site make proper use of large desktop and ultrawide displays.
+           Existing mobile/tablet spacing remains unchanged. */
+        @media (min-width: 1024px) {
+          .max-w-6xl {
+            max-width: min(96vw, 1600px) !important;
+          }
+        }
+      `}</style>
       <SiteHeader />
       <main className="flex-1">{children}</main>
       <SiteFooter />
