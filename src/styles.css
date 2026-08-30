@@ -347,3 +347,11 @@
 .stagger-4 {
   animation-delay: 160ms;
 }
+
+/* Vietnam theater uses the dedicated Hell Let Loose: Vietnam tactical country map. */
+#theaters .planet-vietnam {
+  --planet-art:
+    url("/theater-vietnam.jpg"),
+    linear-gradient(145deg, #122015, #050705) !important;
+  background-position: center top !important;
+}
