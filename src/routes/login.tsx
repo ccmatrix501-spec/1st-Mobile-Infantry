@@ -6,6 +6,7 @@ import { AppShell, PageHero } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { authClient, GROK_PROVIDERS, signIn } from "@/lib/auth/client";
 import { SignedIn, SignedOut, UserButton } from "@/lib/auth/gates";
+import { ensureBootstrapLeadership } from "@/lib/leadership-account-fn";
 
 export const Route = createFileRoute("/login")({
   component: LeadershipLoginPage,
@@ -39,7 +40,7 @@ function LeadershipLoginPage() {
     event.preventDefault();
     setError(null);
 
-    const login = username.trim();
+    const login = username.trim().toLowerCase();
     if (!login || !password) {
       setError("Enter your username and password.");
       return;
@@ -47,12 +48,16 @@ function LeadershipLoginPage() {
 
     setCredentialLoading(true);
     try {
-      // Better Auth's local credential provider uses an email identifier. For
-      // leadership-issued usernames we map e.g. `Matrix` to a private local
-      // identity; entering a real email continues to work as-is.
-      const email = login.includes("@")
-        ? login.toLowerCase()
-        : `${login.toLowerCase()}@1stmid.local`;
+      // Ensure the first command account exists without exposing its initial
+      // password to the client or storing that password in the public repo.
+      const bootstrap = await ensureBootstrapLeadership();
+      if (!bootstrap.ready && login === bootstrap.username.toLowerCase()) {
+        throw new Error(bootstrap.message ?? "Initial leadership account is not configured.");
+      }
+
+      // Local leadership usernames map to private pseudo-email identities used
+      // internally by Better Auth. Entering a real email continues to work.
+      const email = login.includes("@") ? login : `${login}@1stmid.local`;
 
       const { error: signInError } = await authClient.signIn.email({
         email,
