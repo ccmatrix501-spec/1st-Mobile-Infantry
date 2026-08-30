@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { LogIn, ShieldCheck } from "lucide-react";
+import { KeyRound, LogIn, ShieldCheck, UserRound } from "lucide-react";
 import { AppShell, PageHero } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
-import { GROK_PROVIDERS, signIn } from "@/lib/auth/client";
+import { authClient, GROK_PROVIDERS, signIn } from "@/lib/auth/client";
 import { SignedIn, SignedOut, UserButton } from "@/lib/auth/gates";
 
 export const Route = createFileRoute("/login")({
@@ -15,6 +15,9 @@ export const Route = createFileRoute("/login")({
 
 function LeadershipLoginPage() {
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
+  const [credentialLoading, setCredentialLoading] = useState(false);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   async function handleSignIn(providerId: string) {
@@ -30,6 +33,48 @@ function LeadershipLoginPage() {
       setLoadingProvider(null);
     }
   }
+
+  async function handleCredentialSignIn(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+
+    const login = username.trim();
+    if (!login || !password) {
+      setError("Enter your username and password.");
+      return;
+    }
+
+    setCredentialLoading(true);
+    try {
+      // Better Auth's local credential provider uses an email identifier. For
+      // leadership-issued usernames we map e.g. `Matrix` to a private local
+      // identity; entering a real email continues to work as-is.
+      const email = login.includes("@")
+        ? login.toLowerCase()
+        : `${login.toLowerCase()}@1stmid.local`;
+
+      const { error: signInError } = await authClient.signIn.email({
+        email,
+        password,
+        callbackURL: "/leadership",
+      });
+
+      if (signInError) {
+        throw new Error(signInError.message ?? "Invalid username or password.");
+      }
+
+      window.location.href = "/leadership";
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : "Invalid username or password.",
+      );
+      setCredentialLoading(false);
+    }
+  }
+
+  const anyLoading = credentialLoading || loadingProvider !== null;
 
   return (
     <AppShell>
@@ -58,28 +103,100 @@ function LeadershipLoginPage() {
 
           <div className="p-5 sm:p-6">
             <SignedOut>
-              <p className="text-sm leading-relaxed text-muted">
-                Use an approved identity provider to sign in. Access can be restricted further by leadership permissions as the command portal is expanded.
-              </p>
+              <form onSubmit={handleCredentialSignIn} className="space-y-4">
+                <div>
+                  <label
+                    htmlFor="leadership-username"
+                    className="stencil mb-2 block text-[10px] tracking-[0.12em] text-primary"
+                  >
+                    Username
+                  </label>
+                  <div className="relative">
+                    <UserRound
+                      className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+                      aria-hidden
+                    />
+                    <input
+                      id="leadership-username"
+                      name="username"
+                      type="text"
+                      autoComplete="username"
+                      value={username}
+                      onChange={(event) => setUsername(event.target.value)}
+                      disabled={anyLoading}
+                      placeholder="Enter leadership username"
+                      className="h-11 w-full rounded-md border border-border-strong bg-black/45 pl-10 pr-3 font-mono text-sm text-fg outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                    />
+                  </div>
+                </div>
 
-              <div className="mt-6 grid gap-3">
+                <div>
+                  <label
+                    htmlFor="leadership-password"
+                    className="stencil mb-2 block text-[10px] tracking-[0.12em] text-primary"
+                  >
+                    Password
+                  </label>
+                  <div className="relative">
+                    <KeyRound
+                      className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+                      aria-hidden
+                    />
+                    <input
+                      id="leadership-password"
+                      name="password"
+                      type="password"
+                      autoComplete="current-password"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      disabled={anyLoading}
+                      placeholder="Enter password"
+                      className="h-11 w-full rounded-md border border-border-strong bg-black/45 pl-10 pr-3 font-mono text-sm text-fg outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                    />
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  size="lg"
+                  disabled={anyLoading}
+                  className="w-full justify-center"
+                >
+                  <LogIn className="h-4 w-4" aria-hidden />
+                  {credentialLoading ? "Authenticating..." : "Sign In"}
+                </Button>
+              </form>
+
+              <div className="my-6 flex items-center gap-3" aria-hidden>
+                <span className="h-px flex-1 bg-border" />
+                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-subtle">
+                  or continue with
+                </span>
+                <span className="h-px flex-1 bg-border" />
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
                 {GROK_PROVIDERS.map((provider) => (
                   <Button
                     key={provider.providerId}
                     type="button"
                     size="lg"
                     variant="secondary"
-                    disabled={loadingProvider !== null}
+                    disabled={anyLoading}
                     onClick={() => void handleSignIn(provider.providerId)}
                     className="w-full justify-center"
                   >
                     <LogIn className="h-4 w-4" aria-hidden />
                     {loadingProvider === provider.providerId
-                      ? `Signing in with ${provider.label}...`
-                      : `Sign in with ${provider.label}`}
+                      ? `Signing in...`
+                      : provider.label}
                   </Button>
                 ))}
               </div>
+
+              <p className="mt-5 text-xs leading-relaxed text-subtle">
+                Leadership credentials are issued by 1st M.I. command. Public account registration is disabled.
+              </p>
 
               {error ? (
                 <p className="mt-4 rounded-md border border-red-400/25 bg-red-500/10 px-3 py-2 text-sm text-red-200">
