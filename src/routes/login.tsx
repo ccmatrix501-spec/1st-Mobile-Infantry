@@ -1,4 +1,5 @@
-import { FormEvent, useState } from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { KeyRound, LogIn, ShieldCheck, UserRound } from "lucide-react";
 import { AppShell, PageHero } from "@/components/app-shell";
@@ -25,7 +26,7 @@ function LeadershipLoginPage() {
     setLoadingProvider(providerId);
     try {
       await signIn(providerId, {
-        callbackURL: "/leadership",
+        callbackURL: "/leadership-control",
         errorCallbackURL: "/login",
       });
     } catch (err) {
@@ -56,14 +57,14 @@ function LeadershipLoginPage() {
       const { error: signInError } = await authClient.signIn.email({
         email,
         password,
-        callbackURL: "/leadership",
+        callbackURL: "/leadership-control",
       });
 
       if (signInError) {
         throw new Error(signInError.message ?? "Invalid username or password.");
       }
 
-      window.location.href = "/leadership";
+      window.location.href = "/leadership-control";
     } catch (err) {
       setError(
         err instanceof Error && err.message
@@ -214,7 +215,7 @@ function LeadershipLoginPage() {
                   </div>
                 </div>
                 <Button asChild size="lg" className="w-full">
-                  <Link to="/leadership">Continue to Leadership</Link>
+                  <Link to="/leadership-control">Continue to Leadership Control</Link>
                 </Button>
               </div>
             </SignedIn>
