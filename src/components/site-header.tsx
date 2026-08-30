@@ -44,7 +44,7 @@ export function SiteHeader() {
           : "border-b border-white/10 bg-black/20 backdrop-blur-[6px]",
       )}
     >
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:h-[4.25rem] sm:px-6">
+      <div className="relative mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:h-[4.25rem] sm:px-6">
         <Link to="/" className="group flex min-w-0 items-center gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-black shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-primary)_35%,transparent),0_0_18px_color-mix(in_oklab,var(--color-primary)_22%,transparent)] transition-transform duration-200 group-hover:scale-[1.03]">
             <img
@@ -64,7 +64,10 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-0.5 lg:flex" aria-label="Primary">
+        <nav
+          className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-0.5 lg:flex"
+          aria-label="Primary"
+        >
           {navLinks.map((link) => {
             const active = isActive(link.to, "exact" in link ? link.exact : false);
             return (
@@ -83,18 +86,21 @@ export function SiteHeader() {
           <Button asChild size="sm" className="ml-1.5">
             <Link to="/join">Join Now!</Link>
           </Button>
-          <Button asChild size="sm" variant="secondary" className="ml-1.5">
+        </nav>
+
+        <div className="ml-auto hidden lg:flex">
+          <Button asChild size="sm" variant="secondary">
             <Link to="/login">
               <LogIn className="h-4 w-4" aria-hidden />
               Leadership Sign In
             </Link>
           </Button>
-        </nav>
+        </div>
 
         <Button
           variant="secondary"
           size="icon"
-          className="lg:hidden"
+          className="ml-auto lg:hidden"
           aria-label={open ? "Close menu" : "Open menu"}
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
