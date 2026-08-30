@@ -16,6 +16,21 @@ type UserRow = {
   email: string;
 };
 
+async function readSiteContent(): Promise<SiteContent> {
+  const { getSql } = await import("@/lib/db");
+  const sql = await getSql();
+  const rows = await sql.query<SiteContentRow>(
+    "select key, value from site_content",
+  );
+  const values: Partial<Record<SiteContentKey, string>> = {};
+  for (const row of rows) {
+    if ((SITE_CONTENT_KEYS as string[]).includes(row.key)) {
+      values[row.key as SiteContentKey] = row.value;
+    }
+  }
+  return mergeSiteContent(values);
+}
+
 function normalizeAllowedEmails(): Set<string> {
   const configured = process.env.LEADERSHIP_EMAILS?.trim() ?? "";
   return new Set(
@@ -48,18 +63,7 @@ async function requireLeadership(userId: string): Promise<void> {
 export const fetchSiteContent = createServerFn({ method: "GET" }).handler(
   async (): Promise<SiteContent> => {
     try {
-      const { getSql } = await import("@/lib/db");
-      const sql = await getSql();
-      const rows = await sql.query<SiteContentRow>(
-        "select key, value from site_content",
-      );
-      const values: Partial<Record<SiteContentKey, string>> = {};
-      for (const row of rows) {
-        if ((SITE_CONTENT_KEYS as string[]).includes(row.key)) {
-          values[row.key as SiteContentKey] = row.value;
-        }
-      }
-      return mergeSiteContent(values);
+      return await readSiteContent();
     } catch {
       return mergeSiteContent();
     }
@@ -70,7 +74,7 @@ export const fetchLeadershipSiteContent = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
   .handler(async ({ context }): Promise<SiteContent> => {
     await requireLeadership(context.userId);
-    return fetchSiteContent();
+    return readSiteContent();
   });
 
 export const saveSiteContent = createServerFn({ method: "POST" })
@@ -101,5 +105,5 @@ export const saveSiteContent = createServerFn({ method: "POST" })
       );
     }
 
-    return fetchSiteContent();
+    return readSiteContent();
   });
