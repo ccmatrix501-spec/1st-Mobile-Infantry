@@ -12,14 +12,6 @@ type SiteContentRow = {
   value: string;
 };
 
-type UserRow = {
-  email: string;
-};
-
-type AccountRow = {
-  providerId: string;
-};
-
 async function readSiteContent(): Promise<SiteContent> {
   const { getSql } = await import("@/lib/db");
   const sql = await getSql();
@@ -35,46 +27,6 @@ async function readSiteContent(): Promise<SiteContent> {
   return mergeSiteContent(values);
 }
 
-function envSet(name: string): Set<string> {
-  const configured = process.env[name]?.trim() ?? "";
-  return new Set(
-    configured
-      .split(",")
-      .map((value) => value.trim().toLowerCase())
-      .filter(Boolean),
-  );
-}
-
-async function requireLeadership(userId: string): Promise<void> {
-  if (userId === "dev-user") return;
-
-  const { getSql } = await import("@/lib/db");
-  const sql = await getSql();
-  const users = await sql.query<UserRow>(
-    'select "email" as email from "user" where "id" = $1 limit 1',
-    [userId],
-  );
-  const email = users[0]?.email?.trim().toLowerCase();
-  if (!email) throw new Error("Leadership account not found.");
-
-  const allowedUserIds = envSet("LEADERSHIP_USER_IDS");
-  if (allowedUserIds.has(userId.toLowerCase())) return;
-
-  const accounts = await sql.query<AccountRow>(
-    'select "providerId" as "providerId" from "account" where "userId" = $1',
-    [userId],
-  );
-  const hasFederatedIdentity = accounts.some(
-    (account) => account.providerId !== "credential",
-  );
-  const allowedEmails = envSet("LEADERSHIP_EMAILS");
-  if (hasFederatedIdentity && allowedEmails.has(email)) return;
-
-  throw new Error(
-    "This account does not have leadership editing access. Add its email to LEADERSHIP_EMAILS (Google/X) or its user ID to LEADERSHIP_USER_IDS (username/password).",
-  );
-}
-
 export const fetchSiteContent = createServerFn({ method: "GET" }).handler(
   async (): Promise<SiteContent> => {
     try {
@@ -88,6 +40,7 @@ export const fetchSiteContent = createServerFn({ method: "GET" }).handler(
 export const fetchLeadershipSiteContent = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
   .handler(async ({ context }): Promise<SiteContent> => {
+    const { requireLeadership } = await import("@/lib/leadership-access.server");
     await requireLeadership(context.userId);
     return readSiteContent();
   });
@@ -96,6 +49,7 @@ export const saveSiteContent = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .inputValidator((input: Partial<SiteContent>) => input)
   .handler(async ({ data, context }): Promise<SiteContent> => {
+    const { requireLeadership } = await import("@/lib/leadership-access.server");
     await requireLeadership(context.userId);
 
     const { getSql } = await import("@/lib/db");
