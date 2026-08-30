@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LogIn, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { navLinks } from "@/data/unit";
@@ -88,13 +88,19 @@ export function SiteHeader() {
           </Button>
         </nav>
 
+        {/*
+          Leadership access hotspot. Intentionally invisible in the public UI;
+          authentication on /login remains the actual access control.
+        */}
         <div className="ml-auto hidden lg:flex">
-          <Button asChild size="sm" variant="secondary">
-            <Link to="/login">
-              <LogIn className="h-4 w-4" aria-hidden />
-              Leadership Sign In
-            </Link>
-          </Button>
+          <Link
+            to="/login"
+            aria-label="Leadership Sign In"
+            title=""
+            className="h-9 w-[9.5rem] cursor-default rounded-md opacity-0"
+          >
+            <span className="sr-only">Leadership Sign In</span>
+          </Link>
         </div>
 
         <Button
@@ -133,14 +139,6 @@ export function SiteHeader() {
               <Button asChild className="w-full">
                 <Link to="/join" onClick={() => setOpen(false)}>
                   Join Now!
-                </Link>
-              </Button>
-            </li>
-            <li className="pt-1">
-              <Button asChild variant="secondary" className="w-full">
-                <Link to="/login" onClick={() => setOpen(false)}>
-                  <LogIn className="h-4 w-4" aria-hidden />
-                  Leadership Sign In
                 </Link>
               </Button>
             </li>
