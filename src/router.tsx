@@ -1,5 +1,6 @@
 import { createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
+import "./hellfire-fix.css";
 
 export function getRouter() {
   return createRouter({
