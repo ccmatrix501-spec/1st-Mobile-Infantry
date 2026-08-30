@@ -13,12 +13,35 @@ export const Route = createRootRoute({
         content:
           "1st Mobile Infantry, 1st Division. Doctrine, companies, theaters, roster, and enlist.",
       },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://www.1stmid.com/" },
       { property: "og:title", content: "1st Mobile Infantry" },
       {
         property: "og:description",
         content: "No one stacks them high like the First M.I.",
       },
-      { property: "og:image", content: "/mi-emblem.jpg" },
+      {
+        property: "og:image",
+        content: "https://www.1stmid.com/social-preview.jpg?v=20260830",
+      },
+      {
+        property: "og:image:secure_url",
+        content: "https://www.1stmid.com/social-preview.jpg?v=20260830",
+      },
+      { property: "og:image:type", content: "image/jpeg" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "1st Mobile Infantry — 1st Division" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "1st Mobile Infantry" },
+      {
+        name: "twitter:description",
+        content: "No one stacks them high like the First M.I.",
+      },
+      {
+        name: "twitter:image",
+        content: "https://www.1stmid.com/social-preview.jpg?v=20260830",
+      },
       { name: "theme-color", content: "#050705" },
     ],
     links: [
@@ -251,6 +274,17 @@ function RootDocument() {
             font-size: 0.82rem;
             line-height: 1.42;
             -webkit-line-clamp: 5;
+          }
+
+          /* Rename the live kill counter without changing the counter implementation. */
+          .bento-stat:has([data-bugs-killed]) > p.stencil.mt-3 {
+            font-size: 0 !important;
+          }
+
+          .bento-stat:has([data-bugs-killed]) > p.stencil.mt-3::after {
+            content: "Confirm KIA Enemies";
+            font-size: 0.6875rem;
+            letter-spacing: 0.12em;
           }
 
           @media (min-width: 640px) {
