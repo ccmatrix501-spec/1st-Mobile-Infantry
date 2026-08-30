@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Menu, X } from "lucide-react";
+import { LogIn, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { navLinks } from "@/data/unit";
@@ -83,6 +83,12 @@ export function SiteHeader() {
           <Button asChild size="sm" className="ml-1.5">
             <Link to="/join">Join Now!</Link>
           </Button>
+          <Button asChild size="sm" variant="secondary" className="ml-1.5">
+            <Link to="/login">
+              <LogIn className="h-4 w-4" aria-hidden />
+              Leadership Sign In
+            </Link>
+          </Button>
         </nav>
 
         <Button
@@ -121,6 +127,14 @@ export function SiteHeader() {
               <Button asChild className="w-full">
                 <Link to="/join" onClick={() => setOpen(false)}>
                   Join Now!
+                </Link>
+              </Button>
+            </li>
+            <li className="pt-1">
+              <Button asChild variant="secondary" className="w-full">
+                <Link to="/login" onClick={() => setOpen(false)}>
+                  <LogIn className="h-4 w-4" aria-hidden />
+                  Leadership Sign In
                 </Link>
               </Button>
             </li>
