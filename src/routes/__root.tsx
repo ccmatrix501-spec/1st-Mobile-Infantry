@@ -2,46 +2,42 @@ import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-r
 import { AuthProvider } from "@/lib/auth/provider";
 import appCss from "../styles.css?url";
 
+const socialImage = "https://www.1stmid.com/site-bg.png?og=20260830-fb3";
+
 export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "1st Mobile Infantry — Federal Armed Services" },
+      { title: "1st Mobile Infantry — 1st Division" },
       {
         name: "description",
         content:
-          "1st Mobile Infantry, 1st Division. Doctrine, companies, theaters, roster, and enlist.",
+          "1st Mobile Infantry, 1st Division. The First to Drop. The Last to Leave.",
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://www.1stmid.com/" },
-      { property: "og:title", content: "1st Mobile Infantry" },
+      { property: "og:site_name", content: "1st Mobile Infantry" },
+      { property: "og:locale", content: "en_AU" },
+      { property: "og:title", content: "1st Mobile Infantry — 1st Division" },
       {
         property: "og:description",
-        content: "No one stacks them high like the First M.I.",
+        content: "No one stacks them high like the First M.I. The First to Drop. The Last to Leave.",
       },
-      {
-        property: "og:image",
-        content: "https://www.1stmid.com/social-preview.jpg?v=20260830",
-      },
-      {
-        property: "og:image:secure_url",
-        content: "https://www.1stmid.com/social-preview.jpg?v=20260830",
-      },
-      { property: "og:image:type", content: "image/jpeg" },
-      { property: "og:image:width", content: "1200" },
-      { property: "og:image:height", content: "630" },
+      { property: "og:image", content: socialImage },
+      { property: "og:image:secure_url", content: socialImage },
+      { property: "og:image:type", content: "image/png" },
+      { property: "og:image:width", content: "1648" },
+      { property: "og:image:height", content: "928" },
       { property: "og:image:alt", content: "1st Mobile Infantry — 1st Division" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "1st Mobile Infantry" },
+      { name: "twitter:title", content: "1st Mobile Infantry — 1st Division" },
       {
         name: "twitter:description",
-        content: "No one stacks them high like the First M.I.",
+        content: "No one stacks them high like the First M.I. The First to Drop. The Last to Leave.",
       },
-      {
-        name: "twitter:image",
-        content: "https://www.1stmid.com/social-preview.jpg?v=20260830",
-      },
+      { name: "twitter:image", content: socialImage },
+      { name: "twitter:image:alt", content: "1st Mobile Infantry — 1st Division" },
       { name: "theme-color", content: "#050705" },
     ],
     links: [
