@@ -4,6 +4,7 @@ export type LeadershipSessionData = {
   accountId?: string;
   username?: string;
   isSuperAdmin?: boolean;
+  sessionVersion?: number;
 };
 
 function sessionSecret(): string {
