@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { LiveSiteContent } from "@/components/live-site-content";
+import { LiveSiteAdminAppearance } from "@/components/live-site-admin-appearance";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 
@@ -16,6 +17,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         }
       `}</style>
       <LiveSiteContent />
+      <LiveSiteAdminAppearance />
       <SiteHeader />
       <main className="flex-1">{children}</main>
       <SiteFooter />
