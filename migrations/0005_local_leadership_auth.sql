@@ -7,6 +7,7 @@ create table if not exists leadership_local_accounts (
   password_hash text not null,
   is_active boolean not null default true,
   is_super_admin boolean not null default false,
+  session_version integer not null default 1,
   failed_attempts integer not null default 0,
   locked_until timestamptz,
   last_login_at timestamptz,
