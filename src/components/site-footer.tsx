@@ -1,6 +1,14 @@
 import { Link } from "@tanstack/react-router";
-import { navLinks, unit } from "@/data/unit";
+import { unit } from "@/data/unit";
 import { useSiteAdminConfig } from "@/lib/use-site-admin-config";
+
+const publicNavLinks = [
+  { to: "/", label: "Home" },
+  { to: "/companies", label: "Companies" },
+  { to: "/leadership", label: "Leadership" },
+  { to: "/rules", label: "Rules" },
+  { to: "/join", label: "Join now" },
+] as const;
 
 export function SiteFooter() {
   const managed = useSiteAdminConfig();
@@ -24,7 +32,7 @@ export function SiteFooter() {
           <div>
             <p className="stencil text-[10px] tracking-[0.14em] text-subtle">Navigate</p>
             <ul className="mt-3 space-y-2">
-              {navLinks.map((link) => <li key={link.to}><Link to={link.to} className="text-sm text-muted transition-colors hover:text-primary">{link.label}</Link></li>)}
+              {publicNavLinks.map((link) => <li key={link.to}><Link to={link.to} className="text-sm text-muted transition-colors hover:text-primary">{link.label}</Link></li>)}
             </ul>
           </div>
           <div className="sm:col-span-2">
