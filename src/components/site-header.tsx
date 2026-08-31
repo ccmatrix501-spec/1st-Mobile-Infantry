@@ -4,11 +4,19 @@ import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { navLinks } from "@/data/unit";
+import { fetchPublicSiteAdminConfig } from "@/lib/site-admin-config-fn";
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [logoImage, setLogoImage] = useState("/mi-emblem.jpg");
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  useEffect(() => {
+    void fetchPublicSiteAdminConfig()
+      .then((config) => setLogoImage(config.appearance.logoImage || "/mi-emblem.jpg"))
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -48,7 +56,7 @@ export function SiteHeader() {
         <Link to="/" className="group flex min-w-0 items-center gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-black shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-primary)_35%,transparent),0_0_18px_color-mix(in_oklab,var(--color-primary)_22%,transparent)] transition-transform duration-200 group-hover:scale-[1.03]">
             <img
-              src="/mi-emblem.jpg"
+              src={logoImage}
               alt=""
               width={40}
               height={40}
@@ -88,10 +96,7 @@ export function SiteHeader() {
           </Button>
         </nav>
 
-        {/*
-          Leadership access hotspot. Intentionally invisible in the public UI;
-          authentication on /login remains the actual access control.
-        */}
+        {/* Invisible leadership access hotspot; authentication remains the real protection. */}
         <div className="ml-auto hidden lg:flex">
           <Link
             to="/login"
