@@ -5,12 +5,14 @@ type LocalLeadershipRow = {
   username: string;
   is_active: boolean;
   is_super_admin: boolean;
+  session_version: number;
 };
 
 export type LocalLeadershipProfile = {
   id: string;
   username: string;
   isSuperAdmin: boolean;
+  sessionVersion: number;
 };
 
 export async function getLocalLeadershipProfile(): Promise<LocalLeadershipProfile | null> {
@@ -21,14 +23,18 @@ export async function getLocalLeadershipProfile(): Promise<LocalLeadershipProfil
   const { getSql } = await import("@/lib/db");
   const sql = await getSql();
   const rows = await sql.query<LocalLeadershipRow>(
-    `select id, username, is_active, is_super_admin
+    `select id, username, is_active, is_super_admin, session_version
        from leadership_local_accounts
       where id = $1
       limit 1`,
     [accountId],
   );
   const row = rows[0];
-  if (!row || !row.is_active) {
+  if (
+    !row ||
+    !row.is_active ||
+    session.data.sessionVersion !== row.session_version
+  ) {
     await session.clear();
     return null;
   }
@@ -41,6 +47,7 @@ export async function getLocalLeadershipProfile(): Promise<LocalLeadershipProfil
       accountId: row.id,
       username: row.username,
       isSuperAdmin: row.is_super_admin,
+      sessionVersion: row.session_version,
     });
   }
 
@@ -48,6 +55,7 @@ export async function getLocalLeadershipProfile(): Promise<LocalLeadershipProfil
     id: row.id,
     username: row.username,
     isSuperAdmin: row.is_super_admin,
+    sessionVersion: row.session_version,
   };
 }
 
