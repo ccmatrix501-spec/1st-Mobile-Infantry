@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { authMiddleware } from "@/lib/auth/middleware";
 import {
   mergeSiteContent,
   SITE_CONTENT_KEYS,
@@ -37,20 +36,23 @@ export const fetchSiteContent = createServerFn({ method: "GET" }).handler(
   },
 );
 
-export const fetchLeadershipSiteContent = createServerFn({ method: "GET" })
-  .middleware([authMiddleware])
-  .handler(async ({ context }): Promise<SiteContent> => {
-    const { requireLeadership } = await import("@/lib/leadership-access.server");
-    await requireLeadership(context.userId);
+export const fetchLeadershipSiteContent = createServerFn({ method: "GET" }).handler(
+  async (): Promise<SiteContent> => {
+    const { requireLocalLeadership } = await import(
+      "@/lib/local-leadership-access.server"
+    );
+    await requireLocalLeadership();
     return readSiteContent();
-  });
+  },
+);
 
 export const saveSiteContent = createServerFn({ method: "POST" })
-  .middleware([authMiddleware])
   .inputValidator((input: Partial<SiteContent>) => input)
-  .handler(async ({ data, context }): Promise<SiteContent> => {
-    const { requireLeadership } = await import("@/lib/leadership-access.server");
-    await requireLeadership(context.userId);
+  .handler(async ({ data }): Promise<SiteContent> => {
+    const { requireLocalLeadership } = await import(
+      "@/lib/local-leadership-access.server"
+    );
+    const leadership = await requireLocalLeadership();
 
     const { getSql } = await import("@/lib/db");
     const sql = await getSql();
@@ -70,7 +72,7 @@ export const saveSiteContent = createServerFn({ method: "POST" })
          set value = excluded.value,
              updated_at = excluded.updated_at,
              updated_by = excluded.updated_by`,
-        [key, value, context.userId],
+        [key, value, leadership.id],
       );
     }
 
