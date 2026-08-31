@@ -3,8 +3,15 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { navLinks } from "@/data/unit";
 import { fetchPublicSiteAdminConfig } from "@/lib/site-admin-config-fn";
+
+const publicNavLinks = [
+  { to: "/", label: "Home", exact: true },
+  { to: "/companies", label: "Companies" },
+  { to: "/leadership", label: "Leadership" },
+  { to: "/rules", label: "Rules" },
+  { to: "/join", label: "Join now" },
+] as const;
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
@@ -76,7 +83,7 @@ export function SiteHeader() {
           className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-0.5 lg:flex"
           aria-label="Primary"
         >
-          {navLinks.map((link) => {
+          {publicNavLinks.map((link) => {
             const active = isActive(link.to, "exact" in link ? link.exact : false);
             return (
               <Link
@@ -123,7 +130,7 @@ export function SiteHeader() {
       {open ? (
         <nav className="border-t border-border glass px-4 py-3 lg:hidden" aria-label="Mobile">
           <ul className="flex flex-col gap-1">
-            {navLinks.map((link) => {
+            {publicNavLinks.map((link) => {
               const active = isActive(link.to, "exact" in link ? link.exact : false);
               return (
                 <li key={link.to}>
