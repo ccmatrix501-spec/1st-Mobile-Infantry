@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell, PageHero, SectionHeading } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
-import { hooknGaffePortraitHQ } from "@/data/hookngaffe-portrait-hq";
-import { companies, roster, unit } from "@/data/unit";
+import type { ManagedLeader } from "@/lib/site-admin-config";
+import { useSiteAdminConfig } from "@/lib/use-site-admin-config";
+import { unit } from "@/data/unit";
 
 export const Route = createFileRoute("/leadership")({
   component: LeadershipPage,
@@ -12,26 +13,9 @@ export const Route = createFileRoute("/leadership")({
 });
 
 function LeadershipPage() {
-  const command = roster.filter(
-    (p) =>
-      String(p.tier).toLowerCase() === "command" &&
-      String(p.name).toLowerCase() !== "ripper",
-  );
-
-  const alphaCaptain = {
-    rank: "Captain",
-    name: "HooknGaffe",
-    billet: "Alpha Company · Fifth Company",
-    note: "Commands Alpha Company, the fifth company of the 1st Mobile Infantry.",
-    tier: "captain",
-    company: "Alpha",
-    portrait: hooknGaffePortraitHQ,
-  } as (typeof roster)[number];
-
-  const captains = [
-    ...roster.filter((p) => String(p.tier).toLowerCase() === "captain"),
-    alphaCaptain,
-  ];
+  const config = useSiteAdminConfig();
+  const command = config.leadership.filter((person) => person.tier === "command");
+  const captains = config.leadership.filter((person) => person.tier === "captain");
 
   return (
     <AppShell>
@@ -54,154 +38,87 @@ function LeadershipPage() {
         <SectionHeading
           kicker="Division HQ"
           title="Division command"
-          body="General through warrant — the staff that owns the whole division."
+          body="Division staff that owns the whole formation."
         />
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          {command.length === 0 ? (
-            <p className="text-sm text-muted sm:col-span-2">
-              No division command entries found. Check roster tiers in{" "}
-              <code className="font-mono text-primary">src/data/unit.ts</code>.
-            </p>
-          ) : (
-            command.map((person) => (
-              <OfficerCard key={person.name} person={person} featured />
-            ))
-          )}
+          {command.map((person) => (
+            <OfficerCard key={`${person.tier}-${person.name}`} person={person} featured config={config} />
+          ))}
         </div>
 
         <div className="mt-16">
           <SectionHeading
             kicker="Company command"
             title="Company captains"
-            body="Five captains. Five companies. Report up the chain; own the ground under your boots."
+            body={`${captains.length} captains. ${config.companies.length} companies. Report up the chain; own the ground under your boots.`}
           />
           <div className="mt-8 grid gap-4 sm:grid-cols-2">
-            {captains.length === 0 ? (
-              <p className="text-sm text-muted sm:col-span-2">
-                No company captains found. Check roster tiers in{" "}
-                <code className="font-mono text-primary">src/data/unit.ts</code>.
-              </p>
-            ) : (
-              captains.map((person) => (
-                <OfficerCard key={person.name} person={person} />
-              ))
-            )}
+            {captains.map((person) => (
+              <OfficerCard key={`${person.tier}-${person.name}`} person={person} config={config} />
+            ))}
           </div>
         </div>
 
         <div className="mt-12 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-          <Button asChild variant="secondary">
-            <Link to="/">Back to Home</Link>
-          </Button>
-          <Button asChild>
-            <Link to="/rules">Read unit rules</Link>
-          </Button>
+          <Button asChild variant="secondary"><Link to="/">Back to Home</Link></Button>
+          <Button asChild><Link to="/rules">Read unit rules</Link></Button>
         </div>
       </section>
     </AppShell>
   );
 }
 
-function OfficerCard({
-  person,
-  featured,
-}: {
-  person: (typeof roster)[number];
+function OfficerCard({ person, featured, config }: {
+  person: ManagedLeader;
   featured?: boolean;
+  config: ReturnType<typeof useSiteAdminConfig>;
 }) {
   const initials = person.name
     .replace(/[^a-zA-Z]/g, " ")
     .split(/\s+/)
     .filter(Boolean)
-    .map((p) => p[0])
+    .map((part) => part[0])
     .join("")
     .slice(0, 2)
     .toUpperCase();
-
-  const portrait =
-    "portrait" in person && person.portrait ? person.portrait : null;
-
-  const displayedRank = person.name === "Lustrati" ? "Major" : person.rank;
-  const isAlpha = "company" in person && person.company === "Alpha";
-  const isHooknGaffe = person.name === "HooknGaffe";
-
-  const companyLogo =
-    "company" in person && person.company
-      ? isAlpha
-        ? "/company-alpha.png?v=4"
-        : companies.find((c) => c.callsign === person.company)?.logo
-      : null;
+  const companyLogo = person.company
+    ? config.companies.find((company) => company.callsign.toLowerCase() === person.company?.toLowerCase())?.logo
+    : undefined;
 
   return (
     <article className={`panel panel-lift p-6 ${featured ? "sm:p-7" : ""}`}>
       <div className="flex items-center gap-3">
         {companyLogo ? (
-          <span
-            className={`flex shrink-0 items-center justify-center overflow-hidden rounded-md border border-border-strong shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-primary)_18%,transparent)] ${
-              isAlpha ? "h-16 w-16 bg-black/50 p-1.5" : "h-12 w-12 bg-black"
-            }`}
-          >
-            <img
-              src={companyLogo}
-              alt={
-                "company" in person && person.company
-                  ? `${person.company} company logo`
-                  : ""
-              }
-              width={isAlpha ? 64 : 48}
-              height={isAlpha ? 64 : 48}
-              className="h-full w-full object-contain"
-              decoding="async"
-            />
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border-strong bg-black p-1 shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-primary)_18%,transparent)]">
+            <img src={companyLogo} alt={`${person.company} company logo`} className="h-full w-full object-contain" decoding="async" />
           </span>
-        ) : portrait ? (
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border-strong bg-black shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-primary)_25%,transparent)]">
-            <img
-              src={portrait}
-              alt={`${displayedRank} ${person.name}`}
-              width={56}
-              height={56}
-              className="h-full w-full object-cover object-top"
-              decoding="async"
-            />
+        ) : person.portrait ? (
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border-strong bg-black">
+            <img src={person.portrait} alt={`${person.rank} ${person.name}`} className="h-full w-full object-cover object-top" decoding="async" />
           </span>
         ) : (
-          <span className="flex h-12 w-12 items-center justify-center rounded-md border border-primary/25 bg-primary/10 font-display text-sm font-semibold text-primary">
-            {initials}
-          </span>
+          <span className="flex h-12 w-12 items-center justify-center rounded-md border border-primary/25 bg-primary/10 font-display text-sm font-semibold text-primary">{initials}</span>
         )}
         <div className="min-w-0">
-          <p className="stencil text-[10px] tracking-[0.12em] text-primary">{displayedRank}</p>
-          <h2 className="truncate font-display text-xl font-semibold uppercase tracking-wide text-fg sm:text-2xl">
-            {person.name}
-          </h2>
+          <p className="stencil text-[10px] tracking-[0.12em] text-primary">{person.rank}</p>
+          <h2 className="truncate font-display text-xl font-semibold uppercase tracking-wide text-fg sm:text-2xl">{person.name}</h2>
         </div>
       </div>
 
-      {portrait ? (
-        <div
-          className={`mt-4 overflow-hidden rounded-md border border-border bg-black/60 ${
-            isHooknGaffe ? "mx-auto max-w-[360px]" : ""
-          }`}
-        >
+      {person.portrait ? (
+        <div className="mx-auto mt-4 max-w-[420px] overflow-hidden rounded-md border border-border bg-black/60">
           <img
-            src={portrait}
-            alt={isHooknGaffe ? "Captain HooknGaffe" : ""}
-            width={isHooknGaffe ? 480 : 480}
-            height={isHooknGaffe ? 600 : 600}
-            className={`aspect-[4/5] w-full object-cover ${
-              isHooknGaffe ? "object-center" : "object-top"
-            }`}
+            src={person.portrait}
+            alt={`${person.rank} ${person.name}`}
+            className="aspect-[4/5] w-full object-cover object-top"
             decoding="async"
           />
         </div>
       ) : null}
 
       <p className="mt-3 font-mono text-xs text-muted">{person.billet}</p>
-      {"company" in person && person.company ? (
-        <p className="mt-2 inline-flex rounded-sm border border-primary/30 bg-primary/10 px-2 py-0.5 stencil text-[10px] tracking-[0.1em] text-primary">
-          {person.company}
-        </p>
+      {person.company ? (
+        <p className="mt-2 inline-flex rounded-sm border border-primary/30 bg-primary/10 px-2 py-0.5 stencil text-[10px] tracking-[0.1em] text-primary">{person.company}</p>
       ) : null}
       <p className="mt-3 text-sm leading-relaxed text-muted">{person.note}</p>
     </article>
