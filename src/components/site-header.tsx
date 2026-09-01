@@ -8,6 +8,7 @@ import { fetchPublicSiteAdminConfig } from "@/lib/site-admin-config-fn";
 const publicNavLinks = [
   { to: "/", label: "Home", exact: true },
   { to: "/companies", label: "Companies" },
+  { to: "/events", label: "Events" },
   { to: "/leadership", label: "Leadership" },
   { to: "/rules", label: "Rules" },
   { to: "/join", label: "Join now" },
