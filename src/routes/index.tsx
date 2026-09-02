@@ -119,7 +119,7 @@ function StatsStrip({ managed }: { managed: SiteAdminConfig }) {
         {stats.map((stat, i) => (
           <div key={stat.id} className={`bento-stat reveal stagger-${i + 1} px-5 py-6 sm:px-6`}>
             {stat.id === "bugs" ? <BugsKilledCounter /> : stat.id === "dropships" ? <DropshipCounter /> : stat.id === "troopers" ? <TrooperCounter /> : stat.id === "companies" ? <p className="metric-value text-3xl text-fg sm:text-4xl">{managed.companies.length}</p> : <p className="metric-value text-3xl text-fg sm:text-4xl">{stat.value}</p>}
-            <p className="stencil mt-3 text-[11px] tracking-[0.12em] text-muted">{stat.id === "dropships" ? "Total Operations completed" : stat.id === "bugs" ? "Confirm KIA Enemies" : stat.label}</p>
+            <p className="stencil mt-3 text-[11px] tracking-[0.12em] text-muted">{stat.id === "dropships" ? "Total Operations completed" : stat.id === "bugs" ? "Confirmed Enemies K.I.A." : stat.label}</p>
           </div>
         ))}
       </div>
