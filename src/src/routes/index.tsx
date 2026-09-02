@@ -158,7 +158,9 @@ function StatsStrip() {
             ) : (
               <p className="metric-value text-3xl text-fg sm:text-4xl">{stat.value}</p>
             )}
-            <p className="stencil mt-3 text-[11px] tracking-[0.12em] text-muted">{stat.label}</p>
+            <p className="stencil mt-3 text-[11px] tracking-[0.12em] text-muted">
+              {stat.id === "bugs" ? "Confirmed Enemies K.I.A." : stat.label}
+            </p>
             {stat.id === "bugs" ? (
               <p className="badge-live mt-2 stencil text-[10px] tracking-[0.12em] text-primary">
                 Live feed · real-time
