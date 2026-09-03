@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { BUGS_KILLED_BASE, getBugsKilledAt } from "@/lib/bugs-killed";
 import { fetchBugsKilled } from "@/lib/bugs-killed-fn";
 import { connectBugsKilledWs } from "@/lib/bugs-killed-ws-client";
@@ -109,20 +109,27 @@ export function BugsKilledCounter() {
   const display = mounted ? count : BUGS_KILLED_BASE;
 
   return (
-    <p
-      ref={counterEl}
-      className="metric-value text-3xl text-primary sm:text-4xl"
-      data-bugs-killed
-      data-sync={source}
-      data-ws={wsConnected ? "1" : "0"}
-      aria-live="off"
-      title={liveLabel}
-      suppressHydrationWarning
-      style={{
-        textShadow: "0 0 28px color-mix(in oklab, var(--color-primary) 55%, transparent)",
-      }}
-    >
-      {formatter.format(display)}
-    </p>
+    <Fragment>
+      <style>{`
+        .bento-stat:has([data-bugs-killed]) > p.stencil.mt-3::after {
+          content: "Confirmed Enemies K.I.A." !important;
+        }
+      `}</style>
+      <p
+        ref={counterEl}
+        className="metric-value text-3xl text-primary sm:text-4xl"
+        data-bugs-killed
+        data-sync={source}
+        data-ws={wsConnected ? "1" : "0"}
+        aria-live="off"
+        title={liveLabel}
+        suppressHydrationWarning
+        style={{
+          textShadow: "0 0 28px color-mix(in oklab, var(--color-primary) 55%, transparent)",
+        }}
+      >
+        {formatter.format(display)}
+      </p>
+    </Fragment>
   );
 }
