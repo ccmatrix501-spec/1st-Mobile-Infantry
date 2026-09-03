@@ -4,9 +4,10 @@ import { fetchBugsKilled } from "@/lib/bugs-killed-fn";
 import { connectBugsKilledWs } from "@/lib/bugs-killed-ws-client";
 
 const formatter = new Intl.NumberFormat("en-US");
+const KIA_LABEL = "Confirmed Enemies K.I.A.";
 
 /**
- * Shared kill tally with WebSocket real-time sync.
+ * Shared confirmed-enemy K.I.A. tally with WebSocket real-time sync.
  * Display is monotonic: never steps backward.
  */
 export function BugsKilledCounter() {
@@ -16,6 +17,7 @@ export function BugsKilledCounter() {
   const [wsConnected, setWsConnected] = useState(false);
   const [mounted, setMounted] = useState(false);
   const highWater = useRef(BUGS_KILLED_BASE);
+  const counterEl = useRef<HTMLParagraphElement>(null);
 
   function commit(next: number) {
     // Never display a lower value than we already showed this session
@@ -30,6 +32,15 @@ export function BugsKilledCounter() {
     const n = getBugsKilledAt();
     highWater.current = n;
     setCount(n);
+
+    // Keep the public wording exact even if a stale/fallback parent template is served.
+    const card = counterEl.current?.closest(".bento-stat");
+    if (card) {
+      const label = Array.from(card.querySelectorAll("p")).find(
+        (el) => el !== counterEl.current && el.classList.contains("stencil"),
+      );
+      if (label && label.textContent !== KIA_LABEL) label.textContent = KIA_LABEL;
+    }
   }, []);
 
   // WebSocket: use for clock offset + count; never apply a lower count
@@ -99,6 +110,7 @@ export function BugsKilledCounter() {
 
   return (
     <p
+      ref={counterEl}
       className="metric-value text-3xl text-primary sm:text-4xl"
       data-bugs-killed
       data-sync={source}
