@@ -1,10 +1,13 @@
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { unit } from "@/data/unit";
+import { fetchPublicStoreSettings } from "@/lib/store-settings-fn";
 import { useSiteAdminConfig } from "@/lib/use-site-admin-config";
 
 const publicNavLinks = [
   { to: "/", label: "Home" },
   { to: "/companies", label: "Companies" },
+  { to: "/store", label: "Store", requiresStore: true },
   { to: "/leadership", label: "Leadership" },
   { to: "/rules", label: "Rules" },
   { to: "/join", label: "Join now" },
@@ -12,6 +15,18 @@ const publicNavLinks = [
 
 export function SiteFooter() {
   const managed = useSiteAdminConfig();
+  const [storeEnabled, setStoreEnabled] = useState(false);
+
+  useEffect(() => {
+    void fetchPublicStoreSettings()
+      .then((settings) => setStoreEnabled(settings.enabled))
+      .catch(() => undefined);
+  }, []);
+
+  const visibleNavLinks = publicNavLinks.filter(
+    (link) => !("requiresStore" in link) || storeEnabled,
+  );
+
   return (
     <footer className="relative border-t border-border bg-bg-elevated">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
@@ -32,7 +47,7 @@ export function SiteFooter() {
           <div>
             <p className="stencil text-[10px] tracking-[0.14em] text-subtle">Navigate</p>
             <ul className="mt-3 space-y-2">
-              {publicNavLinks.map((link) => <li key={link.to}><Link to={link.to} className="text-sm text-muted transition-colors hover:text-primary">{link.label}</Link></li>)}
+              {visibleNavLinks.map((link) => <li key={link.to}><Link to={link.to} className="text-sm text-muted transition-colors hover:text-primary">{link.label}</Link></li>)}
             </ul>
           </div>
           <div className="sm:col-span-2">
