@@ -3,6 +3,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { fetchLocalLeadershipProfile } from "@/lib/leadership-local-auth-fn";
 import { fetchPublicSiteAdminConfig } from "@/lib/site-admin-config-fn";
 import { fetchPublicStoreSettings } from "@/lib/store-settings-fn";
 
@@ -16,24 +17,33 @@ const publicNavLinks = [
   { to: "/join", label: "Join now" },
 ] as const;
 
+const commandLinks = [
+  { to: "/leadership-control", label: "Control" },
+  { to: "/leadership-store", label: "Store" },
+  { to: "/leadership-media", label: "Media" },
+] as const;
+
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [logoImage, setLogoImage] = useState("/mi-emblem.jpg");
   const [storeEnabled, setStoreEnabled] = useState(false);
+  const [leadershipSignedIn, setLeadershipSignedIn] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
     void Promise.all([
       fetchPublicSiteAdminConfig(),
       fetchPublicStoreSettings(),
+      fetchLocalLeadershipProfile(),
     ])
-      .then(([config, store]) => {
+      .then(([config, store, leadership]) => {
         setLogoImage(config.appearance.logoImage || "/mi-emblem.jpg");
         setStoreEnabled(store.enabled);
+        setLeadershipSignedIn(Boolean(leadership));
       })
       .catch(() => undefined);
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -117,16 +127,33 @@ export function SiteHeader() {
           </Button>
         </nav>
 
-        {/* Invisible leadership access hotspot; authentication remains the real protection. */}
-        <div className="ml-auto hidden lg:flex">
-          <Link
-            to="/login"
-            aria-label="Leadership Sign In"
-            title=""
-            className="h-9 w-[9.5rem] cursor-default rounded-md opacity-0"
-          >
-            <span className="sr-only">Leadership Sign In</span>
-          </Link>
+        <div className="ml-auto hidden items-center gap-1 lg:flex">
+          {leadershipSignedIn ? (
+            <div className="flex items-center gap-1 rounded-lg border border-primary/20 bg-black/35 p-1 backdrop-blur-md">
+              {commandLinks.map((link) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className={cn(
+                    "stencil rounded-md px-2.5 py-2 text-[9px] tracking-[0.12em] text-primary/90 transition-colors hover:bg-primary/10 hover:text-primary",
+                    isActive(link.to) && "bg-primary/10 text-primary",
+                  )}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          ) : (
+            /* Invisible leadership access hotspot; authentication remains the real protection. */
+            <Link
+              to="/login"
+              aria-label="Leadership Sign In"
+              title=""
+              className="h-9 w-[9.5rem] cursor-default rounded-md opacity-0"
+            >
+              <span className="sr-only">Leadership Sign In</span>
+            </Link>
+          )}
         </div>
 
         <Button
@@ -161,6 +188,28 @@ export function SiteHeader() {
                 </li>
               );
             })}
+
+            {leadershipSignedIn ? (
+              <li className="mt-2 border-t border-primary/20 pt-3">
+                <p className="px-3 pb-2 stencil text-[9px] tracking-[0.14em] text-primary">Command</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {commandLinks.map((link) => (
+                    <Link
+                      key={link.to}
+                      to={link.to}
+                      className={cn(
+                        "stencil flex min-h-10 items-center justify-center rounded-md border border-primary/20 bg-primary/5 px-2 text-[10px] tracking-[0.1em] text-primary",
+                        isActive(link.to) && "bg-primary/15",
+                      )}
+                      onClick={() => setOpen(false)}
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              </li>
+            ) : null}
+
             <li className="pt-2">
               <Button asChild className="w-full">
                 <Link to="/join" onClick={() => setOpen(false)}>
