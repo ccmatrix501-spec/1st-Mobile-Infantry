@@ -11,6 +11,7 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { AppShell, PageHero } from "@/components/app-shell";
+import { StoreCurrencyNote, StoreMoney } from "@/components/store-price";
 import { StoreToolbar } from "@/components/store-toolbar";
 import { Button } from "@/components/ui/button";
 import { useStoreCart } from "@/lib/store-cart";
@@ -20,7 +21,6 @@ import {
 } from "@/lib/store-settings-fn";
 import type { StoreProductVariant } from "@/lib/store-settings";
 import {
-  formatMoney,
   parseMoney,
   productIsPurchasable,
   productPrice,
@@ -163,11 +163,12 @@ function StoreProductPage() {
             {product.sku ? <p className="mt-2 font-mono text-[10px] text-subtle">SKU {product.sku}</p> : null}
 
             <div className="mt-5 flex flex-wrap items-baseline gap-3">
-              <p className="font-display text-3xl font-semibold text-primary">{price > 0 ? formatMoney(price, product.currency) : "Price pending"}</p>
+              <p className="font-display text-3xl font-semibold text-primary">{price > 0 ? <StoreMoney amount={price} currency={product.currency} /> : "Price pending"}</p>
               {parseMoney(product.compareAtPrice) > price && price > 0 ? (
-                <p className="text-lg text-muted line-through">{formatMoney(parseMoney(product.compareAtPrice), product.currency)}</p>
+                <p className="text-lg text-muted line-through"><StoreMoney amount={parseMoney(product.compareAtPrice)} currency={product.currency} /></p>
               ) : null}
             </div>
+            <div className="mt-1"><StoreCurrencyNote baseCurrency={product.currency} /></div>
 
             {product.description ? <p className="mt-5 whitespace-pre-line text-sm leading-7 text-muted sm:text-base">{product.description}</p> : null}
 
@@ -188,7 +189,7 @@ function StoreProductPage() {
                         <p className="font-display text-base font-semibold uppercase tracking-wide text-fg">{item.name}</p>
                         {item.options.length ? <p className="mt-1 text-xs text-muted">{item.options.map((option) => `${option.name}: ${option.value}`).join(" · ")}</p> : null}
                         <p className="mt-2 font-mono text-[10px] text-subtle">
-                          {item.price ? formatMoney(productPrice(product, item), product.currency) : "Base price"}
+                          {item.price ? <StoreMoney amount={productPrice(product, item)} currency={product.currency} /> : "Base price"}
                           {product.trackStock ? ` · ${item.stockQuantity} in stock` : ""}
                         </p>
                       </button>
