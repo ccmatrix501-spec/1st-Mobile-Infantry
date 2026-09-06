@@ -11,6 +11,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { AppShell, PageHero } from "@/components/app-shell";
+import { StoreCurrencyNote, StoreProductPrice } from "@/components/store-price";
 import { StoreToolbar } from "@/components/store-toolbar";
 import { Button } from "@/components/ui/button";
 import { useStoreCart } from "@/lib/store-cart";
@@ -20,7 +21,6 @@ import {
 } from "@/lib/store-settings-fn";
 import type { StoreProduct } from "@/lib/store-settings";
 import {
-  productDisplayPrice,
   productIsPurchasable,
   productPrice,
   productPrimaryImage,
@@ -186,6 +186,7 @@ function StorePage() {
                 Store Inventory
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">{settings.statusText}</p>
+              <div className="mt-2"><StoreCurrencyNote baseCurrency={settings.defaultCurrency} /></div>
             </div>
           </div>
           <div className="flex gap-3">
@@ -311,7 +312,7 @@ function ProductCard({
               <h3 className="mt-1 font-display text-2xl font-semibold uppercase tracking-wide text-fg">{product.name}</h3>
             </a>
           </div>
-          <p className="shrink-0 font-display text-xl font-semibold text-primary">{productDisplayPrice(product)}</p>
+          <p className="shrink-0 font-display text-xl font-semibold text-primary"><StoreProductPrice product={product} /></p>
         </div>
 
         {product.description ? (
