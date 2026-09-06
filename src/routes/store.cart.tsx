@@ -12,6 +12,7 @@ import {
   Truck,
 } from "lucide-react";
 import { AppShell, PageHero } from "@/components/app-shell";
+import { StoreCurrencyNote, StoreMoney } from "@/components/store-price";
 import { StoreToolbar } from "@/components/store-toolbar";
 import { Button } from "@/components/ui/button";
 import { useStoreCart } from "@/lib/store-cart";
@@ -20,7 +21,6 @@ import {
   type StorePageAccess,
 } from "@/lib/store-settings-fn";
 import {
-  formatMoney,
   productPrice,
   productPrimaryImage,
   shippingForSubtotal,
@@ -126,10 +126,10 @@ function StoreCartPage() {
                           <h2 className="mt-1 font-display text-xl font-semibold uppercase tracking-wide text-fg">{product.name}</h2>
                         </a>
                         {variant ? <p className="mt-1 text-xs text-muted">{variant.name}{variant.options.length ? ` · ${variant.options.map((option) => option.value).join(" / ")}` : ""}</p> : null}
-                        <p className="mt-2 font-mono text-xs text-muted">{formatMoney(unitPrice, product.currency)} each</p>
+                        <p className="mt-2 font-mono text-xs text-muted"><StoreMoney amount={unitPrice} currency={product.currency} /> each</p>
                       </div>
                       <div className="flex flex-row items-center justify-between gap-4 sm:flex-col sm:items-end">
-                        <p className="font-display text-xl font-semibold text-primary">{formatMoney(lineTotal, product.currency)}</p>
+                        <p className="font-display text-xl font-semibold text-primary"><StoreMoney amount={lineTotal} currency={product.currency} /></p>
                         <div className="flex items-center rounded-md border border-border-strong bg-black/45">
                           <button type="button" onClick={() => cart.setQuantity(line.productId, line.variantId, Math.max(1, line.quantity - 1))} className="p-2 text-muted hover:text-fg"><Minus className="h-4 w-4" /></button>
                           <span className="min-w-9 text-center font-mono text-xs text-fg">{line.quantity}</span>
@@ -152,10 +152,11 @@ function StoreCartPage() {
                 <ShoppingCart className="h-5 w-5 text-primary" />
                 <h2 className="font-display text-2xl font-semibold uppercase tracking-wide text-fg">Order Summary</h2>
               </div>
+              <div className="mt-2"><StoreCurrencyNote baseCurrency={currency} /></div>
 
               <div className="mt-5 space-y-3 border-b border-border pb-5 text-sm">
-                <div className="flex justify-between gap-4"><span className="text-muted">Subtotal</span><span className="text-fg">{formatMoney(subtotal, currency)}</span></div>
-                <div className="flex justify-between gap-4"><span className="text-muted">Shipping</span><span className="text-fg">{shippingZone ? (shipping ? formatMoney(shipping, currency) : "Free") : "Select zone"}</span></div>
+                <div className="flex justify-between gap-4"><span className="text-muted">Subtotal</span><span className="text-fg"><StoreMoney amount={subtotal} currency={currency} /></span></div>
+                <div className="flex justify-between gap-4"><span className="text-muted">Shipping</span><span className="text-fg">{shippingZone ? (shipping ? <StoreMoney amount={shipping} currency={currency} /> : "Free") : "Select zone"}</span></div>
               </div>
 
               <div className="mt-5">
@@ -171,7 +172,7 @@ function StoreCartPage() {
 
               <div className="mt-5 flex items-center justify-between border-t border-border pt-5">
                 <span className="font-display text-lg font-semibold uppercase text-fg">Estimated Total</span>
-                <span className="font-display text-2xl font-semibold text-primary">{formatMoney(total, currency)}</span>
+                <span className="font-display text-2xl font-semibold text-primary"><StoreMoney amount={total} currency={currency} /></span>
               </div>
 
               <Button asChild size="lg" className="mt-6 w-full">
