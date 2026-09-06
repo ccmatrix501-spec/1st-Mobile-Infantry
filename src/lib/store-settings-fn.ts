@@ -46,8 +46,8 @@ function validBuyUrl(value: string): boolean {
 function validateSettings(input: StoreSettings): StoreSettings {
   const settings = mergeStoreSettings(input);
   const json = JSON.stringify(settings);
-  if (json.length > 1_000_000) {
-    throw new Error("Store settings are too large. Keep product images in the Media Library instead of embedding them.");
+  if (json.length > 2_000_000) {
+    throw new Error("Store configuration is too large. Keep images in the Media Library instead of embedding them.");
   }
   if (settings.title.length > 160 || settings.kicker.length > 80) {
     throw new Error("Store title or kicker is too long.");
@@ -55,24 +55,77 @@ function validateSettings(input: StoreSettings): StoreSettings {
   if (settings.body.length > 4_000 || settings.statusText.length > 2_000) {
     throw new Error("Store page text is too long.");
   }
+  if (settings.cartNotice.length > 2_000 || settings.checkoutNotice.length > 2_000) {
+    throw new Error("Cart or checkout notice is too long.");
+  }
   if (!validImageUrl(settings.heroImage)) {
     throw new Error("Store hero image must use a site path or HTTPS URL.");
   }
-  if (!Array.isArray(settings.products) || settings.products.length > 100) {
-    throw new Error("Store can contain up to 100 products.");
+  if (!/^[A-Z]{3,8}$/.test(settings.defaultCurrency)) {
+    throw new Error("Default currency must use a valid currency code such as AUD.");
+  }
+  if (!Array.isArray(settings.products) || settings.products.length > 250) {
+    throw new Error("Store can contain up to 250 products.");
+  }
+  if (!Array.isArray(settings.categories) || settings.categories.length > 50) {
+    throw new Error("Store can contain up to 50 categories.");
+  }
+  if (!Array.isArray(settings.shippingZones) || settings.shippingZones.length > 50) {
+    throw new Error("Store can contain up to 50 shipping zones.");
   }
 
-  const seen = new Set<string>();
+  const seenProducts = new Set<string>();
+  const seenSlugs = new Set<string>();
   for (const product of settings.products) {
-    if (!product.id || seen.has(product.id)) throw new Error("Each product must have a unique id.");
-    seen.add(product.id);
+    if (!product.id || seenProducts.has(product.id)) throw new Error("Each product must have a unique id.");
+    seenProducts.add(product.id);
+    if (!product.slug || seenSlugs.has(product.slug)) throw new Error("Each product must have a unique URL slug.");
+    seenSlugs.add(product.slug);
     if (!product.name.trim() || product.name.length > 180) throw new Error("Each product needs a valid name.");
-    if (product.description.length > 4_000) throw new Error(`Description is too long for ${product.name}.`);
-    if (product.price.length > 40 || product.currency.length > 8) throw new Error(`Price is invalid for ${product.name}.`);
-    if (product.category.length > 100 || product.stockStatus.length > 120) throw new Error(`Category or stock status is too long for ${product.name}.`);
+    if (product.description.length > 8_000) throw new Error(`Description is too long for ${product.name}.`);
+    if (product.price.length > 40 || product.compareAtPrice.length > 40 || product.currency.length > 8) {
+      throw new Error(`Price is invalid for ${product.name}.`);
+    }
+    if (product.category.length > 100 || product.stockStatus.length > 120) {
+      throw new Error(`Category or stock status is too long for ${product.name}.`);
+    }
     if (!validImageUrl(product.image)) throw new Error(`Image URL is invalid for ${product.name}.`);
     if (!validBuyUrl(product.buyUrl)) throw new Error(`Purchase link for ${product.name} must use HTTPS.`);
+    if (product.images.length > 12) throw new Error(`${product.name} can have up to 12 images.`);
+    for (const image of product.images) {
+      if (!validImageUrl(image.url)) throw new Error(`One of the images for ${product.name} is invalid.`);
+    }
+    if (product.variants.length > 100) throw new Error(`${product.name} can have up to 100 variants.`);
+    const variantIds = new Set<string>();
+    for (const variant of product.variants) {
+      if (!variant.id || variantIds.has(variant.id)) throw new Error(`Each variant for ${product.name} needs a unique id.`);
+      variantIds.add(variant.id);
+      if (variant.name.length > 160 || variant.sku.length > 100 || variant.price.length > 40) {
+        throw new Error(`Variant details are too long for ${product.name}.`);
+      }
+      if (variant.options.length > 8) throw new Error(`A variant for ${product.name} has too many options.`);
+    }
   }
+
+  const categoryIds = new Set<string>();
+  for (const category of settings.categories) {
+    if (!category.id || categoryIds.has(category.id)) throw new Error("Each category needs a unique id.");
+    categoryIds.add(category.id);
+    if (!category.name.trim() || category.name.length > 120 || category.description.length > 2_000) {
+      throw new Error("Store category details are invalid.");
+    }
+  }
+
+  const zoneIds = new Set<string>();
+  for (const zone of settings.shippingZones) {
+    if (!zone.id || zoneIds.has(zone.id)) throw new Error("Each shipping zone needs a unique id.");
+    zoneIds.add(zone.id);
+    if (!zone.name.trim() || zone.name.length > 120 || zone.rate.length > 40 || zone.freeOver.length > 40) {
+      throw new Error("Shipping zone details are invalid.");
+    }
+    if (zone.countries.length > 250) throw new Error(`Shipping zone ${zone.name} contains too many country codes.`);
+  }
+
   return settings;
 }
 
@@ -80,7 +133,6 @@ export const fetchPublicStoreSettings = createServerFn({ method: "GET" }).handle
   async (): Promise<StoreSettings> => {
     try {
       const settings = await readStoredSettings();
-      // Do not expose unpublished products/settings through the public settings endpoint.
       return settings.enabled ? settings : { ...DEFAULT_STORE_SETTINGS };
     } catch {
       return mergeStoreSettings();
