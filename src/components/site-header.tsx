@@ -4,11 +4,13 @@ import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { fetchPublicSiteAdminConfig } from "@/lib/site-admin-config-fn";
+import { fetchPublicStoreSettings } from "@/lib/store-settings-fn";
 
 const publicNavLinks = [
   { to: "/", label: "Home", exact: true },
   { to: "/companies", label: "Companies" },
   { to: "/events", label: "Events" },
+  { to: "/store", label: "Store", requiresStore: true },
   { to: "/leadership", label: "Leadership" },
   { to: "/rules", label: "Rules" },
   { to: "/join", label: "Join now" },
@@ -18,11 +20,18 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [logoImage, setLogoImage] = useState("/mi-emblem.jpg");
+  const [storeEnabled, setStoreEnabled] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
-    void fetchPublicSiteAdminConfig()
-      .then((config) => setLogoImage(config.appearance.logoImage || "/mi-emblem.jpg"))
+    void Promise.all([
+      fetchPublicSiteAdminConfig(),
+      fetchPublicStoreSettings(),
+    ])
+      .then(([config, store]) => {
+        setLogoImage(config.appearance.logoImage || "/mi-emblem.jpg");
+        setStoreEnabled(store.enabled);
+      })
       .catch(() => undefined);
   }, []);
 
@@ -50,6 +59,10 @@ export function SiteHeader() {
     if (exact) return pathname === to;
     return pathname === to || pathname.startsWith(`${to}/`);
   }
+
+  const visibleNavLinks = publicNavLinks.filter(
+    (link) => !("requiresStore" in link) || storeEnabled,
+  );
 
   return (
     <header
@@ -84,7 +97,7 @@ export function SiteHeader() {
           className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-0.5 lg:flex"
           aria-label="Primary"
         >
-          {publicNavLinks.map((link) => {
+          {visibleNavLinks.map((link) => {
             const active = isActive(link.to, "exact" in link ? link.exact : false);
             return (
               <Link
@@ -131,7 +144,7 @@ export function SiteHeader() {
       {open ? (
         <nav className="border-t border-border glass px-4 py-3 lg:hidden" aria-label="Mobile">
           <ul className="flex flex-col gap-1">
-            {publicNavLinks.map((link) => {
+            {visibleNavLinks.map((link) => {
               const active = isActive(link.to, "exact" in link ? link.exact : false);
               return (
                 <li key={link.to}>
