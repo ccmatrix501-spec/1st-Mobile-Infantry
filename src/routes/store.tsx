@@ -1,12 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, EyeOff, PackageOpen, ShieldCheck, ShoppingBag } from "lucide-react";
+import {
+  ArrowLeft,
+  ExternalLink,
+  EyeOff,
+  PackageOpen,
+  ShieldCheck,
+  ShoppingBag,
+} from "lucide-react";
 import { AppShell, PageHero } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import {
   fetchStorePageAccess,
   type StorePageAccess,
 } from "@/lib/store-settings-fn";
+import type { StoreProduct } from "@/lib/store-settings";
 
 export const Route = createFileRoute("/store")({
   component: StorePage,
@@ -14,6 +22,21 @@ export const Route = createFileRoute("/store")({
     meta: [{ title: "Store — 1st Mobile Infantry" }],
   }),
 });
+
+function formatPrice(product: StoreProduct): string {
+  const raw = product.price.trim();
+  if (!raw) return "Price pending";
+  const number = Number(raw.replace(/[^0-9.-]/g, ""));
+  if (!Number.isFinite(number)) return raw;
+  try {
+    return new Intl.NumberFormat("en-AU", {
+      style: "currency",
+      currency: product.currency || "AUD",
+    }).format(number);
+  } catch {
+    return `${product.currency || "AUD"} ${number.toFixed(2)}`;
+  }
+}
 
 function StorePage() {
   const [access, setAccess] = useState<StorePageAccess | null>(null);
@@ -32,6 +55,14 @@ function StorePage() {
       cancelled = true;
     };
   }, []);
+
+  const displayProducts = useMemo(() => {
+    if (!access?.visible) return [];
+    const source = access.leadershipPreview
+      ? access.settings.products
+      : access.settings.products.filter((product) => product.visible);
+    return [...source].sort((a, b) => Number(b.featured) - Number(a.featured));
+  }, [access]);
 
   if (!access && !failed) {
     return (
@@ -85,8 +116,8 @@ function StorePage() {
               <ShieldCheck className="h-4 w-4" />
               Leadership preview — the Store is currently hidden from the public.
             </p>
-            <Link to="/leadership-control" className="stencil text-[11px] tracking-[0.12em] text-amber-100 hover:text-white">
-              Store Settings
+            <Link to="/leadership-store" className="stencil text-[11px] tracking-[0.12em] text-amber-100 hover:text-white">
+              Store Manager
             </Link>
           </div>
         </div>
@@ -110,49 +141,97 @@ function StorePage() {
           </div>
         ) : null}
 
-        <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="panel panel-feature p-6 sm:p-8">
-            <div className="flex items-start gap-4">
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-primary/40 bg-primary/10 text-primary">
-                <ShoppingBag className="h-5 w-5" />
-              </span>
-              <div>
-                <p className="stencil text-[10px] tracking-[0.14em] text-primary">Supply Manifest</p>
-                <h2 className="mt-1 font-display text-3xl font-semibold uppercase tracking-wide text-fg">
-                  Store Inventory
-                </h2>
-                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted sm:text-base">
-                  This page is ready for 1st M.I. merchandise. Product cards, prices, sizes, stock status and checkout links can be added here as the Store is built out.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-8 rounded-lg border border-dashed border-border-strong bg-black/25 px-5 py-10 text-center">
-              <PackageOpen className="mx-auto h-8 w-8 text-primary" />
-              <p className="mt-4 font-display text-xl font-semibold uppercase tracking-wide text-fg">
-                Inventory manifest pending
-              </p>
-              <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-muted">
-                {settings.statusText}
-              </p>
+        <div className="mb-8 flex flex-col gap-4 rounded-xl border border-border bg-black/30 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div className="flex items-start gap-4">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-primary/40 bg-primary/10 text-primary">
+              <ShoppingBag className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="stencil text-[10px] tracking-[0.14em] text-primary">Supply Manifest</p>
+              <h2 className="mt-1 font-display text-3xl font-semibold uppercase tracking-wide text-fg">
+                Store Inventory
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">{settings.statusText}</p>
             </div>
           </div>
-
-          <aside className="panel panel-static p-6 sm:p-7">
-            <p className="stencil text-[10px] tracking-[0.14em] text-primary">Store Status</p>
-            <p className="mt-2 font-display text-2xl font-semibold uppercase tracking-wide text-fg">
-              {settings.enabled ? "Public" : "Leadership Preview"}
-            </p>
-            <p className="mt-3 text-sm leading-relaxed text-muted">
-              {settings.statusText}
-            </p>
-            {leadershipPreview ? (
-              <Button asChild className="mt-6 w-full">
-                <Link to="/leadership-control">Return to Leadership Control</Link>
-              </Button>
-            ) : null}
-          </aside>
+          <div className="shrink-0 rounded-md border border-primary/25 bg-primary/10 px-4 py-3 text-center">
+            <p className="stencil text-[9px] tracking-[0.14em] text-primary">Listed Items</p>
+            <p className="mt-1 font-display text-2xl font-semibold text-fg">{displayProducts.length}</p>
+          </div>
         </div>
+
+        {displayProducts.length ? (
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {displayProducts.map((product) => (
+              <article key={product.id} className="panel panel-lift overflow-hidden">
+                <div className="relative aspect-[4/3] overflow-hidden border-b border-border bg-black/55">
+                  {product.image ? (
+                    <img src={product.image} alt={product.name} className="h-full w-full object-cover" loading="lazy" />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-muted">
+                      <PackageOpen className="h-10 w-10" />
+                    </div>
+                  )}
+                  {product.featured ? (
+                    <span className="absolute left-3 top-3 rounded-md border border-primary/35 bg-black/80 px-2.5 py-1 stencil text-[9px] tracking-[0.12em] text-primary">
+                      Featured
+                    </span>
+                  ) : null}
+                  {leadershipPreview && !product.visible ? (
+                    <span className="absolute right-3 top-3 rounded-md border border-amber-300/35 bg-black/80 px-2.5 py-1 stencil text-[9px] tracking-[0.12em] text-amber-200">
+                      Hidden Product
+                    </span>
+                  ) : null}
+                </div>
+
+                <div className="p-5 sm:p-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="stencil text-[9px] tracking-[0.14em] text-primary">{product.category}</p>
+                      <h3 className="mt-1 font-display text-2xl font-semibold uppercase tracking-wide text-fg">
+                        {product.name}
+                      </h3>
+                    </div>
+                    <p className="shrink-0 font-display text-xl font-semibold text-primary">{formatPrice(product)}</p>
+                  </div>
+
+                  {product.description ? (
+                    <p className="mt-3 text-sm leading-relaxed text-muted">{product.description}</p>
+                  ) : null}
+
+                  <div className="mt-5 flex items-center justify-between gap-3 border-t border-border pt-4">
+                    <span className="font-mono text-xs text-muted">{product.stockStatus || "Available"}</span>
+                    {product.buyUrl ? (
+                      <Button asChild size="sm">
+                        <a href={product.buyUrl} target="_blank" rel="noreferrer">
+                          Buy Now <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      </Button>
+                    ) : (
+                      <span className="stencil text-[9px] tracking-[0.12em] text-subtle">Purchase link pending</span>
+                    )}
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-border-strong bg-black/25 px-5 py-12 text-center">
+            <PackageOpen className="mx-auto h-9 w-9 text-primary" />
+            <p className="mt-4 font-display text-xl font-semibold uppercase tracking-wide text-fg">
+              Inventory manifest pending
+            </p>
+            <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-muted">{settings.statusText}</p>
+          </div>
+        )}
+
+        {leadershipPreview ? (
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Button asChild><Link to="/leadership-store">Open Store Manager</Link></Button>
+            <Button asChild variant="secondary"><Link to="/leadership-media">Media Library</Link></Button>
+            <Button asChild variant="secondary"><Link to="/leadership-control">Leadership Control</Link></Button>
+          </div>
+        ) : null}
       </section>
     </AppShell>
   );
