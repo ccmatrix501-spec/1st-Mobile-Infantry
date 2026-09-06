@@ -10,6 +10,7 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { AppShell, PageHero } from "@/components/app-shell";
+import { StoreCurrencyNote, StoreMoney } from "@/components/store-price";
 import { StoreToolbar } from "@/components/store-toolbar";
 import { Button } from "@/components/ui/button";
 import { useStoreCart } from "@/lib/store-cart";
@@ -18,7 +19,6 @@ import {
   type StorePageAccess,
 } from "@/lib/store-settings-fn";
 import {
-  formatMoney,
   productPrice,
   shippingForSubtotal,
 } from "@/lib/store-utils";
@@ -166,6 +166,7 @@ function StoreCheckoutPage() {
 
           <aside className="panel panel-feature h-fit p-5 sm:p-6 lg:sticky lg:top-24">
             <h2 className="font-display text-2xl font-semibold uppercase tracking-wide text-fg">Order Summary</h2>
+            <div className="mt-2"><StoreCurrencyNote baseCurrency={currency} /></div>
             <div className="mt-5 space-y-4">
               {resolved.map(({ line, product, variant, lineTotal }) => (
                 <div key={`${line.productId}:${line.variantId}`} className="flex items-start justify-between gap-4 border-b border-border pb-3 text-sm">
@@ -173,14 +174,14 @@ function StoreCheckoutPage() {
                     <p className="text-fg">{product.name} × {line.quantity}</p>
                     {variant ? <p className="mt-1 text-xs text-muted">{variant.name}</p> : null}
                   </div>
-                  <p className="shrink-0 text-fg">{formatMoney(lineTotal, product.currency)}</p>
+                  <p className="shrink-0 text-fg"><StoreMoney amount={lineTotal} currency={product.currency} /></p>
                 </div>
               ))}
             </div>
             <div className="mt-5 space-y-3 text-sm">
-              <div className="flex justify-between"><span className="text-muted">Subtotal</span><span className="text-fg">{formatMoney(subtotal, currency)}</span></div>
-              <div className="flex justify-between"><span className="text-muted">Shipping</span><span className="text-fg">{zone ? (shipping ? formatMoney(shipping, currency) : "Free") : "Pending"}</span></div>
-              <div className="flex justify-between border-t border-border pt-4 font-display text-xl font-semibold uppercase"><span className="text-fg">Total</span><span className="text-primary">{formatMoney(total, currency)}</span></div>
+              <div className="flex justify-between"><span className="text-muted">Subtotal</span><span className="text-fg"><StoreMoney amount={subtotal} currency={currency} /></span></div>
+              <div className="flex justify-between"><span className="text-muted">Shipping</span><span className="text-fg">{zone ? (shipping ? <StoreMoney amount={shipping} currency={currency} /> : "Free") : "Pending"}</span></div>
+              <div className="flex justify-between border-t border-border pt-4 font-display text-xl font-semibold uppercase"><span className="text-fg">Total</span><span className="text-primary"><StoreMoney amount={total} currency={currency} /></span></div>
             </div>
 
             <Button type="button" size="lg" className="mt-6 w-full" disabled>
