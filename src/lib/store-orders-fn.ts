@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import type {
+  StoreOrderAddress,
   StoreOrderBotHealth,
+  StoreOrderCustomer,
   StoreOrderStatus,
   StoreOrderSystemStatus,
 } from "@/lib/store-orders";
@@ -137,9 +139,6 @@ export const sendStoreOrderTestNotification = createServerFn({ method: "POST" })
     }
 
     const { randomUUID } = await import("node:crypto");
-
-    // Save a genuine TEST order before notifying Discord so the Forum card's
-    // Open Full Order button always points to a real leadership-only record.
     const order = await orders.recordCompletedStoreOrder(
       {
         currency: "AUD",
@@ -205,4 +204,39 @@ export const updateLeadershipStoreOrderStatus = createServerFn({ method: "POST" 
       String(data.orderId || "").trim(),
       data.status,
     );
+  });
+
+export const editLeadershipStoreOrderCustomer = createServerFn({ method: "POST" })
+  .inputValidator((input: { orderId: string; customer: Partial<StoreOrderCustomer> }) => input)
+  .handler(async ({ data }) => {
+    await requireLeadership();
+    const admin = await import("@/lib/store-order-discord-admin.server");
+    return admin.discordEditOrderCustomer(String(data.orderId || "").trim(), data.customer || {});
+  });
+
+export const editLeadershipStoreOrderAddress = createServerFn({ method: "POST" })
+  .inputValidator((input: { orderId: string; address: Partial<StoreOrderAddress> }) => input)
+  .handler(async ({ data }) => {
+    await requireLeadership();
+    const admin = await import("@/lib/store-order-discord-admin.server");
+    return admin.discordEditOrderAddress(String(data.orderId || "").trim(), data.address || {});
+  });
+
+export const editLeadershipStoreOrderShipping = createServerFn({ method: "POST" })
+  .inputValidator((input: { orderId: string; shippingMethod: string; shippingAmount: number }) => input)
+  .handler(async ({ data }) => {
+    await requireLeadership();
+    const admin = await import("@/lib/store-order-discord-admin.server");
+    return admin.discordEditOrderShipping(String(data.orderId || "").trim(), {
+      shippingMethod: data.shippingMethod,
+      shippingAmount: data.shippingAmount,
+    });
+  });
+
+export const removeLeadershipStoreOrder = createServerFn({ method: "POST" })
+  .inputValidator((input: { orderId: string }) => input)
+  .handler(async ({ data }) => {
+    await requireLeadership();
+    const admin = await import("@/lib/store-order-discord-admin.server");
+    return admin.discordRemoveOrder(String(data.orderId || "").trim());
   });
