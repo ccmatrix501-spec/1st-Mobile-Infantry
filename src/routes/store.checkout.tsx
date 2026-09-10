@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowLeft,
+  CheckCircle2,
   CreditCard,
+  FlaskConical,
   LockKeyhole,
   MapPin,
   MessageCircle,
@@ -21,6 +23,10 @@ import {
   type StorePageAccess,
 } from "@/lib/store-settings-fn";
 import {
+  createLeadershipStoreTestPurchase,
+  fetchStoreTestPurchaseAccess,
+} from "@/lib/store-test-purchase-fn";
+import {
   productPrice,
   shippingOptionPrice,
 } from "@/lib/store-utils";
@@ -33,10 +39,39 @@ export const Route = createFileRoute("/store/checkout")({
 const inputClass =
   "h-11 w-full rounded-md border border-border-strong bg-black/55 px-3 text-sm text-fg outline-none transition-colors placeholder:text-subtle focus:border-primary/70 focus:bg-black/65";
 
+type CheckoutFields = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  discordName: string;
+  address: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+};
+
 function StoreCheckoutPage() {
   const [access, setAccess] = useState<StorePageAccess | null>(null);
   const [failed, setFailed] = useState(false);
   const [shippingOptionId, setShippingOptionId] = useState("");
+  const [canTestPurchase, setCanTestPurchase] = useState(false);
+  const [testSubmitting, setTestSubmitting] = useState(false);
+  const [testMessage, setTestMessage] = useState<string | null>(null);
+  const [testError, setTestError] = useState<string | null>(null);
+  const [fields, setFields] = useState<CheckoutFields>({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    discordName: "",
+    address: "",
+    city: "",
+    state: "",
+    postalCode: "",
+    country: "Australia",
+  });
   const cart = useStoreCart();
 
   useEffect(() => {
@@ -55,6 +90,20 @@ function StoreCheckoutPage() {
       })
       .catch(() => {
         if (!cancelled) setFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchStoreTestPurchaseAccess()
+      .then((allowed) => {
+        if (!cancelled) setCanTestPurchase(Boolean(allowed));
+      })
+      .catch(() => {
+        if (!cancelled) setCanTestPurchase(false);
       });
     return () => {
       cancelled = true;
@@ -96,6 +145,82 @@ function StoreCheckoutPage() {
   const currency =
     resolved[0]?.product.currency || access?.settings.defaultCurrency || "AUD";
   const total = subtotal + shipping;
+
+  function setField<K extends keyof CheckoutFields>(key: K, value: CheckoutFields[K]) {
+    setFields((current) => ({ ...current, [key]: value }));
+  }
+
+  async function submitTestPurchase() {
+    if (!canTestPurchase) return;
+    setTestMessage(null);
+    setTestError(null);
+
+    const required = [
+      fields.firstName,
+      fields.lastName,
+      fields.email,
+      fields.address,
+      fields.city,
+      fields.country,
+    ];
+    if (required.some((value) => !value.trim())) {
+      setTestError("Fill in first name, last name, email, address, city/suburb and country before running the test purchase.");
+      return;
+    }
+    if (!shippingOption || !shippingConfigured) {
+      setTestError("Choose a shipping method with a configured price before running the test purchase.");
+      return;
+    }
+    if (!resolved.length) {
+      setTestError("The cart has no valid items to test.");
+      return;
+    }
+
+    setTestSubmitting(true);
+    try {
+      const result = await createLeadershipStoreTestPurchase({
+        data: {
+          currency,
+          subtotal,
+          shippingAmount: shipping,
+          total,
+          shippingMethod: shippingOption.name,
+          customer: {
+            firstName: fields.firstName,
+            lastName: fields.lastName,
+            email: fields.email,
+            phone: fields.phone,
+            discordName: fields.discordName || undefined,
+          },
+          shippingAddress: {
+            address: fields.address,
+            city: fields.city,
+            state: fields.state,
+            postalCode: fields.postalCode,
+            country: fields.country,
+          },
+          items: resolved.map(({ line, product, variant, unitPrice, lineTotal }) => ({
+            productId: product.id,
+            productName: product.name,
+            variantName: variant?.name || undefined,
+            quantity: line.quantity,
+            unitPrice,
+            lineTotal,
+          })),
+        },
+      });
+      const suffix = result.notificationConfigured
+        ? result.notificationMode === "bot-forum"
+          ? " A test Forum post was sent through the Discord bot."
+          : " A test Discord notification was sent."
+        : " The order was created, but Discord notifications are not configured yet.";
+      setTestMessage(`Test order ${result.order.orderNumber} created successfully.${suffix}`);
+    } catch (err) {
+      setTestError(err instanceof Error ? err.message : "Could not create the test purchase.");
+    } finally {
+      setTestSubmitting(false);
+    }
+  }
 
   if (!access && !failed) {
     return (
@@ -142,11 +267,11 @@ function StoreCheckoutPage() {
 
   return (
     <AppShell>
-      {access.leadershipPreview ? (
+      {access.leadershipPreview || canTestPurchase ? (
         <div className="border-b border-amber-300/25 bg-amber-300/10">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
             <p className="flex items-center gap-2 text-sm text-amber-100">
-              <ShieldCheck className="h-4 w-4" />Leadership checkout preview
+              <ShieldCheck className="h-4 w-4" />Leadership checkout access
             </p>
             <Link
               to="/leadership-store"
@@ -191,11 +316,32 @@ function StoreCheckoutPage() {
                   Payments are intentionally disabled
                 </p>
                 <p className="mt-1 text-sm leading-relaxed text-amber-100/80">
-                  {access.settings.checkoutNotice} Nothing entered on this page is submitted or stored yet.
+                  {access.settings.checkoutNotice} Public checkout does not submit or store these details yet.
+                  {canTestPurchase ? " Leadership can use the test purchase control below to simulate a completed order without charging anything." : ""}
                 </p>
               </div>
             </div>
           </div>
+
+          {testError ? (
+            <div className="mb-6 rounded-xl border border-red-400/30 bg-red-500/10 px-5 py-4 text-sm text-red-100">
+              {testError}
+            </div>
+          ) : null}
+          {testMessage ? (
+            <div className="mb-6 flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/10 px-5 py-4 text-sm text-primary">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+              <div>
+                <p>{testMessage}</p>
+                <Link
+                  to="/leadership-store/orders"
+                  className="mt-2 inline-block font-semibold underline underline-offset-4"
+                >
+                  Open Store Orders
+                </Link>
+              </div>
+            </div>
+          ) : null}
 
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_24rem]">
             <div className="space-y-5">
@@ -211,16 +357,37 @@ function StoreCheckoutPage() {
                 </div>
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   <Field label="First name">
-                    <input className={inputClass} autoComplete="given-name" />
+                    <input
+                      className={inputClass}
+                      autoComplete="given-name"
+                      value={fields.firstName}
+                      onChange={(event) => setField("firstName", event.target.value)}
+                    />
                   </Field>
                   <Field label="Last name">
-                    <input className={inputClass} autoComplete="family-name" />
+                    <input
+                      className={inputClass}
+                      autoComplete="family-name"
+                      value={fields.lastName}
+                      onChange={(event) => setField("lastName", event.target.value)}
+                    />
                   </Field>
                   <Field label="Email">
-                    <input type="email" className={inputClass} autoComplete="email" />
+                    <input
+                      type="email"
+                      className={inputClass}
+                      autoComplete="email"
+                      value={fields.email}
+                      onChange={(event) => setField("email", event.target.value)}
+                    />
                   </Field>
                   <Field label="Phone">
-                    <input className={inputClass} autoComplete="tel" />
+                    <input
+                      className={inputClass}
+                      autoComplete="tel"
+                      value={fields.phone}
+                      onChange={(event) => setField("phone", event.target.value)}
+                    />
                   </Field>
                 </div>
               </section>
@@ -248,10 +415,12 @@ function StoreCheckoutPage() {
                           className={inputClass}
                           autoComplete="off"
                           placeholder="e.g. Matrix501 or @Matrix501"
+                          value={fields.discordName}
+                          onChange={(event) => setField("discordName", event.target.value)}
                         />
                       </Field>
                       <p className="mt-2 text-xs leading-relaxed text-muted">
-                        Optional. Add your Discord name if you would prefer us to identify or contact you there about your order.
+                        Optional. Add your Discord name if you would prefer us to identify or contact you there about your order. If supplied, the Discord Forum post title will use this name.
                       </p>
                     </div>
                   </div>
@@ -260,23 +429,45 @@ function StoreCheckoutPage() {
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   <div className="sm:col-span-2">
                     <Field label="Address">
-                      <input className={inputClass} autoComplete="street-address" />
+                      <input
+                        className={inputClass}
+                        autoComplete="street-address"
+                        value={fields.address}
+                        onChange={(event) => setField("address", event.target.value)}
+                      />
                     </Field>
                   </div>
                   <Field label="City / suburb">
-                    <input className={inputClass} autoComplete="address-level2" />
+                    <input
+                      className={inputClass}
+                      autoComplete="address-level2"
+                      value={fields.city}
+                      onChange={(event) => setField("city", event.target.value)}
+                    />
                   </Field>
                   <Field label="State / province">
-                    <input className={inputClass} autoComplete="address-level1" />
+                    <input
+                      className={inputClass}
+                      autoComplete="address-level1"
+                      value={fields.state}
+                      onChange={(event) => setField("state", event.target.value)}
+                    />
                   </Field>
                   <Field label="Postal / ZIP code">
-                    <input className={inputClass} autoComplete="postal-code" />
+                    <input
+                      className={inputClass}
+                      autoComplete="postal-code"
+                      value={fields.postalCode}
+                      onChange={(event) => setField("postalCode", event.target.value)}
+                    />
                   </Field>
                   <Field label="Country / region">
                     <input
                       className={inputClass}
                       autoComplete="country-name"
                       placeholder="Australia"
+                      value={fields.country}
+                      onChange={(event) => setField("country", event.target.value)}
                     />
                   </Field>
                 </div>
@@ -365,6 +556,30 @@ function StoreCheckoutPage() {
                     When you decide on the payment provider, this section will be replaced with the secure checkout hand-off. Card details will never be stored by 1stmid.com.
                   </p>
                 </div>
+
+                {canTestPurchase ? (
+                  <div className="mt-5 rounded-xl border border-primary/35 bg-primary/10 p-5">
+                    <div className="flex items-start gap-3">
+                      <FlaskConical className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                      <div className="min-w-0 flex-1">
+                        <p className="stencil text-[9px] tracking-[0.14em] text-primary">Leadership test mode</p>
+                        <h3 className="mt-1 font-display text-xl font-semibold uppercase tracking-wide text-fg">Simulate this purchase</h3>
+                        <p className="mt-2 text-sm leading-relaxed text-muted">
+                          This creates a TEST order using the cart, customer details and selected shipping method above. No payment is taken. It uses the same order database and Discord notification path so you can test the Forum post end to end.
+                        </p>
+                        <Button
+                          type="button"
+                          className="mt-4"
+                          disabled={testSubmitting || !shippingOption || !shippingConfigured}
+                          onClick={() => void submitTestPurchase()}
+                        >
+                          <FlaskConical className="h-4 w-4" />
+                          {testSubmitting ? "Submitting Test…" : "Submit Test Purchase — No Charge"}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
               </section>
             </div>
 
