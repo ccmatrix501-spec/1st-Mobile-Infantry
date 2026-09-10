@@ -320,7 +320,6 @@ function LeadershipStorePage() {
         variants: product.variants.map((variant) => ({
           ...variant,
           sku: "",
-          price: "",
           stockQuantity: product.stockQuantity,
           active: true,
           options: [],
@@ -560,7 +559,7 @@ function LeadershipStorePage() {
                     </Field>
 
                     <Field
-                      label={`Final sale price (${settings.defaultCurrency})`}
+                      label={`Normal product price (${settings.defaultCurrency})`}
                     >
                       <input
                         value={product.price}
@@ -710,8 +709,7 @@ function LeadershipStorePage() {
                           Product options
                         </p>
                         <p className="mt-1 text-xs text-muted">
-                          Add choices only when needed, such as Small, Medium,
-                          Large, Black or White.
+                          Customers can always buy the normal product without an option. Add optional versions here and give each one its own price. Leave an option price blank to use the normal product price.
                         </p>
                       </div>
                       <Button
@@ -739,27 +737,39 @@ function LeadershipStorePage() {
                       {product.variants.map((variant, variantIndex) => (
                         <div
                           key={variant.id}
-                          className="flex flex-col gap-3 rounded-md border border-border bg-black/25 p-3 sm:flex-row sm:items-end"
+                          className="grid gap-3 rounded-md border border-border bg-black/25 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(11rem,0.45fr)_auto] sm:items-end"
                         >
-                          <div className="flex-1">
-                            <Field label={`Option ${variantIndex + 1}`}>
-                              <input
-                                value={variant.name}
-                                onChange={(event) =>
-                                  updateVariant(index, variantIndex, {
-                                    name: event.target.value,
-                                    sku: "",
-                                    price: "",
-                                    stockQuantity: product.stockQuantity,
-                                    active: true,
-                                    options: [],
-                                  })
-                                }
-                                className={inputClass}
-                                placeholder="e.g. Large or Black"
-                              />
-                            </Field>
-                          </div>
+                          <Field label={`Option ${variantIndex + 1}`}>
+                            <input
+                              value={variant.name}
+                              onChange={(event) =>
+                                updateVariant(index, variantIndex, {
+                                  name: event.target.value,
+                                  sku: "",
+                                  stockQuantity: product.stockQuantity,
+                                  active: true,
+                                  options: [],
+                                })
+                              }
+                              className={inputClass}
+                              placeholder="e.g. Large or Black"
+                            />
+                          </Field>
+
+                          <Field label={`Option price (${settings.defaultCurrency})`}>
+                            <input
+                              value={variant.price}
+                              onChange={(event) =>
+                                updateVariant(index, variantIndex, {
+                                  price: event.target.value,
+                                })
+                              }
+                              className={inputClass}
+                              inputMode="decimal"
+                              placeholder={product.price || "35.00"}
+                            />
+                          </Field>
+
                           <RemoveButton
                             label="Remove Option"
                             onClick={() =>
@@ -776,8 +786,7 @@ function LeadershipStorePage() {
 
                       {!product.variants.length ? (
                         <p className="text-sm text-muted">
-                          No product options. Customers will buy the product as
-                          listed.
+                          No product options. Customers will buy the normal product at its normal price.
                         </p>
                       ) : null}
                     </div>
@@ -818,8 +827,7 @@ function LeadershipStorePage() {
                 Store Changes
               </p>
               <p className="text-xs text-muted">
-                Product details, stock and Standard/Express shipping costs save
-                together.
+                Product details, stock, option prices and Standard/Express shipping costs save together.
               </p>
             </div>
             <div className="flex items-center gap-3">
