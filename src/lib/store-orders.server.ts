@@ -9,7 +9,7 @@ import type {
 } from "@/lib/store-orders";
 
 const DEFAULT_SITE_URL = "https://1stmid.com";
-const WEBHOOK_TIMEOUT_MS = 7_000;
+const NOTIFY_TIMEOUT_MS = 7_000;
 
 const STORE_ORDER_STATUSES: StoreOrderStatus[] = [
   "paid",
@@ -38,6 +38,10 @@ type StoreOrderRow = {
   discord_notified: boolean;
   discord_notified_at: Date | string | null;
   discord_error: string | null;
+};
+
+type NotificationOptions = {
+  test?: boolean;
 };
 
 function asJson<T>(value: T | string): T {
@@ -161,8 +165,36 @@ function getDiscordWebhookUrl(): string {
   return process.env.STORE_DISCORD_WEBHOOK_URL?.trim() || "";
 }
 
+function getBotBaseUrl(): string {
+  const configured =
+    process.env.STORE_ORDER_BOT_URL?.trim() ||
+    process.env.STORE_BOT_URL?.trim() ||
+    "";
+  if (!configured) return "";
+  const base = /^https?:\/\//i.test(configured) ? configured : `https://${configured}`;
+  return base.replace(/\/$/, "");
+}
+
+function getBotSecret(): string {
+  return (
+    process.env.STORE_ORDER_API_SECRET?.trim() ||
+    process.env.STORE_BOT_ORDER_SECRET?.trim() ||
+    ""
+  );
+}
+
+export function storeOrderBotConfigured(): boolean {
+  return Boolean(getBotBaseUrl() && getBotSecret());
+}
+
 export function storeOrderDiscordConfigured(): boolean {
-  return Boolean(getDiscordWebhookUrl());
+  return storeOrderBotConfigured() || Boolean(getDiscordWebhookUrl());
+}
+
+export function storeOrderNotificationMode(): "bot-forum" | "webhook" | "none" {
+  if (storeOrderBotConfigured()) return "bot-forum";
+  if (getDiscordWebhookUrl()) return "webhook";
+  return "none";
 }
 
 export function storeOrderSiteUrl(): string {
@@ -248,33 +280,62 @@ function discordDestination(order: StoreOrder): string {
   return parts.join(", ") || "See admin order page";
 }
 
+async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), NOTIFY_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function postBot(path: string, payload: unknown): Promise<void> {
+  const base = getBotBaseUrl();
+  const secret = getBotSecret();
+  if (!base || !secret) throw new Error("Store order bot bridge is not configured.");
+
+  const response = await fetchWithTimeout(`${base}${path}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "User-Agent": "1st-Mobile-Infantry-Store/1.0",
+      "X-Store-Order-Secret": secret,
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    let detail = "";
+    try {
+      const body = (await response.json()) as { error?: string };
+      detail = body?.error ? ` ${body.error}` : "";
+    } catch {
+      // Ignore non-JSON error response.
+    }
+    throw new Error(`Store order bot returned HTTP ${response.status}.${detail}`);
+  }
+}
+
 async function postDiscordPayload(payload: unknown): Promise<void> {
   const webhookUrl = getDiscordWebhookUrl();
   if (!webhookUrl) {
     throw new Error("STORE_DISCORD_WEBHOOK_URL is not configured.");
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), WEBHOOK_TIMEOUT_MS);
-  try {
-    const response = await fetch(webhookUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "User-Agent": "1st-Mobile-Infantry-Store/1.0",
-      },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    });
-    if (!response.ok) {
-      throw new Error(`Discord webhook returned HTTP ${response.status}.`);
-    }
-  } finally {
-    clearTimeout(timeout);
+  const response = await fetchWithTimeout(webhookUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "User-Agent": "1st-Mobile-Infantry-Store/1.0",
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw new Error(`Discord webhook returned HTTP ${response.status}.`);
   }
 }
 
-function discordOrderPayload(order: StoreOrder) {
+function discordOrderPayload(order: StoreOrder, options: NotificationOptions = {}) {
   const customerName = `${order.customer.firstName} ${order.customer.lastName}`.trim();
   const adminUrl = `${getSiteUrl()}/leadership-store/orders/${encodeURIComponent(order.id)}`;
   const discordLine = order.customer.discordName
@@ -284,13 +345,15 @@ function discordOrderPayload(order: StoreOrder) {
   return {
     username: "1st M.I. Store Orders",
     avatar_url: `${getSiteUrl()}/mi-emblem.jpg`,
+    content: options.test ? "**TEST PURCHASE — no payment was taken.**" : undefined,
     allowed_mentions: { parse: [] },
     embeds: [
       {
-        title: `New Store Order • ${order.orderNumber}`,
+        title: `${options.test ? "TEST • " : ""}New Store Order • ${order.orderNumber}`,
         url: adminUrl,
-        description:
-          "A paid store order has been recorded. The card below keeps private details brief; open the secure admin order page for the full shipping address and contact information.",
+        description: options.test
+          ? "This is a leadership test purchase. It was recorded only to test the store order and Discord notification flow."
+          : "A paid store order has been recorded. The card below keeps private details brief; open the secure admin order page for the full shipping address and contact information.",
         color: 3329895,
         fields: [
           {
@@ -325,7 +388,9 @@ function discordOrderPayload(order: StoreOrder) {
           },
         ],
         footer: {
-          text: "1st M.I. Quartermaster • Admin order notification",
+          text: options.test
+            ? "1st M.I. Quartermaster • TEST ORDER"
+            : "1st M.I. Quartermaster • Admin order notification",
         },
         timestamp: order.placedAt,
       },
@@ -333,8 +398,15 @@ function discordOrderPayload(order: StoreOrder) {
   };
 }
 
-export async function sendStoreOrderDiscordNotification(order: StoreOrder): Promise<void> {
-  await postDiscordPayload(discordOrderPayload(order));
+export async function sendStoreOrderDiscordNotification(
+  order: StoreOrder,
+  options: NotificationOptions = {},
+): Promise<void> {
+  if (storeOrderBotConfigured()) {
+    await postBot("/store-orders/notify", { order, test: options.test === true });
+    return;
+  }
+  await postDiscordPayload(discordOrderPayload(order, options));
 }
 
 async function markDiscordResult(
@@ -356,6 +428,7 @@ async function markDiscordResult(
 
 export async function recordCompletedStoreOrder(
   rawInput: StoreCompletedOrderInput,
+  options: NotificationOptions = {},
 ): Promise<StoreOrder> {
   const input = normaliseCompletedOrder(rawInput);
   const sql = await ensureOrdersTable();
@@ -399,9 +472,14 @@ export async function recordCompletedStoreOrder(
   let order = toOrder(rows[0]);
   if (storeOrderDiscordConfigured()) {
     try {
-      await sendStoreOrderDiscordNotification(order);
+      await sendStoreOrderDiscordNotification(order, options);
       await markDiscordResult(order.id, true, null);
-      order = { ...order, discordNotified: true, discordNotifiedAt: new Date().toISOString(), discordError: null };
+      order = {
+        ...order,
+        discordNotified: true,
+        discordNotifiedAt: new Date().toISOString(),
+        discordError: null,
+      };
     } catch (error) {
       const message = error instanceof Error ? error.message : "Discord notification failed.";
       await markDiscordResult(order.id, false, message.slice(0, 500));
@@ -453,14 +531,39 @@ export async function updateStoreOrderStatus(
     [orderId, status],
   );
   if (!rows[0]) throw new Error("Store order was not found.");
-  return toOrder(rows[0]);
+
+  const order = toOrder(rows[0]);
+  if (storeOrderBotConfigured()) {
+    try {
+      await postBot("/store-orders/status", {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        customerName: `${order.customer.firstName} ${order.customer.lastName}`.trim(),
+        discordName: order.customer.discordName || "",
+      });
+      await markDiscordResult(order.id, true, null);
+      return {
+        ...order,
+        discordNotified: true,
+        discordNotifiedAt: order.discordNotifiedAt || new Date().toISOString(),
+        discordError: null,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Discord status update failed.";
+      await markDiscordResult(order.id, false, message.slice(0, 500));
+      return { ...order, discordNotified: false, discordError: message.slice(0, 500) };
+    }
+  }
+  return order;
 }
 
 export async function resendStoreOrderDiscordNotification(orderId: string): Promise<StoreOrder> {
   const order = await getStoreOrder(orderId);
   if (!order) throw new Error("Store order was not found.");
   try {
-    await sendStoreOrderDiscordNotification(order);
+    const isTest = order.paymentProvider.toLowerCase().includes("test");
+    await sendStoreOrderDiscordNotification(order, { test: isTest });
     await markDiscordResult(order.id, true, null);
     return {
       ...order,
@@ -475,11 +578,11 @@ export async function resendStoreOrderDiscordNotification(orderId: string): Prom
   }
 }
 
-export async function sendStoreOrderDiscordTest(): Promise<void> {
+export async function sendStoreOrderDiscordTest(discordName = "@TestCustomer"): Promise<void> {
   const now = new Date().toISOString();
   const testOrder: StoreOrder = {
-    id: "discord-test",
-    orderNumber: "MI-TEST-NOTIFICATION",
+    id: `discord-test-${randomUUID()}`,
+    orderNumber: `MI-TEST-${randomUUID().replaceAll("-", "").slice(0, 6).toUpperCase()}`,
     status: "paid",
     currency: "AUD",
     subtotal: 15,
@@ -491,7 +594,7 @@ export async function sendStoreOrderDiscordTest(): Promise<void> {
       lastName: "Customer",
       email: "test@example.invalid",
       phone: "Not included in Discord",
-      discordName: "@TestCustomer",
+      discordName: cleanText(discordName, 120) || "@TestCustomer",
     },
     shippingAddress: {
       address: "Private address only shown on the admin page",
@@ -510,15 +613,12 @@ export async function sendStoreOrderDiscordTest(): Promise<void> {
       },
     ],
     paymentProvider: "Test mode",
-    paymentReference: "TEST-NOT-A-REAL-PAYMENT",
+    paymentReference: `TEST-${randomUUID()}`,
     placedAt: now,
     updatedAt: now,
     discordNotified: false,
     discordNotifiedAt: null,
     discordError: null,
   };
-  await postDiscordPayload({
-    ...discordOrderPayload(testOrder),
-    content: "**Test notification — no real order was created.**",
-  });
+  await sendStoreOrderDiscordNotification(testOrder, { test: true });
 }
