@@ -1,4 +1,4 @@
-import type { StoreProduct, StoreProductVariant, StoreShippingZone } from "@/lib/store-settings";
+import type { StoreProduct, StoreProductVariant, StoreShippingOption } from "@/lib/store-settings";
 
 export function parseMoney(value: string): number {
   const number = Number(String(value || "").replace(/[^0-9.-]/g, ""));
@@ -50,10 +50,7 @@ export function productIsPurchasable(product: StoreProduct, variant?: StoreProdu
   return product.stockStatus.trim().toLowerCase() !== "sold out";
 }
 
-export function shippingForSubtotal(zone: StoreShippingZone | null, subtotal: number): number {
-  if (!zone || !zone.enabled) return 0;
-  const rate = parseMoney(zone.rate);
-  const freeOver = parseMoney(zone.freeOver);
-  if (freeOver > 0 && subtotal >= freeOver) return 0;
-  return rate;
+export function shippingOptionPrice(option: StoreShippingOption | null): number {
+  if (!option || !option.enabled || !option.rate.trim()) return 0;
+  return parseMoney(option.rate);
 }
