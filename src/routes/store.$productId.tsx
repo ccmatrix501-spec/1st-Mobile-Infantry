@@ -73,10 +73,6 @@ function StoreProductPage() {
     [product],
   );
 
-  useEffect(() => {
-    if (!variantId && activeVariants[0]) setVariantId(activeVariants[0].id);
-  }, [activeVariants, variantId]);
-
   const variant = activeVariants.find((item) => item.id === variantId) ?? null;
   const price = product ? productPrice(product, variant) : 0;
   const canAdd = product ? productIsPurchasable(product, variant) && price > 0 : false;
@@ -174,8 +170,23 @@ function StoreProductPage() {
 
             {activeVariants.length ? (
               <div className="mt-7">
-                <p className="stencil text-[10px] tracking-[0.12em] text-primary">Select option</p>
+                <p className="stencil text-[10px] tracking-[0.12em] text-primary">Choose product</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted">Buy the normal product at its standard price, or choose one of the optional versions below.</p>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    disabled={product.trackStock && product.stockQuantity <= 0}
+                    onClick={() => setVariantId("")}
+                    className={`rounded-md border p-3 text-left transition-colors ${variantId === "" ? "border-primary bg-primary/10" : "border-border bg-black/25 hover:border-primary/45"} ${product.trackStock && product.stockQuantity <= 0 ? "cursor-not-allowed opacity-45" : ""}`}
+                  >
+                    <p className="font-display text-base font-semibold uppercase tracking-wide text-fg">Standard product</p>
+                    <p className="mt-1 text-xs text-muted">No optional selection</p>
+                    <p className="mt-2 font-mono text-[10px] text-subtle">
+                      {parseMoney(product.price) > 0 ? <StoreMoney amount={parseMoney(product.price)} currency={product.currency} /> : "Price pending"}
+                      {product.trackStock ? ` · ${product.stockQuantity} in stock` : ""}
+                    </p>
+                  </button>
+
                   {activeVariants.map((item) => {
                     const soldOut = product.trackStock && item.stockQuantity <= 0;
                     return (
@@ -189,7 +200,7 @@ function StoreProductPage() {
                         <p className="font-display text-base font-semibold uppercase tracking-wide text-fg">{item.name}</p>
                         {item.options.length ? <p className="mt-1 text-xs text-muted">{item.options.map((option) => `${option.name}: ${option.value}`).join(" · ")}</p> : null}
                         <p className="mt-2 font-mono text-[10px] text-subtle">
-                          {item.price ? <StoreMoney amount={productPrice(product, item)} currency={product.currency} /> : "Base price"}
+                          {item.price?.trim() ? <StoreMoney amount={productPrice(product, item)} currency={product.currency} /> : <>Same price · <StoreMoney amount={productPrice(product, item)} currency={product.currency} /></>}
                           {product.trackStock ? ` · ${item.stockQuantity} in stock` : ""}
                         </p>
                       </button>
