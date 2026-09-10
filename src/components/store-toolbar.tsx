@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Coins, PackageSearch, ShoppingCart } from "lucide-react";
+import { Coins, PackageSearch, ShoppingCart, Tags } from "lucide-react";
 import { useStoreCart } from "@/lib/store-cart";
 import {
   STORE_DISPLAY_CURRENCIES,
@@ -15,15 +15,27 @@ export function StoreToolbar() {
   return (
     <div className="border-b border-border bg-black/35 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-        <Link
-          to="/store"
-          className={cn(
-            "inline-flex items-center gap-2 rounded-md px-3 py-2 stencil text-[10px] tracking-[0.12em] text-muted transition-colors hover:bg-surface-hover hover:text-fg",
-            pathname === "/store" && "bg-primary/10 text-primary",
-          )}
-        >
-          <PackageSearch className="h-4 w-4" />Browse Store
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            to="/store"
+            className={cn(
+              "inline-flex items-center gap-2 rounded-md px-3 py-2 stencil text-[10px] tracking-[0.12em] text-muted transition-colors hover:bg-surface-hover hover:text-fg",
+              pathname === "/store" && "bg-primary/10 text-primary",
+            )}
+          >
+            <PackageSearch className="h-4 w-4" />Browse Store
+          </Link>
+
+          <a
+            href="/store/categories"
+            className={cn(
+              "inline-flex items-center gap-2 rounded-md px-3 py-2 stencil text-[10px] tracking-[0.12em] text-muted transition-colors hover:bg-surface-hover hover:text-fg",
+              (pathname === "/store/categories" || pathname.startsWith("/store/category/")) && "bg-primary/10 text-primary",
+            )}
+          >
+            <Tags className="h-4 w-4" />Categories
+          </a>
+        </div>
 
         <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
           <label className="flex items-center gap-2 rounded-md border border-border-strong bg-black/30 px-2.5 py-1.5">
