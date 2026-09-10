@@ -54,10 +54,22 @@ export type StoreOrder = StoreCompletedOrderInput & {
   discordError: string | null;
 };
 
+export type StoreOrderBotHealth = {
+  reachable: boolean;
+  botReady: boolean | null;
+  secretConfigured: boolean | null;
+  channelId: string | null;
+  error: string | null;
+};
+
 export type StoreOrderSystemStatus = {
   discordConfigured: boolean;
   siteUrl: string;
   orderCount: number;
+  notificationMode: "bot-forum" | "webhook" | "none";
+  websiteBotUrl: string;
+  websiteSecretConfigured: boolean;
+  botHealth: StoreOrderBotHealth;
 };
 
 export function storeOrderCustomerName(order: Pick<StoreOrder, "customer">): string {
