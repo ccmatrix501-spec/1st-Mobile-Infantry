@@ -22,18 +22,23 @@ export function productPrice(product: StoreProduct, variant?: StoreProductVarian
 }
 
 export function productDisplayPrice(product: StoreProduct): string {
-  const variants = product.variants.filter((variant) => variant.active);
-  const values = variants
-    .map((variant) => productPrice(product, variant))
-    .filter((value) => value > 0);
+  const values: number[] = [];
+  const basePrice = parseMoney(product.price);
+  if (basePrice > 0) values.push(basePrice);
+
+  for (const variant of product.variants.filter((item) => item.active)) {
+    const value = productPrice(product, variant);
+    if (value > 0) values.push(value);
+  }
+
   if (values.length) {
     const min = Math.min(...values);
     const max = Math.max(...values);
     if (min !== max) return `From ${formatMoney(min, product.currency)}`;
     return formatMoney(min, product.currency);
   }
-  const price = parseMoney(product.price);
-  return price > 0 ? formatMoney(price, product.currency) : "Price pending";
+
+  return "Price pending";
 }
 
 export function productPrimaryImage(product: StoreProduct): string {
