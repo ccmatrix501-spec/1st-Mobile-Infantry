@@ -1,9 +1,18 @@
 import { createServerFn } from "@tanstack/react-start";
 import type { StoreOrderStatus, StoreOrderSystemStatus } from "@/lib/store-orders";
 
+const DEFAULT_STORE_ORDER_BOT_URL =
+  "https://1st-mi-matrix-r-d-production.up.railway.app";
+
 async function requireLeadership() {
   const access = await import("@/lib/local-leadership-access.server");
   return access.requireLocalLeadership();
+}
+
+function prepareStoreOrderBotEnvironment() {
+  if (!process.env.STORE_ORDER_BOT_URL?.trim() && !process.env.STORE_BOT_URL?.trim()) {
+    process.env.STORE_ORDER_BOT_URL = DEFAULT_STORE_ORDER_BOT_URL;
+  }
 }
 
 export const fetchLeadershipStoreOrders = createServerFn({ method: "GET" }).handler(
@@ -27,6 +36,7 @@ export const fetchLeadershipStoreOrder = createServerFn({ method: "GET" })
 export const fetchStoreOrderSystemStatus = createServerFn({ method: "GET" }).handler(
   async (): Promise<StoreOrderSystemStatus> => {
     await requireLeadership();
+    prepareStoreOrderBotEnvironment();
     const orders = await import("@/lib/store-orders.server");
     return {
       discordConfigured: orders.storeOrderDiscordConfigured(),
@@ -39,7 +49,13 @@ export const fetchStoreOrderSystemStatus = createServerFn({ method: "GET" }).han
 export const sendStoreOrderTestNotification = createServerFn({ method: "POST" }).handler(
   async () => {
     await requireLeadership();
+    prepareStoreOrderBotEnvironment();
     const orders = await import("@/lib/store-orders.server");
+    if (!orders.storeOrderDiscordConfigured()) {
+      throw new Error(
+        "Discord Forum bridge is not configured. Add STORE_ORDER_API_SECRET to Vercel and Railway using the exact same value.",
+      );
+    }
     await orders.sendStoreOrderDiscordTest();
     return { ok: true };
   },
@@ -49,6 +65,7 @@ export const resendLeadershipStoreOrderNotification = createServerFn({ method: "
   .inputValidator((input: { orderId: string }) => input)
   .handler(async ({ data }) => {
     await requireLeadership();
+    prepareStoreOrderBotEnvironment();
     const orders = await import("@/lib/store-orders.server");
     return orders.resendStoreOrderDiscordNotification(String(data.orderId || "").trim());
   });
@@ -57,6 +74,7 @@ export const updateLeadershipStoreOrderStatus = createServerFn({ method: "POST" 
   .inputValidator((input: { orderId: string; status: StoreOrderStatus }) => input)
   .handler(async ({ data }) => {
     await requireLeadership();
+    prepareStoreOrderBotEnvironment();
     const orders = await import("@/lib/store-orders.server");
     return orders.updateStoreOrderStatus(
       String(data.orderId || "").trim(),
