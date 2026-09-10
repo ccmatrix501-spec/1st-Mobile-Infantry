@@ -29,12 +29,11 @@ export type StoreCategory = {
   visible: boolean;
 };
 
-export type StoreShippingZone = {
-  id: string;
+export type StoreShippingOption = {
+  id: "standard" | "express";
   name: string;
-  countries: string[];
+  description: string;
   rate: string;
-  freeOver: string;
   enabled: boolean;
 };
 
@@ -74,91 +73,8 @@ export type StoreSettings = {
   checkoutNotice: string;
   products: StoreProduct[];
   categories: StoreCategory[];
-  shippingZones: StoreShippingZone[];
+  shippingOptions: StoreShippingOption[];
 };
-
-export const DEFAULT_WORLDWIDE_SHIPPING_ZONES: StoreShippingZone[] = [
-  {
-    id: "shipping-australia",
-    name: "Australia",
-    countries: ["AU"],
-    rate: "",
-    freeOver: "",
-    enabled: true,
-  },
-  {
-    id: "shipping-new-zealand-pacific",
-    name: "New Zealand & Pacific",
-    countries: ["NZ", "FJ", "PG", "NC", "PF", "WS", "TO", "VU", "SB", "KI", "TV", "NR", "CK", "NU", "FM", "MH", "PW", "GU", "MP", "AS"],
-    rate: "",
-    freeOver: "",
-    enabled: true,
-  },
-  {
-    id: "shipping-north-america",
-    name: "North America",
-    countries: ["US", "CA", "MX", "BM", "GL", "PM"],
-    rate: "",
-    freeOver: "",
-    enabled: true,
-  },
-  {
-    id: "shipping-uk-ireland",
-    name: "United Kingdom & Ireland",
-    countries: ["GB", "IE", "IM", "JE", "GG"],
-    rate: "",
-    freeOver: "",
-    enabled: true,
-  },
-  {
-    id: "shipping-europe",
-    name: "Europe",
-    countries: ["AD", "AL", "AT", "BA", "BE", "BG", "CH", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IS", "IT", "LI", "LT", "LU", "LV", "MC", "MD", "ME", "MK", "MT", "NL", "NO", "PL", "PT", "RO", "RS", "SE", "SI", "SK", "SM", "UA", "VA", "XK"],
-    rate: "",
-    freeOver: "",
-    enabled: true,
-  },
-  {
-    id: "shipping-asia",
-    name: "Asia",
-    countries: ["AF", "BD", "BN", "BT", "CN", "HK", "ID", "IN", "JP", "KH", "KG", "KR", "KZ", "LA", "LK", "MM", "MN", "MO", "MV", "MY", "NP", "PH", "PK", "SG", "TH", "TJ", "TL", "TM", "TW", "UZ", "VN"],
-    rate: "",
-    freeOver: "",
-    enabled: true,
-  },
-  {
-    id: "shipping-middle-east",
-    name: "Middle East",
-    countries: ["AE", "AM", "AZ", "BH", "GE", "IL", "IQ", "IR", "JO", "KW", "LB", "OM", "PS", "QA", "SA", "SY", "TR", "YE"],
-    rate: "",
-    freeOver: "",
-    enabled: true,
-  },
-  {
-    id: "shipping-africa",
-    name: "Africa",
-    countries: ["AO", "BF", "BI", "BJ", "BW", "CD", "CF", "CG", "CI", "CM", "CV", "DJ", "DZ", "EG", "EH", "ER", "ET", "GA", "GH", "GM", "GN", "GQ", "GW", "KE", "KM", "LR", "LS", "LY", "MA", "MG", "ML", "MR", "MU", "MW", "MZ", "NA", "NE", "NG", "RE", "RW", "SC", "SD", "SH", "SL", "SN", "SO", "SS", "ST", "SZ", "TD", "TG", "TN", "TZ", "UG", "YT", "ZA", "ZM", "ZW"],
-    rate: "",
-    freeOver: "",
-    enabled: true,
-  },
-  {
-    id: "shipping-latin-america-caribbean",
-    name: "Central & South America / Caribbean",
-    countries: ["AG", "AI", "AR", "AW", "BB", "BL", "BO", "BQ", "BR", "BS", "BZ", "CL", "CO", "CR", "CU", "CW", "DM", "DO", "EC", "FK", "GD", "GF", "GP", "GT", "GY", "HN", "HT", "JM", "KN", "KY", "LC", "MF", "MQ", "MS", "NI", "PA", "PE", "PR", "PY", "SR", "SV", "SX", "TC", "TT", "UY", "VC", "VE", "VG", "VI"],
-    rate: "",
-    freeOver: "",
-    enabled: true,
-  },
-  {
-    id: "shipping-rest-of-world",
-    name: "Rest of World",
-    countries: ["*"],
-    rate: "",
-    freeOver: "",
-    enabled: true,
-  },
-];
 
 export const DEFAULT_STORE_SETTINGS: StoreSettings = {
   enabled: false,
@@ -168,7 +84,7 @@ export const DEFAULT_STORE_SETTINGS: StoreSettings = {
   statusText: "Store inventory is being prepared. Check back soon.",
   heroImage: "",
   defaultCurrency: "AUD",
-  cartNotice: "Payment processing is not connected yet. You can build and preview your cart, but checkout remains locked until command activates payments.",
+  cartNotice: "Shipping destination and Standard or Express delivery are selected at checkout. Payment processing is not connected yet.",
   checkoutNotice: "Checkout is being prepared. No payment or order can be submitted yet.",
   products: [],
   categories: [
@@ -178,10 +94,22 @@ export const DEFAULT_STORE_SETTINGS: StoreSettings = {
     { id: "stickers", name: "Stickers", slug: "stickers", description: "1st M.I. decals and stickers.", visible: true },
     { id: "other", name: "Other Gear", slug: "other-gear", description: "Other approved merchandise.", visible: true },
   ],
-  shippingZones: DEFAULT_WORLDWIDE_SHIPPING_ZONES.map((zone) => ({
-    ...zone,
-    countries: [...zone.countries],
-  })),
+  shippingOptions: [
+    {
+      id: "standard",
+      name: "Standard",
+      description: "Standard worldwide delivery.",
+      rate: "",
+      enabled: true,
+    },
+    {
+      id: "express",
+      name: "Express",
+      description: "Faster worldwide delivery where available.",
+      rate: "",
+      enabled: true,
+    },
+  ],
 };
 
 function slugify(value: string): string {
@@ -274,21 +202,18 @@ function normaliseCategories(input?: Partial<StoreSettings> | null): StoreCatego
   }));
 }
 
-function normaliseShipping(input?: Partial<StoreSettings> | null): StoreShippingZone[] {
-  if (!Array.isArray(input?.shippingZones) || !input.shippingZones.length) {
-    return DEFAULT_WORLDWIDE_SHIPPING_ZONES.map((zone) => ({
-      ...zone,
-      countries: [...zone.countries],
-    }));
-  }
-  return input.shippingZones.map((zone, index) => ({
-    id: String(zone.id || `zone-${index + 1}`),
-    name: String(zone.name || `Shipping Zone ${index + 1}`),
-    countries: Array.isArray(zone.countries) ? zone.countries.map((code) => String(code).trim().toUpperCase()).filter(Boolean) : [],
-    rate: String(zone.rate ?? ""),
-    freeOver: String(zone.freeOver ?? ""),
-    enabled: zone.enabled !== false,
-  }));
+function normaliseShippingOptions(input?: Partial<StoreSettings> | null): StoreShippingOption[] {
+  const supplied = Array.isArray(input?.shippingOptions) ? input.shippingOptions : [];
+  return DEFAULT_STORE_SETTINGS.shippingOptions.map((fallback) => {
+    const current = supplied.find((option) => option?.id === fallback.id);
+    return {
+      id: fallback.id,
+      name: fallback.name,
+      description: String(current?.description ?? fallback.description),
+      rate: String(current?.rate ?? fallback.rate),
+      enabled: current?.enabled !== false,
+    };
+  });
 }
 
 export function mergeStoreSettings(input?: Partial<StoreSettings> | null): StoreSettings {
@@ -297,12 +222,17 @@ export function mergeStoreSettings(input?: Partial<StoreSettings> | null): Store
     : [];
 
   return {
-    ...DEFAULT_STORE_SETTINGS,
-    ...(input ?? {}),
     enabled: input?.enabled === true,
+    kicker: String(input?.kicker ?? DEFAULT_STORE_SETTINGS.kicker),
+    title: String(input?.title ?? DEFAULT_STORE_SETTINGS.title),
+    body: String(input?.body ?? DEFAULT_STORE_SETTINGS.body),
+    statusText: String(input?.statusText ?? DEFAULT_STORE_SETTINGS.statusText),
+    heroImage: String(input?.heroImage ?? DEFAULT_STORE_SETTINGS.heroImage),
     defaultCurrency: String(input?.defaultCurrency || "AUD").toUpperCase(),
+    cartNotice: String(input?.cartNotice ?? DEFAULT_STORE_SETTINGS.cartNotice),
+    checkoutNotice: String(input?.checkoutNotice ?? DEFAULT_STORE_SETTINGS.checkoutNotice),
     products,
     categories: normaliseCategories(input),
-    shippingZones: normaliseShipping(input),
+    shippingOptions: normaliseShippingOptions(input),
   };
 }
