@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { createServerFn } from "@tanstack/react-start";
 import type {
   StoreOrderBotHealth,
@@ -136,6 +135,8 @@ export const sendStoreOrderTestNotification = createServerFn({ method: "POST" })
         "Discord Forum bridge is not configured. Add STORE_ORDER_API_SECRET to Vercel and Railway using the exact same value.",
       );
     }
+
+    const { randomUUID } = await import("node:crypto");
 
     // Save a genuine TEST order before notifying Discord so the Forum card's
     // Open Full Order button always points to a real leadership-only record.
