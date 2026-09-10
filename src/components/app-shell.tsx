@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { LiveSiteContent } from "@/components/live-site-content";
 import { LiveSiteAdminAppearance } from "@/components/live-site-admin-appearance";
 import { LeadershipStoreControl } from "@/components/leadership-store-control";
@@ -6,6 +7,11 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const showStoreAdminNav =
+    pathname === "/leadership-store" ||
+    pathname.startsWith("/leadership-store/orders");
+
   return (
     <div className="flex min-h-dvh flex-col">
       <style>{`
@@ -20,6 +26,35 @@ export function AppShell({ children }: { children: ReactNode }) {
       <LiveSiteContent />
       <LiveSiteAdminAppearance />
       <SiteHeader />
+      {showStoreAdminNav ? (
+        <div className="border-b border-primary/20 bg-black/75 backdrop-blur-md">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-4 py-2.5 sm:px-6">
+            <span className="mr-2 stencil text-[9px] tracking-[0.14em] text-primary">
+              Quartermaster Admin
+            </span>
+            <Link
+              to="/leadership-store"
+              className={`rounded-md border px-3 py-2 font-display text-xs font-semibold uppercase tracking-[0.08em] transition-colors ${
+                pathname === "/leadership-store"
+                  ? "border-primary bg-primary text-black"
+                  : "border-border-strong bg-black/30 text-fg hover:border-primary/50"
+              }`}
+            >
+              Store Manager
+            </Link>
+            <Link
+              to="/leadership-store/orders"
+              className={`rounded-md border px-3 py-2 font-display text-xs font-semibold uppercase tracking-[0.08em] transition-colors ${
+                pathname.startsWith("/leadership-store/orders")
+                  ? "border-primary bg-primary text-black"
+                  : "border-border-strong bg-black/30 text-fg hover:border-primary/50"
+              }`}
+            >
+              Store Orders
+            </Link>
+          </div>
+        </div>
+      ) : null}
       <main className="flex-1">{children}</main>
       <LeadershipStoreControl />
       <SiteFooter />
