@@ -34,10 +34,20 @@ export const createLeadershipStoreTestPurchase = createServerFn({ method: "POST"
       { test: true },
     );
 
+    const notificationConfigured = orders.storeOrderDiscordConfigured();
+    const notificationMode = orders.storeOrderNotificationMode();
+
+    if (notificationConfigured && !order.discordNotified) {
+      const detail = order.discordError?.trim() || "Discord notification failed for an unknown reason.";
+      throw new Error(
+        `Test order ${order.orderNumber} was created, but the Discord notification did not send. ${detail}`,
+      );
+    }
+
     return {
       ok: true,
       order,
-      notificationConfigured: orders.storeOrderDiscordConfigured(),
-      notificationMode: orders.storeOrderNotificationMode(),
+      notificationConfigured,
+      notificationMode,
     };
   });
