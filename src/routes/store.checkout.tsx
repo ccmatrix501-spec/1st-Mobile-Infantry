@@ -8,6 +8,7 @@ import {
   PackageCheck,
   ShieldCheck,
   ShoppingCart,
+  Truck,
 } from "lucide-react";
 import { AppShell, PageHero } from "@/components/app-shell";
 import { StoreCurrencyNote, StoreMoney } from "@/components/store-price";
@@ -20,7 +21,7 @@ import {
 } from "@/lib/store-settings-fn";
 import {
   productPrice,
-  shippingForSubtotal,
+  shippingOptionPrice,
 } from "@/lib/store-utils";
 
 export const Route = createFileRoute("/store/checkout")({
@@ -33,14 +34,18 @@ const inputClass = "h-11 w-full rounded-md border border-border-strong bg-black/
 function StoreCheckoutPage() {
   const [access, setAccess] = useState<StorePageAccess | null>(null);
   const [failed, setFailed] = useState(false);
-  const [shippingZoneId, setShippingZoneId] = useState("");
+  const [shippingOptionId, setShippingOptionId] = useState("");
   const cart = useStoreCart();
 
   useEffect(() => {
     let cancelled = false;
     void fetchStorePageAccess()
       .then((value) => {
-        if (!cancelled) setAccess(value);
+        if (!cancelled) {
+          setAccess(value);
+          const firstEnabled = value.settings.shippingOptions.find((option) => option.enabled);
+          if (firstEnabled) setShippingOptionId((current) => current || firstEnabled.id);
+        }
       })
       .catch(() => {
         if (!cancelled) setFailed(true);
@@ -63,13 +68,12 @@ function StoreCheckoutPage() {
   }, [access, cart.lines]);
 
   const subtotal = resolved.reduce((sum, item) => sum + item.lineTotal, 0);
-  const zones = access?.settings.shippingZones.filter((zone) => zone.enabled) ?? [];
-  const zone = zones.find((item) => item.id === shippingZoneId) ?? null;
-  const shippingRateConfigured = Boolean(zone?.rate.trim());
-  const shipping = shippingRateConfigured ? shippingForSubtotal(zone, subtotal) : 0;
+  const shippingOptions = access?.settings.shippingOptions.filter((option) => option.enabled) ?? [];
+  const shippingOption = shippingOptions.find((option) => option.id === shippingOptionId) ?? null;
+  const shippingConfigured = Boolean(shippingOption?.rate.trim());
+  const shipping = shippingOptionPrice(shippingOption);
   const currency = resolved[0]?.product.currency || access?.settings.defaultCurrency || "AUD";
   const total = subtotal + shipping;
-  const totalReady = Boolean(zone && shippingRateConfigured);
 
   if (!access && !failed) {
     return <AppShell><div className="mx-auto flex min-h-[55vh] max-w-6xl items-center justify-center px-4 py-20 text-muted">Loading checkout…</div></AppShell>;
@@ -103,7 +107,7 @@ function StoreCheckoutPage() {
         </div>
       ) : null}
       <StoreToolbar />
-      <PageHero kicker="Quartermaster" title="Checkout" body="Customer and worldwide shipping details are ready for payment integration." meta="1ST MI DIV · CHECKOUT" />
+      <PageHero kicker="Quartermaster" title="Checkout" body="Enter the delivery destination, then choose Standard or Express worldwide shipping." meta="1ST MI DIV · CHECKOUT" />
 
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
         <div className="mb-6 rounded-xl border border-amber-300/25 bg-amber-300/10 p-5 text-amber-50">
@@ -136,22 +140,44 @@ function StoreCheckoutPage() {
                 <MapPin className="h-5 w-5 text-primary" />
                 <h2 className="font-display text-2xl font-semibold uppercase tracking-wide text-fg">Shipping Address</h2>
               </div>
+              <p className="mt-2 text-sm leading-relaxed text-muted">Worldwide delivery destination is entered here at checkout. Shipping is not linked to product stock.</p>
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
                 <div className="sm:col-span-2"><Field label="Address"><input className={inputClass} autoComplete="street-address" /></Field></div>
                 <Field label="City / suburb"><input className={inputClass} autoComplete="address-level2" /></Field>
                 <Field label="State / province"><input className={inputClass} autoComplete="address-level1" /></Field>
                 <Field label="Postal / ZIP code"><input className={inputClass} autoComplete="postal-code" /></Field>
                 <Field label="Country / region"><input className={inputClass} autoComplete="country-name" placeholder="Australia" /></Field>
-                <div className="sm:col-span-2">
-                  <Field label="Shipping zone">
-                    <select value={shippingZoneId} onChange={(event) => setShippingZoneId(event.target.value)} className={inputClass}>
-                      <option value="">Select worldwide region</option>
-                      {zones.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-                    </select>
-                  </Field>
-                  <p className="mt-2 text-xs leading-relaxed text-muted">Worldwide delivery is supported. Any zone without a configured postage price will show as Rate pending until leadership sets the final carrier rate.</p>
-                </div>
               </div>
+            </section>
+
+            <section className="panel panel-static p-5 sm:p-6">
+              <div className="flex items-center gap-3">
+                <Truck className="h-5 w-5 text-primary" />
+                <h2 className="font-display text-2xl font-semibold uppercase tracking-wide text-fg">Shipping Method</h2>
+              </div>
+              <p className="mt-2 text-sm leading-relaxed text-muted">Choose one delivery option. The selected shipping price is added to the order total here at checkout.</p>
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                {shippingOptions.map((option) => {
+                  const selected = option.id === shippingOptionId;
+                  return (
+                    <label key={option.id} className={`cursor-pointer rounded-lg border p-4 transition-colors ${selected ? "border-primary/70 bg-primary/10" : "border-border-strong bg-black/25 hover:border-primary/40"}`}>
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-3">
+                          <input type="radio" name="shipping-method" value={option.id} checked={selected} onChange={() => setShippingOptionId(option.id)} className="mt-1 h-4 w-4 accent-[var(--color-primary)]" />
+                          <div>
+                            <p className="font-display text-xl font-semibold uppercase tracking-wide text-fg">{option.name}</p>
+                            <p className="mt-1 text-xs leading-relaxed text-muted">{option.description}</p>
+                          </div>
+                        </div>
+                        <span className="shrink-0 font-display text-lg font-semibold text-primary">
+                          {option.rate.trim() ? <StoreMoney amount={shippingOptionPrice(option)} currency={currency} /> : "Price pending"}
+                        </span>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+              {!shippingOptions.length ? <p className="mt-4 text-sm text-muted">Leadership has disabled both shipping options.</p> : null}
             </section>
 
             <section className="panel panel-static p-5 sm:p-6">
@@ -183,8 +209,8 @@ function StoreCheckoutPage() {
             </div>
             <div className="mt-5 space-y-3 text-sm">
               <div className="flex justify-between"><span className="text-muted">Subtotal</span><span className="text-fg"><StoreMoney amount={subtotal} currency={currency} /></span></div>
-              <div className="flex justify-between"><span className="text-muted">Shipping</span><span className="text-fg">{!zone ? "Pending" : !shippingRateConfigured ? "Rate pending" : shipping ? <StoreMoney amount={shipping} currency={currency} /> : "Free"}</span></div>
-              <div className="flex justify-between border-t border-border pt-4 font-display text-xl font-semibold uppercase"><span className="text-fg">Total</span><span className="text-primary">{totalReady ? <StoreMoney amount={total} currency={currency} /> : "Pending"}</span></div>
+              <div className="flex justify-between"><span className="text-muted">Shipping</span><span className="text-fg">{shippingOption ? (shippingConfigured ? <StoreMoney amount={shipping} currency={currency} /> : "Price pending") : "Select method"}</span></div>
+              <div className="flex justify-between border-t border-border pt-4 font-display text-xl font-semibold uppercase"><span className="text-fg">Total</span><span className="text-primary">{shippingOption && shippingConfigured ? <StoreMoney amount={total} currency={currency} /> : "Pending"}</span></div>
             </div>
 
             <Button type="button" size="lg" className="mt-6 w-full" disabled>
