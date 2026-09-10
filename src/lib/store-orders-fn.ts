@@ -32,11 +32,16 @@ function storeOrderBotUrl(): string {
   return base.replace(/\/$/, "");
 }
 
-function websiteSecretConfigured(): boolean {
-  return Boolean(
+function storeOrderApiSecret(): string {
+  return (
     process.env.STORE_ORDER_API_SECRET?.trim() ||
-      process.env.STORE_BOT_ORDER_SECRET?.trim(),
+    process.env.STORE_BOT_ORDER_SECRET?.trim() ||
+    ""
   );
+}
+
+function websiteSecretConfigured(): boolean {
+  return Boolean(storeOrderApiSecret());
 }
 
 async function fetchBotHealth(): Promise<StoreOrderBotHealth> {
@@ -83,6 +88,39 @@ async function fetchBotHealth(): Promise<StoreOrderBotHealth> {
           ? `Bot bridge unavailable: ${error.message}`
           : "Bot bridge unavailable.",
     };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function removeDiscordOrderThread(orderId: string): Promise<void> {
+  prepareStoreOrderBotEnvironment();
+  const secret = storeOrderApiSecret();
+  if (!secret) return;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 7000);
+  try {
+    const response = await fetch(`${storeOrderBotUrl()}/store-orders/remove-thread`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "1st-Mobile-Infantry-Website/1.0",
+        "X-Store-Order-Secret": secret,
+      },
+      body: JSON.stringify({ orderId }),
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      let detail = "";
+      try {
+        const body = (await response.json()) as { error?: string };
+        if (body.error) detail = ` ${body.error}`;
+      } catch {
+        // Ignore non-JSON body.
+      }
+      throw new Error(`Discord cleanup returned HTTP ${response.status}.${detail}`);
+    }
   } finally {
     clearTimeout(timeout);
   }
@@ -237,6 +275,18 @@ export const removeLeadershipStoreOrder = createServerFn({ method: "POST" })
   .inputValidator((input: { orderId: string }) => input)
   .handler(async ({ data }) => {
     await requireLeadership();
+    const orderId = String(data.orderId || "").trim();
+    if (!orderId) throw new Error("Order id is required.");
+
+    let discordCleanupWarning: string | null = null;
+    try {
+      await removeDiscordOrderThread(orderId);
+    } catch (error) {
+      discordCleanupWarning =
+        error instanceof Error ? error.message : "Could not remove the Discord Forum post.";
+    }
+
     const admin = await import("@/lib/store-order-discord-admin.server");
-    return admin.discordRemoveOrder(String(data.orderId || "").trim());
+    const result = await admin.discordRemoveOrder(orderId);
+    return { ...result, discordCleanupWarning };
   });
