@@ -9,7 +9,6 @@ import {
   ShieldCheck,
   ShoppingCart,
   Trash2,
-  Truck,
 } from "lucide-react";
 import { AppShell, PageHero } from "@/components/app-shell";
 import { StoreCurrencyNote, StoreMoney } from "@/components/store-price";
@@ -23,7 +22,6 @@ import {
 import {
   productPrice,
   productPrimaryImage,
-  shippingForSubtotal,
 } from "@/lib/store-utils";
 
 export const Route = createFileRoute("/store/cart")({
@@ -34,7 +32,6 @@ export const Route = createFileRoute("/store/cart")({
 function StoreCartPage() {
   const [access, setAccess] = useState<StorePageAccess | null>(null);
   const [failed, setFailed] = useState(false);
-  const [shippingZoneId, setShippingZoneId] = useState("");
   const cart = useStoreCart();
 
   useEffect(() => {
@@ -66,10 +63,6 @@ function StoreCartPage() {
   }, [access, cart.lines]);
 
   const subtotal = resolved.reduce((sum, item) => sum + item.lineTotal, 0);
-  const shippingZones = access?.settings.shippingZones.filter((zone) => zone.enabled) ?? [];
-  const shippingZone = shippingZones.find((zone) => zone.id === shippingZoneId) ?? null;
-  const shipping = shippingForSubtotal(shippingZone, subtotal);
-  const total = subtotal + shipping;
   const currency = resolved[0]?.product.currency || access?.settings.defaultCurrency || "AUD";
 
   if (!access && !failed) {
@@ -99,7 +92,7 @@ function StoreCartPage() {
         </div>
       ) : null}
       <StoreToolbar />
-      <PageHero kicker="Quartermaster" title="Your Cart" body="Review your selected 1st M.I. merchandise and estimate shipping before checkout." meta="1ST MI DIV · SUPPLY CART" />
+      <PageHero kicker="Quartermaster" title="Your Cart" body="Review your selected 1st M.I. merchandise. Destination and Standard or Express shipping are selected at checkout." meta="1ST MI DIV · SUPPLY CART" />
 
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
         {!resolved.length ? (
@@ -155,24 +148,13 @@ function StoreCartPage() {
               <div className="mt-2"><StoreCurrencyNote baseCurrency={currency} /></div>
 
               <div className="mt-5 space-y-3 border-b border-border pb-5 text-sm">
-                <div className="flex justify-between gap-4"><span className="text-muted">Subtotal</span><span className="text-fg"><StoreMoney amount={subtotal} currency={currency} /></span></div>
-                <div className="flex justify-between gap-4"><span className="text-muted">Shipping</span><span className="text-fg">{shippingZone ? (shipping ? <StoreMoney amount={shipping} currency={currency} /> : "Free") : "Select zone"}</span></div>
-              </div>
-
-              <div className="mt-5">
-                <label className="block">
-                  <span className="mb-2 flex items-center gap-2 stencil text-[9px] tracking-[0.12em] text-primary"><Truck className="h-3.5 w-3.5" />Shipping zone</span>
-                  <select value={shippingZoneId} onChange={(event) => setShippingZoneId(event.target.value)} className="h-11 w-full rounded-md border border-border-strong bg-black/45 px-3 text-sm text-fg outline-none focus:border-primary/70">
-                    <option value="">Select destination region</option>
-                    {shippingZones.map((zone) => <option key={zone.id} value={zone.id}>{zone.name}</option>)}
-                  </select>
-                </label>
-                {!shippingZones.length ? <p className="mt-2 text-xs leading-relaxed text-muted">Leadership has not configured shipping zones yet.</p> : null}
+                <div className="flex justify-between gap-4"><span className="text-muted">Merchandise subtotal</span><span className="text-fg"><StoreMoney amount={subtotal} currency={currency} /></span></div>
+                <div className="flex justify-between gap-4"><span className="text-muted">Shipping</span><span className="text-fg">Calculated at checkout</span></div>
               </div>
 
               <div className="mt-5 flex items-center justify-between border-t border-border pt-5">
-                <span className="font-display text-lg font-semibold uppercase text-fg">Estimated Total</span>
-                <span className="font-display text-2xl font-semibold text-primary"><StoreMoney amount={total} currency={currency} /></span>
+                <span className="font-display text-lg font-semibold uppercase text-fg">Cart Subtotal</span>
+                <span className="font-display text-2xl font-semibold text-primary"><StoreMoney amount={subtotal} currency={currency} /></span>
               </div>
 
               <Button asChild size="lg" className="mt-6 w-full">
