@@ -77,6 +77,89 @@ export type StoreSettings = {
   shippingZones: StoreShippingZone[];
 };
 
+export const DEFAULT_WORLDWIDE_SHIPPING_ZONES: StoreShippingZone[] = [
+  {
+    id: "shipping-australia",
+    name: "Australia",
+    countries: ["AU"],
+    rate: "",
+    freeOver: "",
+    enabled: true,
+  },
+  {
+    id: "shipping-new-zealand-pacific",
+    name: "New Zealand & Pacific",
+    countries: ["NZ", "FJ", "PG", "NC", "PF", "WS", "TO", "VU", "SB", "KI", "TV", "NR", "CK", "NU", "FM", "MH", "PW", "GU", "MP", "AS"],
+    rate: "",
+    freeOver: "",
+    enabled: true,
+  },
+  {
+    id: "shipping-north-america",
+    name: "North America",
+    countries: ["US", "CA", "MX", "BM", "GL", "PM"],
+    rate: "",
+    freeOver: "",
+    enabled: true,
+  },
+  {
+    id: "shipping-uk-ireland",
+    name: "United Kingdom & Ireland",
+    countries: ["GB", "IE", "IM", "JE", "GG"],
+    rate: "",
+    freeOver: "",
+    enabled: true,
+  },
+  {
+    id: "shipping-europe",
+    name: "Europe",
+    countries: ["AD", "AL", "AT", "BA", "BE", "BG", "CH", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IS", "IT", "LI", "LT", "LU", "LV", "MC", "MD", "ME", "MK", "MT", "NL", "NO", "PL", "PT", "RO", "RS", "SE", "SI", "SK", "SM", "UA", "VA", "XK"],
+    rate: "",
+    freeOver: "",
+    enabled: true,
+  },
+  {
+    id: "shipping-asia",
+    name: "Asia",
+    countries: ["AF", "BD", "BN", "BT", "CN", "HK", "ID", "IN", "JP", "KH", "KG", "KR", "KZ", "LA", "LK", "MM", "MN", "MO", "MV", "MY", "NP", "PH", "PK", "SG", "TH", "TJ", "TL", "TM", "TW", "UZ", "VN"],
+    rate: "",
+    freeOver: "",
+    enabled: true,
+  },
+  {
+    id: "shipping-middle-east",
+    name: "Middle East",
+    countries: ["AE", "AM", "AZ", "BH", "GE", "IL", "IQ", "IR", "JO", "KW", "LB", "OM", "PS", "QA", "SA", "SY", "TR", "YE"],
+    rate: "",
+    freeOver: "",
+    enabled: true,
+  },
+  {
+    id: "shipping-africa",
+    name: "Africa",
+    countries: ["AO", "BF", "BI", "BJ", "BW", "CD", "CF", "CG", "CI", "CM", "CV", "DJ", "DZ", "EG", "EH", "ER", "ET", "GA", "GH", "GM", "GN", "GQ", "GW", "KE", "KM", "LR", "LS", "LY", "MA", "MG", "ML", "MR", "MU", "MW", "MZ", "NA", "NE", "NG", "RE", "RW", "SC", "SD", "SH", "SL", "SN", "SO", "SS", "ST", "SZ", "TD", "TG", "TN", "TZ", "UG", "YT", "ZA", "ZM", "ZW"],
+    rate: "",
+    freeOver: "",
+    enabled: true,
+  },
+  {
+    id: "shipping-latin-america-caribbean",
+    name: "Central & South America / Caribbean",
+    countries: ["AG", "AI", "AR", "AW", "BB", "BL", "BO", "BQ", "BR", "BS", "BZ", "CL", "CO", "CR", "CU", "CW", "DM", "DO", "EC", "FK", "GD", "GF", "GP", "GT", "GY", "HN", "HT", "JM", "KN", "KY", "LC", "MF", "MQ", "MS", "NI", "PA", "PE", "PR", "PY", "SR", "SV", "SX", "TC", "TT", "UY", "VC", "VE", "VG", "VI"],
+    rate: "",
+    freeOver: "",
+    enabled: true,
+  },
+  {
+    id: "shipping-rest-of-world",
+    name: "Rest of World",
+    countries: ["*"],
+    rate: "",
+    freeOver: "",
+    enabled: true,
+  },
+];
+
 export const DEFAULT_STORE_SETTINGS: StoreSettings = {
   enabled: false,
   kicker: "Quartermaster",
@@ -95,7 +178,10 @@ export const DEFAULT_STORE_SETTINGS: StoreSettings = {
     { id: "stickers", name: "Stickers", slug: "stickers", description: "1st M.I. decals and stickers.", visible: true },
     { id: "other", name: "Other Gear", slug: "other-gear", description: "Other approved merchandise.", visible: true },
   ],
-  shippingZones: [],
+  shippingZones: DEFAULT_WORLDWIDE_SHIPPING_ZONES.map((zone) => ({
+    ...zone,
+    countries: [...zone.countries],
+  })),
 };
 
 function slugify(value: string): string {
@@ -189,7 +275,12 @@ function normaliseCategories(input?: Partial<StoreSettings> | null): StoreCatego
 }
 
 function normaliseShipping(input?: Partial<StoreSettings> | null): StoreShippingZone[] {
-  if (!Array.isArray(input?.shippingZones)) return [];
+  if (!Array.isArray(input?.shippingZones) || !input.shippingZones.length) {
+    return DEFAULT_WORLDWIDE_SHIPPING_ZONES.map((zone) => ({
+      ...zone,
+      countries: [...zone.countries],
+    }));
+  }
   return input.shippingZones.map((zone, index) => ({
     id: String(zone.id || `zone-${index + 1}`),
     name: String(zone.name || `Shipping Zone ${index + 1}`),
