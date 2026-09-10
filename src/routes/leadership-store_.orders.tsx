@@ -10,13 +10,17 @@ import {
   RefreshCw,
   Send,
   ShoppingBag,
+  Trash2,
+  XCircle,
 } from "lucide-react";
 import { AppShell, PageHero } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import {
   fetchLeadershipStoreOrders,
   fetchStoreOrderSystemStatus,
+  removeLeadershipStoreOrder,
   sendStoreOrderTestNotification,
+  updateLeadershipStoreOrderStatus,
 } from "@/lib/store-orders-fn";
 import {
   storeOrderCustomerName,
@@ -58,6 +62,7 @@ function LeadershipStoreOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [workingOrderId, setWorkingOrderId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -91,10 +96,46 @@ function LeadershipStoreOrdersPage() {
     try {
       await sendStoreOrderTestNotification();
       setMessage("Test order card sent successfully. Check the Store Orders Forum in Discord.");
+      await load(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not send the Discord test notification.");
     } finally {
       setTesting(false);
+    }
+  }
+
+  async function cancelOrder(order: StoreOrder) {
+    if (!window.confirm(`Cancel order ${order.orderNumber}?`)) return;
+    setWorkingOrderId(order.id);
+    setMessage(null);
+    setError(null);
+    try {
+      const updated = await updateLeadershipStoreOrderStatus({
+        data: { orderId: order.id, status: "cancelled" },
+      });
+      setOrders((current) => current.map((item) => item.id === updated.id ? updated : item));
+      setMessage(`${order.orderNumber} was cancelled.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not cancel the order.");
+    } finally {
+      setWorkingOrderId(null);
+    }
+  }
+
+  async function deleteOrder(order: StoreOrder) {
+    if (!window.confirm(`Permanently delete ${order.orderNumber}?\n\nThis removes the order from the website database and cannot be undone.`)) return;
+    setWorkingOrderId(order.id);
+    setMessage(null);
+    setError(null);
+    try {
+      await removeLeadershipStoreOrder({ data: { orderId: order.id } });
+      setOrders((current) => current.filter((item) => item.id !== order.id));
+      setSystem((current) => current ? { ...current, orderCount: Math.max(0, current.orderCount - 1) } : current);
+      setMessage(`${order.orderNumber} was permanently removed.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not remove the order.");
+    } finally {
+      setWorkingOrderId(null);
     }
   }
 
@@ -193,7 +234,7 @@ function LeadershipStoreOrdersPage() {
               </div>
             </div>
             <p className="mt-3 text-sm leading-relaxed text-muted">
-              Discord is only the notification layer. Full order and shipping details remain stored behind the leadership login on this website.
+              Open an order to see all customer, shipping and payment details. Test orders can be cancelled or permanently removed here.
             </p>
           </section>
         </div>
@@ -216,57 +257,81 @@ function LeadershipStoreOrdersPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {orders.map((order) => (
-                <article key={order.id} className="panel panel-static overflow-hidden p-0">
-                  <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[1fr_auto] lg:items-center">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 stencil text-[9px] tracking-[0.1em] text-primary">
-                          {statusLabel(order.status)}
-                        </span>
-                        <span className={`rounded-full border px-2.5 py-1 text-[10px] ${order.discordNotified ? "border-primary/25 bg-primary/5 text-primary" : "border-amber-300/25 bg-amber-300/5 text-amber-100"}`}>
-                          {order.discordNotified ? "Discord notified" : "Discord pending"}
-                        </span>
+              {orders.map((order) => {
+                const working = workingOrderId === order.id;
+                const fullOrderUrl = `/leadership-order?id=${encodeURIComponent(order.id)}`;
+                return (
+                  <article key={order.id} className="panel panel-static overflow-hidden p-0">
+                    <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[1fr_auto] lg:items-center">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 stencil text-[9px] tracking-[0.1em] text-primary">
+                            {statusLabel(order.status)}
+                          </span>
+                          <span className={`rounded-full border px-2.5 py-1 text-[10px] ${order.discordNotified ? "border-primary/25 bg-primary/5 text-primary" : "border-amber-300/25 bg-amber-300/5 text-amber-100"}`}>
+                            {order.discordNotified ? "Discord notified" : "Discord pending"}
+                          </span>
+                        </div>
+
+                        <h3 className="mt-3 font-display text-2xl font-semibold uppercase tracking-wide text-fg sm:text-3xl">
+                          {order.orderNumber}
+                        </h3>
+                        <p className="mt-1 text-xs text-muted">{formatDate(order.placedAt)}</p>
+
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                          <Info label="Customer" value={storeOrderCustomerName(order)} />
+                          <Info label="Discord" value={order.customer.discordName || "Not provided"} />
+                          <Info label="Items" value={`${storeOrderItemCount(order)} item${storeOrderItemCount(order) === 1 ? "" : "s"}`} />
+                          <Info label="Shipping" value={`${order.shippingMethod} · ${order.shippingAddress.country}`} />
+                        </div>
                       </div>
 
-                      <h3 className="mt-3 font-display text-2xl font-semibold uppercase tracking-wide text-fg sm:text-3xl">
-                        {order.orderNumber}
-                      </h3>
-                      <p className="mt-1 text-xs text-muted">{formatDate(order.placedAt)}</p>
+                      <div className="flex min-w-[14rem] flex-col gap-3 rounded-xl border border-border bg-black/30 p-4 lg:text-right">
+                        <div>
+                          <p className="stencil text-[9px] tracking-[0.12em] text-primary">Order total</p>
+                          <p className="mt-1 font-display text-3xl font-semibold text-primary">
+                            {formatMoney(order.total, order.currency)}
+                          </p>
+                        </div>
 
-                      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                        <Info label="Customer" value={storeOrderCustomerName(order)} />
-                        <Info label="Discord" value={order.customer.discordName || "Not provided"} />
-                        <Info label="Items" value={`${storeOrderItemCount(order)} item${storeOrderItemCount(order) === 1 ? "" : "s"}`} />
-                        <Info label="Shipping" value={`${order.shippingMethod} · ${order.shippingAddress.country}`} />
+                        <a
+                          href={fullOrderUrl}
+                          className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-primary bg-primary px-4 font-display text-sm font-semibold uppercase tracking-[0.08em] text-black transition-opacity hover:opacity-90"
+                        >
+                          View Order <ExternalLink className="h-4 w-4" />
+                        </a>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            disabled={working || order.status === "cancelled"}
+                            onClick={() => void cancelOrder(order)}
+                          >
+                            <XCircle className="h-4 w-4" /> Cancel
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            disabled={working}
+                            onClick={() => void deleteOrder(order)}
+                            className="border-red-400/30 text-red-200 hover:bg-red-500/10"
+                          >
+                            <Trash2 className="h-4 w-4" /> Delete
+                          </Button>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="flex min-w-[14rem] flex-col gap-3 rounded-xl border border-border bg-black/30 p-4 lg:text-right">
-                      <div>
-                        <p className="stencil text-[9px] tracking-[0.12em] text-primary">Order total</p>
-                        <p className="mt-1 font-display text-3xl font-semibold text-primary">
-                          {formatMoney(order.total, order.currency)}
-                        </p>
+                    {order.discordError ? (
+                      <div className="flex items-start gap-2 border-t border-amber-300/20 bg-amber-300/5 px-5 py-3 text-xs text-amber-100 sm:px-6">
+                        <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                        Discord alert issue: {order.discordError}
                       </div>
-                      <Link
-                        to="/leadership-store/orders/$orderId"
-                        params={{ orderId: order.id }}
-                        className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-primary bg-primary px-4 font-display text-sm font-semibold uppercase tracking-[0.08em] text-black transition-opacity hover:opacity-90"
-                      >
-                        View Order <ExternalLink className="h-4 w-4" />
-                      </Link>
-                    </div>
-                  </div>
-
-                  {order.discordError ? (
-                    <div className="flex items-start gap-2 border-t border-amber-300/20 bg-amber-300/5 px-5 py-3 text-xs text-amber-100 sm:px-6">
-                      <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
-                      Discord alert issue: {order.discordError}
-                    </div>
-                  ) : null}
-                </article>
-              ))}
+                    ) : null}
+                  </article>
+                );
+              })}
             </div>
           )}
         </section>
