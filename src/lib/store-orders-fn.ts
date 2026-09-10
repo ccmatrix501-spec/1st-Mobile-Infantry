@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { createServerFn } from "@tanstack/react-start";
 import type {
   StoreOrderBotHealth,
@@ -135,8 +136,52 @@ export const sendStoreOrderTestNotification = createServerFn({ method: "POST" })
         "Discord Forum bridge is not configured. Add STORE_ORDER_API_SECRET to Vercel and Railway using the exact same value.",
       );
     }
-    await orders.sendStoreOrderDiscordTest();
-    return { ok: true };
+
+    // Save a genuine TEST order before notifying Discord so the Forum card's
+    // Open Full Order button always points to a real leadership-only record.
+    const order = await orders.recordCompletedStoreOrder(
+      {
+        currency: "AUD",
+        subtotal: 15,
+        shippingAmount: 10,
+        total: 25,
+        shippingMethod: "Standard",
+        customer: {
+          firstName: "Test",
+          lastName: "Customer",
+          email: "test@example.invalid",
+          phone: "Test order",
+          discordName: "@TestCustomer",
+        },
+        shippingAddress: {
+          address: "Test address — no parcel will be sent",
+          city: "Nambour",
+          state: "QLD",
+          postalCode: "4560",
+          country: "Australia",
+        },
+        items: [
+          {
+            productId: "test-product",
+            productName: "1st M.I. 3D Printed Logo",
+            quantity: 1,
+            unitPrice: 15,
+            lineTotal: 15,
+          },
+        ],
+        paymentProvider: "Website Test Purchase",
+        paymentReference: `ADMIN-TEST-${randomUUID()}`,
+      },
+      { test: true },
+    );
+
+    if (!order.discordNotified) {
+      throw new Error(
+        `Test order ${order.orderNumber} was saved, but Discord did not confirm the notification. ${order.discordError || "Unknown Discord notification error."}`,
+      );
+    }
+
+    return { ok: true, order };
   },
 );
 
