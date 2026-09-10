@@ -1,5 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
-import type { StoreOrderStatus, StoreOrderSystemStatus } from "@/lib/store-orders";
+import type {
+  StoreOrderBotHealth,
+  StoreOrderStatus,
+  StoreOrderSystemStatus,
+} from "@/lib/store-orders";
 
 const DEFAULT_STORE_ORDER_BOT_URL =
   "https://1st-mi-matrix-r-d-production.up.railway.app";
@@ -12,6 +16,73 @@ async function requireLeadership() {
 function prepareStoreOrderBotEnvironment() {
   if (!process.env.STORE_ORDER_BOT_URL?.trim() && !process.env.STORE_BOT_URL?.trim()) {
     process.env.STORE_ORDER_BOT_URL = DEFAULT_STORE_ORDER_BOT_URL;
+  }
+}
+
+function storeOrderBotUrl(): string {
+  const configured =
+    process.env.STORE_ORDER_BOT_URL?.trim() ||
+    process.env.STORE_BOT_URL?.trim() ||
+    DEFAULT_STORE_ORDER_BOT_URL;
+  const base = /^https?:\/\//i.test(configured)
+    ? configured
+    : `https://${configured}`;
+  return base.replace(/\/$/, "");
+}
+
+function websiteSecretConfigured(): boolean {
+  return Boolean(
+    process.env.STORE_ORDER_API_SECRET?.trim() ||
+      process.env.STORE_BOT_ORDER_SECRET?.trim(),
+  );
+}
+
+async function fetchBotHealth(): Promise<StoreOrderBotHealth> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+  try {
+    const response = await fetch(`${storeOrderBotUrl()}/store-orders/health`, {
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "1st-Mobile-Infantry-Website/1.0",
+      },
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      return {
+        reachable: false,
+        botReady: null,
+        secretConfigured: null,
+        channelId: null,
+        error: `Bot bridge health returned HTTP ${response.status}.`,
+      };
+    }
+    const data = (await response.json()) as {
+      botReady?: boolean;
+      configured?: boolean;
+      channelId?: string;
+    };
+    return {
+      reachable: true,
+      botReady: data.botReady === true,
+      secretConfigured: data.configured === true,
+      channelId: typeof data.channelId === "string" ? data.channelId : null,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      reachable: false,
+      botReady: null,
+      secretConfigured: null,
+      channelId: null,
+      error:
+        error instanceof Error
+          ? `Bot bridge unavailable: ${error.message}`
+          : "Bot bridge unavailable.",
+    };
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -38,10 +109,18 @@ export const fetchStoreOrderSystemStatus = createServerFn({ method: "GET" }).han
     await requireLeadership();
     prepareStoreOrderBotEnvironment();
     const orders = await import("@/lib/store-orders.server");
+    const [orderCount, botHealth] = await Promise.all([
+      orders.countStoreOrders(),
+      fetchBotHealth(),
+    ]);
     return {
       discordConfigured: orders.storeOrderDiscordConfigured(),
       siteUrl: orders.storeOrderSiteUrl(),
-      orderCount: await orders.countStoreOrders(),
+      orderCount,
+      notificationMode: orders.storeOrderNotificationMode(),
+      websiteBotUrl: storeOrderBotUrl(),
+      websiteSecretConfigured: websiteSecretConfigured(),
+      botHealth,
     };
   },
 );
