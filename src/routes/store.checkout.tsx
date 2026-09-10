@@ -65,9 +65,11 @@ function StoreCheckoutPage() {
   const subtotal = resolved.reduce((sum, item) => sum + item.lineTotal, 0);
   const zones = access?.settings.shippingZones.filter((zone) => zone.enabled) ?? [];
   const zone = zones.find((item) => item.id === shippingZoneId) ?? null;
-  const shipping = shippingForSubtotal(zone, subtotal);
+  const shippingRateConfigured = Boolean(zone?.rate.trim());
+  const shipping = shippingRateConfigured ? shippingForSubtotal(zone, subtotal) : 0;
   const currency = resolved[0]?.product.currency || access?.settings.defaultCurrency || "AUD";
   const total = subtotal + shipping;
+  const totalReady = Boolean(zone && shippingRateConfigured);
 
   if (!access && !failed) {
     return <AppShell><div className="mx-auto flex min-h-[55vh] max-w-6xl items-center justify-center px-4 py-20 text-muted">Loading checkout…</div></AppShell>;
@@ -101,7 +103,7 @@ function StoreCheckoutPage() {
         </div>
       ) : null}
       <StoreToolbar />
-      <PageHero kicker="Quartermaster" title="Checkout" body="Customer and international shipping details are ready for payment integration." meta="1ST MI DIV · CHECKOUT" />
+      <PageHero kicker="Quartermaster" title="Checkout" body="Customer and worldwide shipping details are ready for payment integration." meta="1ST MI DIV · CHECKOUT" />
 
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
         <div className="mb-6 rounded-xl border border-amber-300/25 bg-amber-300/10 p-5 text-amber-50">
@@ -143,10 +145,11 @@ function StoreCheckoutPage() {
                 <div className="sm:col-span-2">
                   <Field label="Shipping zone">
                     <select value={shippingZoneId} onChange={(event) => setShippingZoneId(event.target.value)} className={inputClass}>
-                      <option value="">Select configured region</option>
+                      <option value="">Select worldwide region</option>
                       {zones.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
                     </select>
                   </Field>
+                  <p className="mt-2 text-xs leading-relaxed text-muted">Worldwide delivery is supported. Any zone without a configured postage price will show as Rate pending until leadership sets the final carrier rate.</p>
                 </div>
               </div>
             </section>
@@ -180,8 +183,8 @@ function StoreCheckoutPage() {
             </div>
             <div className="mt-5 space-y-3 text-sm">
               <div className="flex justify-between"><span className="text-muted">Subtotal</span><span className="text-fg"><StoreMoney amount={subtotal} currency={currency} /></span></div>
-              <div className="flex justify-between"><span className="text-muted">Shipping</span><span className="text-fg">{zone ? (shipping ? <StoreMoney amount={shipping} currency={currency} /> : "Free") : "Pending"}</span></div>
-              <div className="flex justify-between border-t border-border pt-4 font-display text-xl font-semibold uppercase"><span className="text-fg">Total</span><span className="text-primary"><StoreMoney amount={total} currency={currency} /></span></div>
+              <div className="flex justify-between"><span className="text-muted">Shipping</span><span className="text-fg">{!zone ? "Pending" : !shippingRateConfigured ? "Rate pending" : shipping ? <StoreMoney amount={shipping} currency={currency} /> : "Free"}</span></div>
+              <div className="flex justify-between border-t border-border pt-4 font-display text-xl font-semibold uppercase"><span className="text-fg">Total</span><span className="text-primary">{totalReady ? <StoreMoney amount={total} currency={currency} /> : "Pending"}</span></div>
             </div>
 
             <Button type="button" size="lg" className="mt-6 w-full" disabled>
