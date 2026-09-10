@@ -31,7 +31,7 @@ import {
   type StoreProductImage,
   type StoreProductVariant,
   type StoreSettings,
-  type StoreShippingZone,
+  type StoreShippingOption,
 } from "@/lib/store-settings";
 
 export const Route = createFileRoute("/leadership-store")({
@@ -114,17 +114,6 @@ function newCategory(index: number): StoreCategory {
     slug: `category-${index + 1}`,
     description: "",
     visible: true,
-  };
-}
-
-function newShippingZone(index: number): StoreShippingZone {
-  return {
-    id: newId("zone"),
-    name: `Shipping Zone ${index + 1}`,
-    countries: [],
-    rate: "",
-    freeOver: "",
-    enabled: true,
   };
 }
 
@@ -247,12 +236,12 @@ function LeadershipStorePage() {
     }));
   }
 
-  function updateShipping(index: number, patch: Partial<StoreShippingZone>) {
+  function updateShippingOption(index: number, patch: Partial<StoreShippingOption>) {
     setSaved(false);
     setSettings((current) => ({
       ...current,
-      shippingZones: current.shippingZones.map((zone, zoneIndex) =>
-        zoneIndex === index ? { ...zone, ...patch } : zone,
+      shippingOptions: current.shippingOptions.map((option, optionIndex) =>
+        optionIndex === index ? { ...option, ...patch } : option,
       ),
     }));
   }
@@ -287,7 +276,7 @@ function LeadershipStorePage() {
       <PageHero
         kicker="Quartermaster command"
         title="Store Manager"
-        body="Build the complete 1st M.I. online store, manage inventory and international shipping, and keep it hidden until command is ready to publish."
+        body="Build the complete 1st M.I. online store, manage inventory and checkout delivery options, and keep it hidden until command is ready to publish."
         meta="1ST MI DIV · LEADERSHIP ONLY"
       />
 
@@ -471,30 +460,33 @@ function LeadershipStorePage() {
           </div>
         </ManagerPanel>
 
-        <ManagerPanel kicker="International fulfilment" title="Shipping Zones" icon={<Truck className="h-5 w-5" />}>
-          <p className="mb-5 text-sm leading-relaxed text-muted">Create destination groups for Australia, New Zealand, North America, Europe or any other regions you ship to. Use two-letter country codes such as AU, NZ, US, CA, GB.</p>
-          <div className="space-y-4">
-            {settings.shippingZones.map((zone, index) => (
-              <div key={zone.id} className="rounded-lg border border-border bg-black/20 p-4">
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <Field label="Zone name"><input value={zone.name} onChange={(event) => updateShipping(index, { name: event.target.value })} className={inputClass} placeholder="Australia" /></Field>
-                  <Field label={`Shipping rate (${settings.defaultCurrency})`}><input value={zone.rate} onChange={(event) => updateShipping(index, { rate: event.target.value })} className={inputClass} inputMode="decimal" placeholder="10.00" /></Field>
-                  <Field label="Free shipping over"><input value={zone.freeOver} onChange={(event) => updateShipping(index, { freeOver: event.target.value })} className={inputClass} inputMode="decimal" placeholder="Leave blank if none" /></Field>
-                  <label className="flex h-11 items-center gap-2 self-end rounded-md border border-border-strong bg-black/30 px-3 text-sm text-fg"><input type="checkbox" checked={zone.enabled} onChange={(event) => updateShipping(index, { enabled: event.target.checked })} />Enabled</label>
-                  <div className="sm:col-span-2 lg:col-span-4"><Field label="Country codes (comma separated)"><input value={zone.countries.join(", ")} onChange={(event) => updateShipping(index, { countries: event.target.value.split(",").map((value) => value.trim().toUpperCase()).filter(Boolean) })} className={inputClass} placeholder="AU" /></Field></div>
-                  <div className="sm:col-span-2 lg:col-span-4"><RemoveButton label="Remove Shipping Zone" onClick={() => updateSettings({ shippingZones: settings.shippingZones.filter((_, i) => i !== index) })} /></div>
+        <ManagerPanel kicker="Checkout fulfilment" title="Shipping Options" icon={<Truck className="h-5 w-5" />}>
+          <p className="mb-5 text-sm leading-relaxed text-muted">There are no shipping zones. The customer enters their worldwide delivery destination at checkout and then chooses Standard or Express shipping. Set the price shown for each option below.</p>
+          <div className="grid gap-4 lg:grid-cols-2">
+            {settings.shippingOptions.map((option, index) => (
+              <div key={option.id} className="rounded-lg border border-border bg-black/20 p-5">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="stencil text-[9px] tracking-[0.14em] text-primary">{option.id === "standard" ? "Standard delivery" : "Express delivery"}</p>
+                    <h3 className="mt-1 font-display text-2xl font-semibold uppercase tracking-wide text-fg">{option.name}</h3>
+                  </div>
+                  <label className="flex items-center gap-2 rounded-md border border-border-strong bg-black/30 px-3 py-2 text-sm text-fg"><input type="checkbox" checked={option.enabled} onChange={(event) => updateShippingOption(index, { enabled: event.target.checked })} />Enabled</label>
+                </div>
+                <div className="mt-5 space-y-4">
+                  <Field label={`Checkout shipping price (${settings.defaultCurrency})`}><input value={option.rate} onChange={(event) => updateShippingOption(index, { rate: event.target.value })} className={inputClass} inputMode="decimal" placeholder="Enter price" /></Field>
+                  <Field label="Checkout description"><textarea value={option.description} onChange={(event) => updateShippingOption(index, { description: event.target.value })} rows={3} className={textareaClass} /></Field>
                 </div>
               </div>
             ))}
-            <Button type="button" variant="secondary" onClick={() => updateSettings({ shippingZones: [...settings.shippingZones, newShippingZone(settings.shippingZones.length)] })}><Plus className="h-4 w-4" />Add Shipping Zone</Button>
           </div>
+          <p className="mt-4 text-xs leading-relaxed text-muted">Leave a price blank while you are still deciding postage. Checkout will show “Price pending” rather than treating a blank price as free shipping.</p>
         </ManagerPanel>
 
         <div className="sticky bottom-4 z-30 mt-6 rounded-xl border border-primary/35 bg-black/90 p-4 shadow-[0_0_40px_rgba(0,0,0,.65)] backdrop-blur-xl">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-display text-lg font-semibold uppercase tracking-wide text-fg">Store Changes</p>
-              <p className="text-xs text-muted">Products, variants, categories, shipping and Store visibility save together.</p>
+              <p className="text-xs text-muted">Products, variants, categories, checkout shipping and Store visibility save together.</p>
             </div>
             <div className="flex items-center gap-3">
               {saved ? <span className="inline-flex items-center gap-1.5 text-sm text-primary"><CheckCircle2 className="h-4 w-4" />Saved</span> : null}
