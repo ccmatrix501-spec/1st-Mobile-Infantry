@@ -70,8 +70,8 @@ function validateSettings(input: StoreSettings): StoreSettings {
   if (!Array.isArray(settings.categories) || settings.categories.length > 50) {
     throw new Error("Store can contain up to 50 categories.");
   }
-  if (!Array.isArray(settings.shippingZones) || settings.shippingZones.length > 50) {
-    throw new Error("Store can contain up to 50 shipping zones.");
+  if (!Array.isArray(settings.shippingOptions) || settings.shippingOptions.length !== 2) {
+    throw new Error("Store shipping must contain Standard and Express options.");
   }
 
   const seenProducts = new Set<string>();
@@ -116,14 +116,13 @@ function validateSettings(input: StoreSettings): StoreSettings {
     }
   }
 
-  const zoneIds = new Set<string>();
-  for (const zone of settings.shippingZones) {
-    if (!zone.id || zoneIds.has(zone.id)) throw new Error("Each shipping zone needs a unique id.");
-    zoneIds.add(zone.id);
-    if (!zone.name.trim() || zone.name.length > 120 || zone.rate.length > 40 || zone.freeOver.length > 40) {
-      throw new Error("Shipping zone details are invalid.");
+  const shippingIds = new Set<string>();
+  for (const option of settings.shippingOptions) {
+    if (!option.id || shippingIds.has(option.id)) throw new Error("Each shipping option needs a unique id.");
+    shippingIds.add(option.id);
+    if ((option.id !== "standard" && option.id !== "express") || option.name.length > 80 || option.description.length > 500 || option.rate.length > 40) {
+      throw new Error("Shipping option details are invalid.");
     }
-    if (zone.countries.length > 250) throw new Error(`Shipping zone ${zone.name} contains too many country codes.`);
   }
 
   return settings;
