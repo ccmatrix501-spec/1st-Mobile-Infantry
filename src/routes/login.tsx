@@ -16,6 +16,15 @@ export const Route = createFileRoute("/login")({
   }),
 });
 
+function requestedDestination(): string {
+  if (typeof window === "undefined") return "/leadership-control";
+  const requested = new URLSearchParams(window.location.search).get("next")?.trim() || "";
+  // Only permit a same-site relative path. This prevents the login page being
+  // used as an open redirect while still supporting secure order links.
+  if (requested.startsWith("/") && !requested.startsWith("//")) return requested;
+  return "/leadership-control";
+}
+
 function LeadershipLoginPage() {
   const [credentialLoading, setCredentialLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
@@ -60,7 +69,7 @@ function LeadershipLoginPage() {
       if (!result.ok) {
         throw new Error(result.error ?? "Invalid username or password.");
       }
-      window.location.href = "/leadership-control";
+      window.location.href = requestedDestination();
     } catch (err) {
       setError(
         err instanceof Error && err.message
@@ -112,7 +121,7 @@ function LeadershipLoginPage() {
                   </p>
                 </div>
                 <Button asChild size="lg" className="w-full">
-                  <Link to="/leadership-control">Continue to Leadership Control</Link>
+                  <a href={requestedDestination()}>Continue to Leadership</a>
                 </Button>
               </div>
             ) : (
