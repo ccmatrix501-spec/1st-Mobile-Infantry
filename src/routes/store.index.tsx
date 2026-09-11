@@ -175,6 +175,26 @@ function StorePage() {
           </div>
         ) : null}
 
+        <div className="mb-8 overflow-hidden rounded-xl border border-primary/35 bg-[linear-gradient(135deg,rgba(40,200,95,.13),rgba(0,0,0,.72))] shadow-[0_16px_45px_rgba(0,0,0,.28)]">
+          <div className="grid gap-5 p-5 sm:p-7 lg:grid-cols-[auto_1fr_auto] lg:items-center">
+            <span className="flex h-14 w-14 items-center justify-center rounded-lg border border-primary/35 bg-black/45 text-primary">
+              <PackageOpen className="h-7 w-7" />
+            </span>
+            <div>
+              <p className="stencil text-[10px] tracking-[0.14em] text-primary">Custom fabrication</p>
+              <h2 className="mt-1 font-display text-3xl font-semibold uppercase tracking-wide text-fg">
+                Custom 3D Print Request
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+                Need something that is not listed in the store? Send us what you want made. No payment is taken when you submit the request — Website Staff will contact you to discuss the design, options and price first.
+              </p>
+            </div>
+            <Button asChild size="lg" className="lg:min-w-48">
+              <a href="/store/custom-3d-print">Request a Quote</a>
+            </Button>
+          </div>
+        </div>
+
         <div className="mb-8 flex flex-col gap-4 rounded-xl border border-border bg-black/30 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div className="flex items-start gap-4">
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-primary/40 bg-primary/10 text-primary">
