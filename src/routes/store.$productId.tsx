@@ -19,7 +19,6 @@ import {
   fetchStorePageAccess,
   type StorePageAccess,
 } from "@/lib/store-settings-fn";
-import type { StoreProductVariant } from "@/lib/store-settings";
 import {
   parseMoney,
   productIsPurchasable,
@@ -31,6 +30,8 @@ export const Route = createFileRoute("/store/$productId")({
   component: StoreProductPage,
   head: () => ({ meta: [{ title: "Product — 1st M.I. Store" }] }),
 });
+
+const CUSTOM_PRINT_PRODUCT_SLUG = "1st-m-i-3d-printed-logo";
 
 function StoreProductPage() {
   const { productId } = Route.useParams();
@@ -76,6 +77,7 @@ function StoreProductPage() {
   const variant = activeVariants.find((item) => item.id === variantId) ?? null;
   const price = product ? productPrice(product, variant) : 0;
   const canAdd = product ? productIsPurchasable(product, variant) && price > 0 : false;
+  const hasCustomPrintRequest = product?.slug === CUSTOM_PRINT_PRODUCT_SLUG;
 
   if (!access && !failed) {
     return <AppShell><div className="mx-auto flex min-h-[55vh] max-w-6xl items-center justify-center px-4 py-20 text-muted">Loading product…</div></AppShell>;
@@ -108,6 +110,8 @@ function StoreProductPage() {
     setAdded(true);
     window.setTimeout(() => setAdded(false), 2400);
   }
+
+  const customRequestUrl = `/store/custom-3d-print?source=${encodeURIComponent(product.name)}&product=${encodeURIComponent(product.slug)}`;
 
   return (
     <AppShell>
@@ -168,10 +172,10 @@ function StoreProductPage() {
 
             {product.description ? <p className="mt-5 whitespace-pre-line text-sm leading-7 text-muted sm:text-base">{product.description}</p> : null}
 
-            {activeVariants.length ? (
+            {activeVariants.length || hasCustomPrintRequest ? (
               <div className="mt-7">
-                <p className="stencil text-[10px] tracking-[0.12em] text-primary">Choose product</p>
-                <p className="mt-1 text-xs leading-relaxed text-muted">Buy the normal product at its standard price, or choose one of the optional versions below.</p>
+                <p className="stencil text-[10px] tracking-[0.12em] text-primary">Product options</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted">Choose the normal product, one of its priced options, or request a custom 3D print quote.</p>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   <button
                     type="button"
@@ -206,6 +210,17 @@ function StoreProductPage() {
                       </button>
                     );
                   })}
+
+                  {hasCustomPrintRequest ? (
+                    <a
+                      href={customRequestUrl}
+                      className="rounded-md border border-primary/45 bg-primary/5 p-3 text-left transition-colors hover:border-primary hover:bg-primary/10"
+                    >
+                      <p className="font-display text-base font-semibold uppercase tracking-wide text-fg">Custom 3D Print Request</p>
+                      <p className="mt-1 text-xs leading-relaxed text-muted">For a different size, shape, design or completely custom print. Staff will discuss the design and price with you first.</p>
+                      <p className="mt-2 font-mono text-[10px] text-primary">REQUEST A QUOTE · PRICE SET WITH STAFF</p>
+                    </a>
+                  ) : null}
                 </div>
               </div>
             ) : null}
