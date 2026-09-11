@@ -25,6 +25,7 @@ import {
 import {
   storeOrderCustomerName,
   storeOrderItemCount,
+  storeOrderStatusLabel,
   type StoreOrder,
   type StoreOrderSystemStatus,
 } from "@/lib/store-orders";
@@ -44,16 +45,6 @@ function formatDate(value: string): string {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);
-}
-
-function statusLabel(status: StoreOrder["status"]): string {
-  switch (status) {
-    case "paid": return "Paid / New";
-    case "packing": return "Packing";
-    case "shipped": return "Shipped";
-    case "completed": return "Completed";
-    case "cancelled": return "Cancelled";
-  }
 }
 
 function LeadershipStoreOrdersPage() {
@@ -189,7 +180,7 @@ function LeadershipStoreOrdersPage() {
                   {system?.discordConfigured ? "Notification bridge configured" : "Notification bridge not configured"}
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-                  Completed orders are sent to the Store Orders Forum. The Forum post uses the customer&apos;s Discord name when one was supplied and links back to the secure order details here.
+                  Store orders are sent to the Store Orders Forum. The Forum post uses the customer&apos;s Discord name when one was supplied and links back to the secure order details here.
                 </p>
               </div>
             </div>
@@ -234,7 +225,7 @@ function LeadershipStoreOrdersPage() {
               </div>
             </div>
             <p className="mt-3 text-sm leading-relaxed text-muted">
-              Open an order to see all customer, shipping and payment details. Test orders can be cancelled or permanently removed here.
+              Open an order to see all customer, shipping and payment details. Orders can be updated, cancelled or permanently removed here.
             </p>
           </section>
         </div>
@@ -252,7 +243,7 @@ function LeadershipStoreOrdersPage() {
               <PackageSearch className="mx-auto h-10 w-10 text-primary" />
               <h3 className="mt-4 font-display text-2xl font-semibold uppercase tracking-wide text-fg">No orders yet</h3>
               <p className="mx-auto mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-                Test purchases and completed customer orders will appear here.
+                Test purchases and customer orders will appear here.
               </p>
             </div>
           ) : (
@@ -266,7 +257,7 @@ function LeadershipStoreOrdersPage() {
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 stencil text-[9px] tracking-[0.1em] text-primary">
-                            {statusLabel(order.status)}
+                            {storeOrderStatusLabel(order.status)}
                           </span>
                           <span className={`rounded-full border px-2.5 py-1 text-[10px] ${order.discordNotified ? "border-primary/25 bg-primary/5 text-primary" : "border-amber-300/25 bg-amber-300/5 text-amber-100"}`}>
                             {order.discordNotified ? "Discord notified" : "Discord pending"}
