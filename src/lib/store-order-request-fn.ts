@@ -19,6 +19,7 @@ export type StoreOrderRequestInput = {
   phone?: string;
   discordName?: string;
   preferredContact: "discord" | "email" | "phone";
+  paymentMethod: "paypal" | "venmo";
   address: string;
   city: string;
   state?: string;
@@ -84,6 +85,8 @@ export const submitStoreOrderRequest = createServerFn({ method: "POST" })
       data.preferredContact === "email"
         ? data.preferredContact
         : "email";
+    const paymentMethod =
+      data.paymentMethod === "venmo" ? "venmo" : data.paymentMethod === "paypal" ? "paypal" : null;
 
     if (!firstName || !lastName || !email || !address || !city || !country) {
       throw new Error(
@@ -96,6 +99,9 @@ export const submitStoreOrderRequest = createServerFn({ method: "POST" })
     }
     if (preferredContact === "phone" && !phone) {
       throw new Error("Enter your phone number if phone is your preferred contact method.");
+    }
+    if (!paymentMethod) {
+      throw new Error("Choose PayPal or Venmo as your payment method.");
     }
 
     const settings = await readStoreSettings();
@@ -161,6 +167,7 @@ export const submitStoreOrderRequest = createServerFn({ method: "POST" })
         : preferredContact === "phone"
           ? "Phone"
           : "Email";
+    const paymentLabel = paymentMethod === "venmo" ? "Venmo" : "PayPal";
 
     prepareBotEnvironment();
     const orders = await import("@/lib/store-orders.server");
@@ -187,8 +194,8 @@ export const submitStoreOrderRequest = createServerFn({ method: "POST" })
         },
         items,
         paymentProvider: leadershipTestMode
-          ? `Website Test Order — Payment Pending — Staff contact via ${contactLabel}`
-          : `Payment Pending — Staff contact via ${contactLabel}`,
+          ? `Website Test Order — Payment Pending — ${paymentLabel} — Staff contact via ${contactLabel}`
+          : `Payment Pending — ${paymentLabel} — Staff contact via ${contactLabel}`,
         paymentReference: `${leadershipTestMode ? "TEST-ORDER" : "ORDER-REQUEST"}-${randomUUID()}`,
       },
       { test: leadershipTestMode },
@@ -200,6 +207,7 @@ export const submitStoreOrderRequest = createServerFn({ method: "POST" })
       total: order.total,
       currency: order.currency,
       preferredContact,
+      paymentMethod,
       testMode: leadershipTestMode,
       discordNotified: order.discordNotified,
       discordError: order.discordError,
