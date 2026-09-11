@@ -1,17 +1,10 @@
-import type {
-  StoreOrder,
-  StoreOrderAddress,
-  StoreOrderCustomer,
-  StoreOrderStatus,
+import {
+  STORE_ORDER_STATUSES,
+  type StoreOrder,
+  type StoreOrderAddress,
+  type StoreOrderCustomer,
+  type StoreOrderStatus,
 } from "@/lib/store-orders";
-
-const ALLOWED_STATUSES: StoreOrderStatus[] = [
-  "paid",
-  "packing",
-  "shipped",
-  "completed",
-  "cancelled",
-];
 
 function text(value: unknown, max: number): string {
   return String(value ?? "").trim().slice(0, max);
@@ -49,7 +42,7 @@ export async function discordSetOrderStatus(
   orderId: string,
   status: StoreOrderStatus,
 ): Promise<StoreOrder> {
-  if (!ALLOWED_STATUSES.includes(status)) throw new Error("Invalid order status.");
+  if (!STORE_ORDER_STATUSES.includes(status)) throw new Error("Invalid order status.");
   await getOrderOrThrow(orderId);
   const sql = await getSql();
   await sql.query(
