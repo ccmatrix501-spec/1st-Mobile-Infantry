@@ -1,23 +1,17 @@
 import { randomUUID } from "node:crypto";
-import type {
-  StoreCompletedOrderInput,
-  StoreOrder,
-  StoreOrderAddress,
-  StoreOrderCustomer,
-  StoreOrderItem,
-  StoreOrderStatus,
+import {
+  STORE_ORDER_STATUSES,
+  storeOrderStatusLabel,
+  type StoreCompletedOrderInput,
+  type StoreOrder,
+  type StoreOrderAddress,
+  type StoreOrderCustomer,
+  type StoreOrderItem,
+  type StoreOrderStatus,
 } from "@/lib/store-orders";
 
 const DEFAULT_SITE_URL = "https://1stmid.com";
 const NOTIFY_TIMEOUT_MS = 7_000;
-
-const STORE_ORDER_STATUSES: StoreOrderStatus[] = [
-  "paid",
-  "packing",
-  "shipped",
-  "completed",
-  "cancelled",
-];
 
 type StoreOrderRow = {
   id: string;
@@ -42,6 +36,7 @@ type StoreOrderRow = {
 
 type NotificationOptions = {
   test?: boolean;
+  initialStatus?: StoreOrderStatus;
 };
 
 function asJson<T>(value: T | string): T {
@@ -55,14 +50,16 @@ function iso(value: Date | string | null): string | null {
   return Number.isNaN(date.getTime()) ? String(value) : date.toISOString();
 }
 
+function normaliseStatus(value: unknown, fallback: StoreOrderStatus = "new"): StoreOrderStatus {
+  const status = String(value ?? "").trim().toLowerCase() as StoreOrderStatus;
+  return STORE_ORDER_STATUSES.includes(status) ? status : fallback;
+}
+
 function toOrder(row: StoreOrderRow): StoreOrder {
-  const status = STORE_ORDER_STATUSES.includes(row.status as StoreOrderStatus)
-    ? (row.status as StoreOrderStatus)
-    : "paid";
   return {
     id: row.id,
     orderNumber: row.order_number,
-    status,
+    status: normaliseStatus(row.status),
     currency: row.currency,
     subtotal: Number(row.subtotal) || 0,
     shippingAmount: Number(row.shipping_amount) || 0,
@@ -131,7 +128,7 @@ function normaliseCompletedOrder(input: StoreCompletedOrderInput): StoreComplete
   }
   if (!items.length) throw new Error("Completed order has no items.");
 
-  const paymentProvider = cleanText(input.paymentProvider, 80);
+  const paymentProvider = cleanText(input.paymentProvider, 120);
   const paymentReference = cleanText(input.paymentReference, 240);
   if (!paymentProvider || !paymentReference) {
     throw new Error("Completed order requires a payment provider and payment reference.");
@@ -218,7 +215,7 @@ async function ensureOrdersTable() {
     create table if not exists store_orders (
       id text primary key,
       order_number text not null unique,
-      status text not null default 'paid',
+      status text not null default 'new',
       currency text not null,
       subtotal numeric(12, 2) not null,
       shipping_amount numeric(12, 2) not null,
@@ -236,6 +233,7 @@ async function ensureOrdersTable() {
       discord_error text
     )
   `);
+  await sql.query(`alter table store_orders alter column status set default 'new'`);
   await sql.query(`
     create unique index if not exists store_orders_payment_reference_idx
       on store_orders (payment_provider, payment_reference)
@@ -318,9 +316,7 @@ async function postBot(path: string, payload: unknown): Promise<void> {
 
 async function postDiscordPayload(payload: unknown): Promise<void> {
   const webhookUrl = getDiscordWebhookUrl();
-  if (!webhookUrl) {
-    throw new Error("STORE_DISCORD_WEBHOOK_URL is not configured.");
-  }
+  if (!webhookUrl) throw new Error("STORE_DISCORD_WEBHOOK_URL is not configured.");
 
   const response = await fetchWithTimeout(webhookUrl, {
     method: "POST",
@@ -330,14 +326,12 @@ async function postDiscordPayload(payload: unknown): Promise<void> {
     },
     body: JSON.stringify(payload),
   });
-  if (!response.ok) {
-    throw new Error(`Discord webhook returned HTTP ${response.status}.`);
-  }
+  if (!response.ok) throw new Error(`Discord webhook returned HTTP ${response.status}.`);
 }
 
 function discordOrderPayload(order: StoreOrder, options: NotificationOptions = {}) {
   const customerName = `${order.customer.firstName} ${order.customer.lastName}`.trim();
-  const adminUrl = `${getSiteUrl()}/leadership-store/orders/${encodeURIComponent(order.id)}`;
+  const adminUrl = `${getSiteUrl()}/login?next=${encodeURIComponent(`/leadership-order?id=${order.id}`)}`;
   const discordLine = order.customer.discordName
     ? `\nDiscord: **${clamp(order.customer.discordName, 100)}**`
     : "";
@@ -349,16 +343,21 @@ function discordOrderPayload(order: StoreOrder, options: NotificationOptions = {
     allowed_mentions: { parse: [] },
     embeds: [
       {
-        title: `${options.test ? "TEST • " : ""}New Store Order • ${order.orderNumber}`,
+        title: `${options.test ? "TEST • " : ""}${storeOrderStatusLabel(order.status)} Store Order • ${order.orderNumber}`,
         url: adminUrl,
         description: options.test
-          ? "This is a leadership test purchase. It was recorded only to test the store order and Discord notification flow."
-          : "A paid store order has been recorded. The card below keeps private details brief; open the secure admin order page for the full shipping address and contact information.",
-        color: 3329895,
+          ? "This is a leadership test order. No payment was taken."
+          : "A store order has been recorded. Open the secure admin page for the full contact and shipping details.",
+        color: order.status === "cancelled" ? 14174794 : 3329895,
         fields: [
           {
             name: "Customer",
             value: `**${clamp(customerName, 150)}**${discordLine}`,
+            inline: true,
+          },
+          {
+            name: "Status",
+            value: `**${storeOrderStatusLabel(order.status).toUpperCase()}**`,
             inline: true,
           },
           {
@@ -378,7 +377,7 @@ function discordOrderPayload(order: StoreOrder, options: NotificationOptions = {
           },
           {
             name: "Payment",
-            value: `${clamp(order.paymentProvider, 70)}\nReference: ${clamp(order.paymentReference, 170)}`,
+            value: `${clamp(order.paymentProvider, 120)}\nReference: ${clamp(order.paymentReference, 170)}`,
             inline: true,
           },
           {
@@ -431,6 +430,7 @@ export async function recordCompletedStoreOrder(
   options: NotificationOptions = {},
 ): Promise<StoreOrder> {
   const input = normaliseCompletedOrder(rawInput);
+  const initialStatus = normaliseStatus(options.initialStatus, "new");
   const sql = await ensureOrdersTable();
 
   const existing = await sql.query<StoreOrderRow>(
@@ -449,13 +449,14 @@ export async function recordCompletedStoreOrder(
        shipping_method, customer, shipping_address, items, payment_provider,
        payment_reference
      ) values (
-       $1, $2, 'paid', $3, $4, $5, $6,
-       $7, $8::jsonb, $9::jsonb, $10::jsonb, $11, $12
+       $1, $2, $3, $4, $5, $6, $7,
+       $8, $9::jsonb, $10::jsonb, $11::jsonb, $12, $13
      )
      returning *`,
     [
       id,
       number,
+      initialStatus,
       input.currency,
       input.subtotal,
       input.shippingAmount,
@@ -583,7 +584,7 @@ export async function sendStoreOrderDiscordTest(discordName = "@TestCustomer"): 
   const testOrder: StoreOrder = {
     id: `discord-test-${randomUUID()}`,
     orderNumber: `MI-TEST-${randomUUID().replaceAll("-", "").slice(0, 6).toUpperCase()}`,
-    status: "paid",
+    status: "new",
     currency: "AUD",
     subtotal: 15,
     shippingAmount: 10,
