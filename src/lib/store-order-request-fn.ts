@@ -51,6 +51,15 @@ async function readStoreSettings(): Promise<StoreSettings> {
   return mergeStoreSettings(parsed);
 }
 
+async function hasLeadershipSession(): Promise<boolean> {
+  try {
+    const access = await import("@/lib/local-leadership-access.server");
+    return Boolean(await access.getLocalLeadershipProfile());
+  } catch {
+    return false;
+  }
+}
+
 export const submitStoreOrderRequest = createServerFn({ method: "POST" })
   .inputValidator((input: StoreOrderRequestInput) => input)
   .handler(async ({ data }) => {
@@ -90,7 +99,8 @@ export const submitStoreOrderRequest = createServerFn({ method: "POST" })
     }
 
     const settings = await readStoreSettings();
-    if (!settings.enabled) {
+    const leadershipTestMode = !settings.enabled && (await hasLeadershipSession());
+    if (!settings.enabled && !leadershipTestMode) {
       throw new Error("The store is currently closed for public orders.");
     }
 
@@ -154,30 +164,35 @@ export const submitStoreOrderRequest = createServerFn({ method: "POST" })
 
     prepareBotEnvironment();
     const orders = await import("@/lib/store-orders.server");
-    const order = await orders.recordCompletedStoreOrder({
-      currency: settings.defaultCurrency || "AUD",
-      subtotal,
-      shippingAmount,
-      total,
-      shippingMethod: shippingOption.name,
-      customer: {
-        firstName,
-        lastName,
-        email,
-        phone,
-        discordName: discordName || undefined,
+    const order = await orders.recordCompletedStoreOrder(
+      {
+        currency: settings.defaultCurrency || "AUD",
+        subtotal,
+        shippingAmount,
+        total,
+        shippingMethod: shippingOption.name,
+        customer: {
+          firstName,
+          lastName,
+          email,
+          phone,
+          discordName: discordName || undefined,
+        },
+        shippingAddress: {
+          address,
+          city,
+          state,
+          postalCode,
+          country,
+        },
+        items,
+        paymentProvider: leadershipTestMode
+          ? `Website Test Order — Payment Pending — Staff contact via ${contactLabel}`
+          : `Payment Pending — Staff contact via ${contactLabel}`,
+        paymentReference: `${leadershipTestMode ? "TEST-ORDER" : "ORDER-REQUEST"}-${randomUUID()}`,
       },
-      shippingAddress: {
-        address,
-        city,
-        state,
-        postalCode,
-        country,
-      },
-      items,
-      paymentProvider: `Payment Pending — Staff contact via ${contactLabel}`,
-      paymentReference: `ORDER-REQUEST-${randomUUID()}`,
-    });
+      { test: leadershipTestMode },
+    );
 
     return {
       ok: true,
@@ -185,6 +200,7 @@ export const submitStoreOrderRequest = createServerFn({ method: "POST" })
       total: order.total,
       currency: order.currency,
       preferredContact,
+      testMode: leadershipTestMode,
       discordNotified: order.discordNotified,
       discordError: order.discordError,
     };
