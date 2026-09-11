@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Coins, PackageSearch, ShoppingCart, Tags } from "lucide-react";
+import { Coins, PackageSearch, Send, ShoppingCart, Tags } from "lucide-react";
 import { useStoreCart } from "@/lib/store-cart";
 import {
   STORE_DISPLAY_CURRENCIES,
@@ -54,6 +54,18 @@ export function StoreToolbar() {
               ))}
             </select>
           </label>
+
+          {cart.count > 0 ? (
+            <Link
+              to="/store/order-request"
+              className={cn(
+                "inline-flex items-center gap-2 rounded-md border border-primary/45 bg-primary/10 px-3 py-2 stencil text-[10px] tracking-[0.12em] text-primary transition-colors hover:bg-primary/20",
+                pathname.startsWith("/store/order-request") && "border-primary bg-primary/20",
+              )}
+            >
+              <Send className="h-4 w-4" />Place Order
+            </Link>
+          ) : null}
 
           <Link
             to="/store/cart"
