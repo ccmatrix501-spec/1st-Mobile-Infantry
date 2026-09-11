@@ -1,9 +1,40 @@
 export type StoreOrderStatus =
+  | "new"
   | "paid"
+  | "approved"
   | "packing"
   | "shipped"
   | "completed"
   | "cancelled";
+
+export const STORE_ORDER_STATUSES: StoreOrderStatus[] = [
+  "new",
+  "paid",
+  "approved",
+  "packing",
+  "shipped",
+  "completed",
+  "cancelled",
+];
+
+export function storeOrderStatusLabel(status: StoreOrderStatus): string {
+  switch (status) {
+    case "new":
+      return "New";
+    case "paid":
+      return "Paid";
+    case "approved":
+      return "Approved";
+    case "packing":
+      return "Packing";
+    case "shipped":
+      return "Shipped";
+    case "completed":
+      return "Completed";
+    case "cancelled":
+      return "Cancelled";
+  }
+}
 
 export type StoreOrderCustomer = {
   firstName: string;
