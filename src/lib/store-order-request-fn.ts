@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { createServerFn } from "@tanstack/react-start";
 import { mergeStoreSettings, type StoreSettings } from "@/lib/store-settings";
-import { parseMoney, productPrice, shippingOptionPrice } from "@/lib/store-utils";
+import { productPrice, shippingOptionPrice } from "@/lib/store-utils";
 
 const DEFAULT_STORE_ORDER_BOT_URL =
   "https://1st-mi-matrix-r-d-production.up.railway.app";
