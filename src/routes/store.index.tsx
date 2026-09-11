@@ -34,6 +34,7 @@ export const Route = createFileRoute("/store/")({
 });
 
 type SortMode = "featured" | "name" | "price-low" | "price-high";
+const CUSTOM_PRINT_CATEGORY = "__custom_3d_print";
 
 function StorePage() {
   const [access, setAccess] = useState<StorePageAccess | null>(null);
@@ -74,6 +75,7 @@ function StorePage() {
   const displayProducts = useMemo(() => {
     const needle = query.trim().toLowerCase();
     const filtered = sourceProducts.filter((product) => {
+      if (category === CUSTOM_PRINT_CATEGORY) return false;
       if (category !== "all" && product.category !== category) return false;
       if (!needle) return true;
       const haystack = [
@@ -95,6 +97,20 @@ function StorePage() {
       return Number(b.featured) - Number(a.featured) || a.name.localeCompare(b.name);
     });
   }, [category, query, sort, sourceProducts]);
+
+  const showCustomPrintRequest = useMemo(() => {
+    if (category !== "all" && category !== CUSTOM_PRINT_CATEGORY) return false;
+    const needle = query.trim().toLowerCase();
+    if (!needle) return true;
+    return [
+      "custom 3d print request",
+      "custom fabrication",
+      "3d printing",
+      "quote",
+      "custom print",
+      "made to order",
+    ].some((value) => value.includes(needle) || needle.includes(value));
+  }, [category, query]);
 
   if (!access && !failed) {
     return (
@@ -138,6 +154,7 @@ function StorePage() {
   }
 
   const { settings, leadershipPreview } = access;
+  const visibleItemCount = displayProducts.length + (showCustomPrintRequest ? 1 : 0);
 
   return (
     <AppShell>
@@ -175,26 +192,6 @@ function StorePage() {
           </div>
         ) : null}
 
-        <div className="mb-8 overflow-hidden rounded-xl border border-primary/35 bg-[linear-gradient(135deg,rgba(40,200,95,.13),rgba(0,0,0,.72))] shadow-[0_16px_45px_rgba(0,0,0,.28)]">
-          <div className="grid gap-5 p-5 sm:p-7 lg:grid-cols-[auto_1fr_auto] lg:items-center">
-            <span className="flex h-14 w-14 items-center justify-center rounded-lg border border-primary/35 bg-black/45 text-primary">
-              <PackageOpen className="h-7 w-7" />
-            </span>
-            <div>
-              <p className="stencil text-[10px] tracking-[0.14em] text-primary">Custom fabrication</p>
-              <h2 className="mt-1 font-display text-3xl font-semibold uppercase tracking-wide text-fg">
-                Custom 3D Print Request
-              </h2>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-                Need something that is not listed in the store? Send us what you want made. No payment is taken when you submit the request — Website Staff will contact you to discuss the design, options and price first.
-              </p>
-            </div>
-            <Button asChild size="lg" className="lg:min-w-48">
-              <a href="/store/custom-3d-print">Request a Quote</a>
-            </Button>
-          </div>
-        </div>
-
         <div className="mb-8 flex flex-col gap-4 rounded-xl border border-border bg-black/30 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div className="flex items-start gap-4">
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-primary/40 bg-primary/10 text-primary">
@@ -212,7 +209,7 @@ function StorePage() {
           <div className="flex gap-3">
             <div className="rounded-md border border-primary/25 bg-primary/10 px-4 py-3 text-center">
               <p className="stencil text-[9px] tracking-[0.14em] text-primary">Items</p>
-              <p className="mt-1 font-display text-2xl font-semibold text-fg">{displayProducts.length}</p>
+              <p className="mt-1 font-display text-2xl font-semibold text-fg">{visibleItemCount}</p>
             </div>
             <a href="/store/cart" className="rounded-md border border-border-strong bg-black/35 px-4 py-3 text-center transition-colors hover:border-primary/50">
               <p className="stencil text-[9px] tracking-[0.14em] text-primary">Cart</p>
@@ -241,6 +238,7 @@ function StorePage() {
               className="h-11 min-w-48 rounded-md border border-border-strong bg-black/45 pl-10 pr-8 text-sm text-fg outline-none focus:border-primary/70"
             >
               <option value="all">All categories</option>
+              <option value={CUSTOM_PRINT_CATEGORY}>Custom 3D Print</option>
               {categories.map((item) => (
                 <option key={item.id} value={item.name}>{item.name}</option>
               ))}
@@ -258,8 +256,9 @@ function StorePage() {
           </select>
         </div>
 
-        {displayProducts.length ? (
+        {visibleItemCount ? (
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {showCustomPrintRequest ? <CustomPrintRequestCard /> : null}
             {displayProducts.map((product) => (
               <ProductCard
                 key={product.id}
@@ -290,6 +289,50 @@ function StorePage() {
         ) : null}
       </section>
     </AppShell>
+  );
+}
+
+function CustomPrintRequestCard() {
+  return (
+    <article className="panel panel-lift overflow-hidden border-primary/35">
+      <a href="/store/custom-3d-print" className="block">
+        <div className="relative aspect-[4/3] overflow-hidden border-b border-primary/25 bg-[radial-gradient(circle_at_center,rgba(40,200,95,.22),rgba(0,0,0,.82)_70%)]">
+          <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
+            <span className="flex h-20 w-20 items-center justify-center rounded-2xl border border-primary/45 bg-black/55 text-primary shadow-[0_0_35px_rgba(40,200,95,.15)]">
+              <PackageOpen className="h-10 w-10" />
+            </span>
+            <span className="rounded-md border border-primary/35 bg-black/75 px-3 py-1 stencil text-[9px] tracking-[0.14em] text-primary">
+              Custom fabrication
+            </span>
+          </div>
+        </div>
+      </a>
+
+      <div className="p-5 sm:p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="stencil text-[9px] tracking-[0.14em] text-primary">Custom 3D Print</p>
+            <a href="/store/custom-3d-print" className="hover:text-primary">
+              <h3 className="mt-1 font-display text-2xl font-semibold uppercase tracking-wide text-fg">
+                Custom 3D Print Request
+              </h3>
+            </a>
+          </div>
+          <p className="shrink-0 font-display text-xl font-semibold text-primary">Quote</p>
+        </div>
+
+        <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted">
+          Need something that is not listed? Send Website Staff the details of what you want made and we will contact you to discuss the design, options and final price before any payment is requested.
+        </p>
+
+        <div className="mt-5 flex items-center justify-between gap-3 border-t border-border pt-4">
+          <span className="font-mono text-xs text-muted">Price discussed with staff</span>
+          <Button asChild size="sm">
+            <a href="/store/custom-3d-print">Request a Quote</a>
+          </Button>
+        </div>
+      </div>
+    </article>
   );
 }
 
