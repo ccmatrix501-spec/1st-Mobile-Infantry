@@ -26,11 +26,12 @@ import {
   removeLeadershipStoreOrder,
   updateLeadershipStoreOrderStatus,
 } from "@/lib/store-orders-fn";
-import type {
-  StoreOrder,
-  StoreOrderAddress,
-  StoreOrderCustomer,
-  StoreOrderStatus,
+import {
+  storeOrderStatusLabel,
+  type StoreOrder,
+  type StoreOrderAddress,
+  type StoreOrderCustomer,
+  type StoreOrderStatus,
 } from "@/lib/store-orders";
 import { formatMoney } from "@/lib/store-utils";
 
@@ -56,7 +57,7 @@ function LeadershipOrderPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [status, setStatus] = useState<StoreOrderStatus>("paid");
+  const [status, setStatus] = useState<StoreOrderStatus>("new");
   const [saving, setSaving] = useState(false);
   const [customer, setCustomer] = useState<StoreOrderCustomer>({
     firstName: "",
@@ -128,7 +129,7 @@ function LeadershipOrderPage() {
     if (!order) return;
     await runSave(
       () => updateLeadershipStoreOrderStatus({ data: { orderId: order.id, status: nextStatus } }),
-      `Order status updated to ${nextStatus}.`,
+      `Order status updated to ${storeOrderStatusLabel(nextStatus)}.`,
     );
   }
 
@@ -342,14 +343,16 @@ function LeadershipOrderPage() {
             </section>
 
             <section className="panel panel-static p-5">
-              <p className="stencil text-[9px] tracking-[0.14em] text-primary">Fulfilment</p>
+              <p className="stencil text-[9px] tracking-[0.14em] text-primary">Fulfilment status</p>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as StoreOrderStatus)}
                 className={`${inputClass} mt-3`}
               >
-                <option value="paid">Paid / New</option>
-                <option value="packing">Packing / Approved</option>
+                <option value="new">New</option>
+                <option value="paid">Paid</option>
+                <option value="approved">Approved</option>
+                <option value="packing">Packing</option>
                 <option value="shipped">Shipped</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
