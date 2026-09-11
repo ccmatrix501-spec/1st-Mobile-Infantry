@@ -3,11 +3,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowLeft,
   CheckCircle2,
-  Mail,
+  CreditCard,
   MapPin,
   MessageCircle,
   PackageCheck,
-  Phone,
   Send,
   ShoppingCart,
   Truck,
@@ -42,6 +41,7 @@ type FormFields = {
   phone: string;
   discordName: string;
   preferredContact: "discord" | "email" | "phone";
+  paymentMethod: "paypal" | "venmo";
   address: string;
   city: string;
   state: string;
@@ -61,6 +61,7 @@ function StoreOrderRequestPage() {
     total: number;
     currency: string;
     preferredContact: string;
+    paymentMethod: "paypal" | "venmo";
   } | null>(null);
   const [fields, setFields] = useState<FormFields>({
     firstName: "",
@@ -69,6 +70,7 @@ function StoreOrderRequestPage() {
     phone: "",
     discordName: "",
     preferredContact: "discord",
+    paymentMethod: "paypal",
     address: "",
     city: "",
     state: "",
@@ -127,6 +129,7 @@ function StoreOrderRequestPage() {
   const shipping = shippingOptionPrice(shippingOption);
   const currency = resolved[0]?.product.currency || access?.settings.defaultCurrency || "AUD";
   const total = subtotal + shipping;
+  const paymentLabel = fields.paymentMethod === "venmo" ? "Venmo" : "PayPal";
 
   function setField<K extends keyof FormFields>(key: K, value: FormFields[K]) {
     setFields((current) => ({ ...current, [key]: value }));
@@ -168,6 +171,7 @@ function StoreOrderRequestPage() {
         phone: fields.phone || undefined,
         discordName: fields.discordName || undefined,
         preferredContact: fields.preferredContact,
+        paymentMethod: fields.paymentMethod,
         address: fields.address,
         city: fields.city,
         state: fields.state || undefined,
@@ -187,6 +191,7 @@ function StoreOrderRequestPage() {
         total: result.total,
         currency: result.currency,
         preferredContact: result.preferredContact,
+        paymentMethod: result.paymentMethod,
       });
       cart.clear();
     } catch (err) {
@@ -221,6 +226,7 @@ function StoreOrderRequestPage() {
         : submitted.preferredContact === "phone"
           ? "phone"
           : "email";
+    const submittedPayment = submitted.paymentMethod === "venmo" ? "Venmo" : "PayPal";
     return (
       <AppShell>
         <StoreToolbar />
@@ -231,13 +237,19 @@ function StoreOrderRequestPage() {
             <p className="mt-5 stencil text-[10px] tracking-[0.14em] text-primary">Order number</p>
             <h2 className="mt-2 font-display text-3xl font-semibold uppercase tracking-wide text-fg">{submitted.orderNumber}</h2>
             <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-muted">
-              No payment was taken on the website. Website Staff have received your order and will contact you by {contactText} with payment details and anything else needed before the order is approved for processing.
+              No payment was taken on the website. Website Staff have received your order and can see that you selected <strong className="text-fg">{submittedPayment}</strong>. They will contact you by {contactText} with the payment details and anything else needed before the order is approved for processing.
             </p>
-            <div className="mx-auto mt-5 max-w-sm rounded-lg border border-border bg-black/30 p-4">
-              <p className="text-xs text-muted">Order total before any staff adjustments</p>
-              <p className="mt-1 font-display text-3xl font-semibold text-primary">
-                <StoreMoney amount={submitted.total} currency={submitted.currency} />
-              </p>
+            <div className="mx-auto mt-5 grid max-w-md gap-3 sm:grid-cols-2">
+              <div className="rounded-lg border border-border bg-black/30 p-4">
+                <p className="text-xs text-muted">Payment method</p>
+                <p className="mt-1 font-display text-xl font-semibold uppercase text-fg">{submittedPayment}</p>
+              </div>
+              <div className="rounded-lg border border-border bg-black/30 p-4">
+                <p className="text-xs text-muted">Order total</p>
+                <p className="mt-1 font-display text-xl font-semibold text-primary">
+                  <StoreMoney amount={submitted.total} currency={submitted.currency} />
+                </p>
+              </div>
             </div>
             <p className="mt-4 text-xs text-muted">Keep your order number in case staff ask for it.</p>
             <Button asChild className="mt-6"><Link to="/store">Return to Store</Link></Button>
@@ -267,7 +279,7 @@ function StoreOrderRequestPage() {
       <PageHero
         kicker="Quartermaster"
         title="Place Order"
-        body="Send your order to Website Staff. Staff will contact you with payment details before the order is processed."
+        body="Send your order to Website Staff. Choose PayPal or Venmo and staff will contact you with the payment details before the order is processed."
         meta="1ST MI DIV · STAFF-ASSISTED CHECKOUT"
       />
 
@@ -282,7 +294,7 @@ function StoreOrderRequestPage() {
             <div>
               <h2 className="font-display text-xl font-semibold uppercase tracking-wide text-fg">Staff-assisted payment</h2>
               <p className="mt-2 text-sm leading-relaxed text-muted">
-                This page does not take a payment. Submitting creates a real order for Website Staff and sends it to the Discord Store Orders Forum. Staff will contact you with payment details and can confirm or adjust the order with you before processing it.
+                This page does not take a payment. Submitting creates a real order for Website Staff and sends it to the Discord Store Orders Forum. Staff will see your selected payment method and contact you with the correct payment details before processing it.
               </p>
             </div>
           </div>
@@ -345,6 +357,50 @@ function StoreOrderRequestPage() {
                 ))}
               </div>
             </section>
+
+            <section className="rounded-xl border border-border bg-black/65 p-5 sm:p-6">
+              <div className="flex items-center gap-3">
+                <CreditCard className="h-5 w-5 text-primary" />
+                <div>
+                  <h2 className="font-display text-2xl font-semibold uppercase tracking-wide text-fg">Payment Method</h2>
+                  <p className="mt-1 text-xs text-muted">Choose how you intend to pay. Staff will send you the payment details after reviewing the order.</p>
+                </div>
+              </div>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <label className={`cursor-pointer rounded-xl border p-5 transition-colors ${fields.paymentMethod === "paypal" ? "border-primary bg-primary/10" : "border-border bg-black/25 hover:border-primary/40"}`}>
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="radio"
+                      name="payment-method"
+                      value="paypal"
+                      checked={fields.paymentMethod === "paypal"}
+                      onChange={() => setField("paymentMethod", "paypal")}
+                      className="mt-1 accent-[var(--color-primary)]"
+                    />
+                    <div>
+                      <p className="font-display text-xl font-semibold uppercase tracking-wide text-fg">PayPal</p>
+                      <p className="mt-1 text-xs leading-relaxed text-muted">Website Staff will contact you with the PayPal payment details for this order.</p>
+                    </div>
+                  </div>
+                </label>
+                <label className={`cursor-pointer rounded-xl border p-5 transition-colors ${fields.paymentMethod === "venmo" ? "border-primary bg-primary/10" : "border-border bg-black/25 hover:border-primary/40"}`}>
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="radio"
+                      name="payment-method"
+                      value="venmo"
+                      checked={fields.paymentMethod === "venmo"}
+                      onChange={() => setField("paymentMethod", "venmo")}
+                      className="mt-1 accent-[var(--color-primary)]"
+                    />
+                    <div>
+                      <p className="font-display text-xl font-semibold uppercase tracking-wide text-fg">Venmo</p>
+                      <p className="mt-1 text-xs leading-relaxed text-muted">Website Staff will contact you with the Venmo payment details for this order.</p>
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </section>
           </div>
 
           <aside className="h-fit rounded-xl border border-primary/30 bg-black/75 p-5 sm:p-6 xl:sticky xl:top-24">
@@ -366,6 +422,7 @@ function StoreOrderRequestPage() {
             <div className="mt-5 space-y-3 text-sm">
               <SummaryRow label="Subtotal" value={<StoreMoney amount={subtotal} currency={currency} />} />
               <SummaryRow label="Shipping" value={shippingOption ? <StoreMoney amount={shipping} currency={currency} /> : "Select method"} />
+              <SummaryRow label="Payment" value={paymentLabel} />
               <div className="flex items-center justify-between border-t border-border pt-4">
                 <span className="font-display text-lg font-semibold uppercase text-fg">Total</span>
                 <span className="font-display text-3xl font-semibold text-primary"><StoreMoney amount={total} currency={currency} /></span>
@@ -375,7 +432,7 @@ function StoreOrderRequestPage() {
             <Button type="button" size="lg" className="mt-6 w-full" disabled={submitting || !shippingOption} onClick={() => void submitOrder()}>
               <Send className="h-4 w-4" />{submitting ? "Sending Order…" : "Send Order to Website Staff"}
             </Button>
-            <p className="mt-3 text-center text-xs leading-relaxed text-muted">No payment is taken when you submit. Staff will contact you with payment details.</p>
+            <p className="mt-3 text-center text-xs leading-relaxed text-muted">No payment is taken when you submit. Staff will contact you with the {paymentLabel} payment details.</p>
             <Button asChild variant="secondary" className="mt-3 w-full"><Link to="/store/cart"><ArrowLeft className="h-4 w-4" />Return to Cart</Link></Button>
           </aside>
         </div>
