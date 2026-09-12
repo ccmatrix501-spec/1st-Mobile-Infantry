@@ -139,20 +139,11 @@ function StoreCategoryPage() {
         <div className="mb-6 grid gap-3 md:grid-cols-[1fr_auto]">
           <label className="relative block">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={`Search ${category.name}…`}
-              className="h-11 w-full rounded-md border border-border-strong bg-black/45 pl-10 pr-3 text-sm text-fg outline-none focus:border-primary/70"
-            />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${category.name}…`} className="h-11 w-full rounded-md border border-border-strong bg-black/45 pl-10 pr-3 text-sm text-fg outline-none focus:border-primary/70" />
           </label>
           <label className="relative flex items-center">
             <SlidersHorizontal className="pointer-events-none absolute left-3 h-4 w-4 text-muted" />
-            <select
-              value={sort}
-              onChange={(event) => setSort(event.target.value as SortMode)}
-              className="h-11 min-w-48 rounded-md border border-border-strong bg-black/45 pl-10 pr-8 text-sm text-fg outline-none focus:border-primary/70"
-            >
+            <select value={sort} onChange={(event) => setSort(event.target.value as SortMode)} className="h-11 min-w-48 rounded-md border border-border-strong bg-black/45 pl-10 pr-8 text-sm text-fg outline-none focus:border-primary/70">
               <option value="featured">Featured first</option>
               <option value="name">Name A–Z</option>
               <option value="price-low">Price low–high</option>
@@ -209,7 +200,10 @@ function CategoryProductCard({
           ) : (
             <div className="flex h-full items-center justify-center text-muted"><PackageOpen className="h-10 w-10" /></div>
           )}
-          {product.featured ? <span className="absolute left-3 top-3 rounded-md border border-primary/35 bg-black/80 px-2.5 py-1 stencil text-[9px] tracking-[0.12em] text-primary">Featured</span> : null}
+          <div className="absolute left-3 top-3 flex flex-wrap gap-2">
+            {product.featured ? <span className="rounded-md border border-primary/35 bg-black/80 px-2.5 py-1 stencil text-[9px] tracking-[0.12em] text-primary">Featured</span> : null}
+            {product.preOrder ? <span className="rounded-md border border-amber-300/45 bg-black/85 px-2.5 py-1 stencil text-[9px] tracking-[0.12em] text-amber-200">PRE-ORDER</span> : null}
+          </div>
           {leadershipPreview && product.status !== "published" ? <span className="absolute right-3 top-3 rounded-md border border-amber-300/35 bg-black/80 px-2.5 py-1 stencil text-[9px] tracking-[0.12em] text-amber-200">{product.status}</span> : null}
         </div>
       </a>
@@ -223,9 +217,9 @@ function CategoryProductCard({
         {product.description ? <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted">{product.description}</p> : null}
 
         <div className="mt-5 flex items-center justify-between gap-3 border-t border-border pt-4">
-          <span className="font-mono text-xs text-muted">{product.stockStatus || "Available"}</span>
+          <span className={`font-mono text-xs ${product.preOrder ? "text-amber-200" : "text-muted"}`}>{product.preOrder ? "Pre-order" : product.stockStatus || "Available"}</span>
           {canQuickAdd ? (
-            <Button type="button" size="sm" onClick={onQuickAdd}><ShoppingCart className="h-3.5 w-3.5" />Add to Cart</Button>
+            <Button type="button" size="sm" onClick={onQuickAdd}><ShoppingCart className="h-3.5 w-3.5" />{product.preOrder ? "Pre-order" : "Add to Cart"}</Button>
           ) : (
             <Button asChild size="sm" variant="secondary"><a href={`/store/${encodeURIComponent(product.slug)}`}>{hasVariants ? "Select Options" : "View Product"}</a></Button>
           )}
