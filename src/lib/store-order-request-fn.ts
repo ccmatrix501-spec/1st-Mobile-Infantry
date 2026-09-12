@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { createServerFn } from "@tanstack/react-start";
 import { mergeStoreSettings, type StoreSettings } from "@/lib/store-settings";
-import { productPrice, shippingOptionPrice } from "@/lib/store-utils";
+import { productIsPreOrder, productPrice, shippingOptionPrice } from "@/lib/store-utils";
 
 const DEFAULT_STORE_ORDER_BOT_URL =
   "https://1st-mi-matrix-r-d-production.up.railway.app";
@@ -64,7 +64,6 @@ async function hasLeadershipSession(): Promise<boolean> {
 export const submitStoreOrderRequest = createServerFn({ method: "POST" })
   .inputValidator((input: StoreOrderRequestInput) => input)
   .handler(async ({ data }) => {
-    // Honeypot for simple automated form spam.
     if (clean(data.companyWebsite, 200)) {
       throw new Error("Could not submit this order request.");
     }
@@ -137,7 +136,8 @@ export const submitStoreOrderRequest = createServerFn({ method: "POST" })
         throw new Error(`The selected option for ${product.name} is no longer available.`);
       }
 
-      if (product.trackStock) {
+      const preOrder = productIsPreOrder(product, variant);
+      if (product.trackStock && !preOrder) {
         const available = variant ? variant.stockQuantity : product.stockQuantity;
         if (available <= 0) throw new Error(`${product.name} is sold out.`);
         if (quantity > available) {
@@ -151,7 +151,9 @@ export const submitStoreOrderRequest = createServerFn({ method: "POST" })
       return {
         productId: product.id,
         productName: product.name,
-        variantName: variant?.name || undefined,
+        variantName: preOrder
+          ? `${variant?.name || "Standard product"} · PRE-ORDER`
+          : variant?.name || undefined,
         quantity,
         unitPrice,
         lineTotal: Math.round(unitPrice * quantity * 100) / 100,
