@@ -17,6 +17,7 @@ export type StoreProductVariant = {
   sku: string;
   price: string;
   stockQuantity: number;
+  preOrder: boolean;
   active: boolean;
   options: StoreVariantOption[];
 };
@@ -51,6 +52,7 @@ export type StoreProduct = {
   images: StoreProductImage[];
   stockStatus: string;
   stockQuantity: number;
+  preOrder: boolean;
   trackStock: boolean;
   weightGrams: number;
   buyUrl: string;
@@ -149,6 +151,7 @@ function normaliseVariants(product: Partial<StoreProduct>): StoreProductVariant[
     sku: String(variant.sku || ""),
     price: String(variant.price ?? ""),
     stockQuantity: Math.max(0, Math.floor(finiteNumber(variant.stockQuantity, 0))),
+    preOrder: variant.preOrder === true,
     active: variant.active !== false,
     options: Array.isArray(variant.options)
       ? variant.options.map((option) => ({ name: String(option.name || "Option"), value: String(option.value || "") }))
@@ -180,6 +183,7 @@ function normaliseProduct(product: Partial<StoreProduct>, index: number): StoreP
     images,
     stockStatus: String(product.stockStatus || "Available"),
     stockQuantity: Math.max(0, Math.floor(finiteNumber(product.stockQuantity, 0))),
+    preOrder: product.preOrder === true,
     trackStock: product.trackStock === true,
     weightGrams: Math.max(0, finiteNumber(product.weightGrams, 0)),
     buyUrl: String(product.buyUrl || ""),
