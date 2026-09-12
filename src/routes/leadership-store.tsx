@@ -76,7 +76,7 @@ function newProduct(index: number, currency: string): StoreProduct {
     category: "Other Gear",
     image: "",
     images: [],
-    stockStatus: "Available",
+    stockStatus: "Sold out",
     stockQuantity: 0,
     trackStock: true,
     weightGrams: 0,
@@ -89,13 +89,13 @@ function newProduct(index: number, currency: string): StoreProduct {
   };
 }
 
-function newVariant(index: number, stockQuantity: number): StoreProductVariant {
+function newVariant(index: number): StoreProductVariant {
   return {
     id: newId("variant"),
     name: `Option ${index + 1}`,
     sku: "",
     price: "",
-    stockQuantity,
+    stockQuantity: 0,
     active: true,
     options: [],
   };
@@ -109,12 +109,23 @@ function newImage(index: number, productName: string): StoreProductImage {
   };
 }
 
+function productHasStock(product: StoreProduct): boolean {
+  if (product.stockQuantity > 0) return true;
+  return product.variants.some(
+    (variant) => variant.active && variant.stockQuantity > 0,
+  );
+}
+
 function simpleStockStatus(product: StoreProduct): "Available" | "Sold out" | "Hidden" {
   if (product.status === "hidden" || product.visible === false) return "Hidden";
-  if (product.stockStatus.trim().toLowerCase() === "sold out" || product.stockQuantity <= 0) {
-    return "Sold out";
-  }
-  return "Available";
+  return productHasStock(product) ? "Available" : "Sold out";
+}
+
+function optionStockTotal(product: StoreProduct): number {
+  return product.variants.reduce(
+    (total, variant) => total + Math.max(0, variant.stockQuantity || 0),
+    0,
+  );
 }
 
 function LeadershipStorePage() {
@@ -184,16 +195,22 @@ function LeadershipStorePage() {
     setSaved(false);
     setSettings((current) => ({
       ...current,
-      products: current.products.map((product, index) =>
-        index === productIndex
-          ? {
-              ...product,
-              variants: product.variants.map((variant, vIndex) =>
-                vIndex === variantIndex ? { ...variant, ...patch } : variant,
-              ),
-            }
-          : product,
-      ),
+      products: current.products.map((product, index) => {
+        if (index !== productIndex) return product;
+        const variants = product.variants.map((variant, vIndex) =>
+          vIndex === variantIndex ? { ...variant, ...patch } : variant,
+        );
+        const next = { ...product, variants };
+        return {
+          ...next,
+          stockStatus:
+            next.status === "hidden" || next.visible === false
+              ? next.stockStatus
+              : productHasStock(next)
+                ? "Available"
+                : "Sold out",
+        };
+      }),
     }));
   }
 
@@ -266,7 +283,7 @@ function LeadershipStorePage() {
 
         return {
           ...product,
-          stockStatus: "Available",
+          stockStatus: productHasStock(product) ? "Available" : "Sold out",
           trackStock: true,
           visible: true,
           status: "published",
@@ -283,19 +300,18 @@ function LeadershipStorePage() {
       products: current.products.map((product, productIndex) => {
         if (productIndex !== index) return product;
         const hidden = product.status === "hidden" || product.visible === false;
-        return {
+        const next = {
           ...product,
           stockQuantity: safeQuantity,
+          trackStock: true,
+        };
+        return {
+          ...next,
           stockStatus: hidden
             ? product.stockStatus
-            : safeQuantity > 0
+            : productHasStock(next)
               ? "Available"
               : "Sold out",
-          trackStock: true,
-          variants: product.variants.map((variant) => ({
-            ...variant,
-            stockQuantity: safeQuantity,
-          })),
         };
       }),
     }));
@@ -312,19 +328,29 @@ function LeadershipStorePage() {
         ...option,
         enabled: true,
       })),
-      products: settings.products.map((product) => ({
-        ...product,
-        currency: settings.defaultCurrency,
-        compareAtPrice: "",
-        trackStock: true,
-        variants: product.variants.map((variant) => ({
+      products: settings.products.map((product) => {
+        const variants = product.variants.map((variant) => ({
           ...variant,
           sku: "",
-          stockQuantity: product.stockQuantity,
+          stockQuantity: Math.max(0, Math.floor(variant.stockQuantity || 0)),
           active: true,
           options: [],
-        })),
-      })),
+        }));
+        const normalStock = Math.max(0, Math.floor(product.stockQuantity || 0));
+        const hidden = product.status === "hidden" || product.visible === false;
+        const anyStock =
+          normalStock > 0 || variants.some((variant) => variant.stockQuantity > 0);
+
+        return {
+          ...product,
+          currency: settings.defaultCurrency,
+          compareAtPrice: "",
+          trackStock: true,
+          stockQuantity: normalStock,
+          stockStatus: hidden ? "Hidden" : anyStock ? "Available" : "Sold out",
+          variants,
+        };
+      }),
     };
 
     try {
@@ -400,12 +426,10 @@ function LeadershipStorePage() {
             <LockKeyhole className="mt-0.5 h-5 w-5 shrink-0" />
             <div>
               <p className="font-display text-lg font-semibold uppercase tracking-wide">
-                Payment processing not connected
+                Staff-assisted payment
               </p>
               <p className="mt-1 text-sm leading-relaxed text-amber-100/80">
-                Products, cart and checkout can be previewed now. Final payment
-                and order submission remain locked until a payment provider is
-                connected.
+                Customers submit the order first. Website Staff then contacts them with the selected PayPal or Venmo payment details.
               </p>
             </div>
           </div>
@@ -418,8 +442,7 @@ function LeadershipStorePage() {
                 {settings.enabled ? "Store is Public" : "Store is Hidden"}
               </p>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-                Leadership can preview the store while it is hidden. Turn this
-                on when you want customers to see it.
+                Leadership can preview and test the store while it is hidden. Turn this on when you want customers to see it.
               </p>
             </div>
             <label className="flex cursor-pointer items-center gap-3 rounded-md border border-border-strong bg-black/30 px-4 py-3">
@@ -444,9 +467,7 @@ function LeadershipStorePage() {
           icon={<Truck className="h-5 w-5" />}
         >
           <p className="mb-5 text-sm leading-relaxed text-muted">
-            Edit the two shipping prices customers can choose at checkout. The
-            customer enters their delivery address at checkout, so there are no
-            shipping zones on products.
+            Edit the two shipping prices customers can choose at checkout. The customer enters their delivery address at checkout, so there are no shipping zones on products.
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
             {settings.shippingOptions.map((option, index) => (
@@ -475,10 +496,6 @@ function LeadershipStorePage() {
               </div>
             ))}
           </div>
-          <p className="mt-4 text-xs leading-relaxed text-muted">
-            Leave a cost blank if it has not been decided yet. Checkout will
-            show “Price pending” instead of treating it as free shipping.
-          </p>
         </ManagerPanel>
 
         <ManagerPanel
@@ -488,8 +505,7 @@ function LeadershipStorePage() {
         >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted">
-              Keep product editing simple: name, images, description, final
-              price, stock and optional product choices.
+              Edit the normal product and each optional version separately, including individual stock counts.
             </p>
             <Button
               type="button"
@@ -524,8 +540,7 @@ function LeadershipStorePage() {
                         {product.name || `Product ${index + 1}`}
                       </p>
                       <p className="mt-1 text-xs text-muted">
-                        {simpleStockStatus(product)} · {product.stockQuantity}{" "}
-                        available
+                        {simpleStockStatus(product)} · Normal {product.stockQuantity} · Options {optionStockTotal(product)}
                       </p>
                     </div>
                     <p className="shrink-0 font-display text-lg font-semibold text-primary">
@@ -596,10 +611,11 @@ function LeadershipStorePage() {
                       </select>
                     </Field>
 
-                    <Field label="Quantity available">
+                    <Field label="Normal product stock">
                       <input
                         type="number"
                         min="0"
+                        step="1"
                         value={product.stockQuantity}
                         onChange={(event) =>
                           setProductQuantity(
@@ -609,6 +625,9 @@ function LeadershipStorePage() {
                         }
                         className={inputClass}
                       />
+                      <p className="mt-1 text-xs text-muted">
+                        This is only for the standard product with no option selected.
+                      </p>
                     </Field>
 
                     <div className="sm:col-span-2">
@@ -709,7 +728,7 @@ function LeadershipStorePage() {
                           Product options
                         </p>
                         <p className="mt-1 text-xs text-muted">
-                          Customers can always buy the normal product without an option. Add optional versions here and give each one its own price. Leave an option price blank to use the normal product price.
+                          Each option has its own price and its own stock count. Customers can still buy the normal product without selecting an option.
                         </p>
                       </div>
                       <Button
@@ -720,10 +739,7 @@ function LeadershipStorePage() {
                           updateProduct(index, {
                             variants: [
                               ...product.variants,
-                              newVariant(
-                                product.variants.length,
-                                product.stockQuantity,
-                              ),
+                              newVariant(product.variants.length),
                             ],
                           })
                         }
@@ -737,7 +753,7 @@ function LeadershipStorePage() {
                       {product.variants.map((variant, variantIndex) => (
                         <div
                           key={variant.id}
-                          className="grid gap-3 rounded-md border border-border bg-black/25 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(11rem,0.45fr)_auto] sm:items-end"
+                          className="grid gap-3 rounded-md border border-border bg-black/25 p-3 lg:grid-cols-[minmax(0,1fr)_minmax(10rem,0.45fr)_minmax(8rem,0.32fr)_auto] lg:items-end"
                         >
                           <Field label={`Option ${variantIndex + 1}`}>
                             <input
@@ -746,13 +762,12 @@ function LeadershipStorePage() {
                                 updateVariant(index, variantIndex, {
                                   name: event.target.value,
                                   sku: "",
-                                  stockQuantity: product.stockQuantity,
                                   active: true,
                                   options: [],
                                 })
                               }
                               className={inputClass}
-                              placeholder="e.g. Large or Black"
+                              placeholder="e.g. 100 mm or Magnet Back"
                             />
                           </Field>
 
@@ -767,6 +782,24 @@ function LeadershipStorePage() {
                               className={inputClass}
                               inputMode="decimal"
                               placeholder={product.price || "35.00"}
+                            />
+                          </Field>
+
+                          <Field label="Option stock">
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={variant.stockQuantity}
+                              onChange={(event) =>
+                                updateVariant(index, variantIndex, {
+                                  stockQuantity: Math.max(
+                                    0,
+                                    Math.floor(Number(event.target.value) || 0),
+                                  ),
+                                })
+                              }
+                              className={inputClass}
                             />
                           </Field>
 
@@ -786,7 +819,7 @@ function LeadershipStorePage() {
 
                       {!product.variants.length ? (
                         <p className="text-sm text-muted">
-                          No product options. Customers will buy the normal product at its normal price.
+                          No product options. Customers will buy the normal product at its normal price and normal stock count.
                         </p>
                       ) : null}
                     </div>
@@ -827,7 +860,7 @@ function LeadershipStorePage() {
                 Store Changes
               </p>
               <p className="text-xs text-muted">
-                Product details, stock, option prices and Standard/Express shipping costs save together.
+                Product details, normal stock, individual option stock, option prices and shipping costs save together.
               </p>
             </div>
             <div className="flex items-center gap-3">
