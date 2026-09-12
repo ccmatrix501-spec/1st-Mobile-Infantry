@@ -20,8 +20,10 @@ function playHatchetBattleCry() {
   if (!hatchetBattleCryAudio) {
     hatchetBattleCryAudio = new Audio("/HatchetsBattleCry.mp3");
     hatchetBattleCryAudio.preload = "auto";
+    hatchetBattleCryAudio.volume = 0.5;
   }
 
+  hatchetBattleCryAudio.volume = 0.5;
   hatchetBattleCryAudio.pause();
   hatchetBattleCryAudio.currentTime = 0;
   void hatchetBattleCryAudio.play().catch(() => undefined);
