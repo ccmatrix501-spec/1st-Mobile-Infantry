@@ -21,6 +21,7 @@ import {
 } from "@/lib/store-settings-fn";
 import {
   parseMoney,
+  productIsPreOrder,
   productIsPurchasable,
   productPrice,
   productPrimaryImage,
@@ -76,6 +77,7 @@ function StoreProductPage() {
 
   const variant = activeVariants.find((item) => item.id === variantId) ?? null;
   const price = product ? productPrice(product, variant) : 0;
+  const selectedPreOrder = product ? productIsPreOrder(product, variant) : false;
   const canAdd = product ? productIsPurchasable(product, variant) && price > 0 : false;
   const hasCustomPrintRequest = product?.slug === CUSTOM_PRINT_PRODUCT_SLUG;
 
@@ -112,6 +114,7 @@ function StoreProductPage() {
   }
 
   const customRequestUrl = `/store/custom-3d-print?source=${encodeURIComponent(product.name)}&product=${encodeURIComponent(product.slug)}`;
+  const standardUnavailable = product.trackStock && product.stockQuantity <= 0 && !product.preOrder;
 
   return (
     <AppShell>
@@ -132,7 +135,10 @@ function StoreProductPage() {
 
         <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr]">
           <div>
-            <div className="overflow-hidden rounded-xl border border-border bg-black/45">
+            <div className="relative overflow-hidden rounded-xl border border-border bg-black/45">
+              {product.preOrder ? (
+                <span className="absolute left-4 top-4 z-10 rounded-md border border-amber-300/45 bg-black/85 px-3 py-1.5 stencil text-[10px] tracking-[0.14em] text-amber-200">PRE-ORDER</span>
+              ) : null}
               <div className="aspect-square sm:aspect-[4/3]">
                 {currentImage ? (
                   <img src={currentImage.url} alt={currentImage.alt || product.name} className="h-full w-full object-contain" />
@@ -158,7 +164,12 @@ function StoreProductPage() {
           </div>
 
           <div className="panel panel-feature p-6 sm:p-8">
-            <p className="stencil text-[10px] tracking-[0.14em] text-primary">{product.category}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="stencil text-[10px] tracking-[0.14em] text-primary">{product.category}</p>
+              {selectedPreOrder ? (
+                <span className="rounded-md border border-amber-300/35 bg-amber-300/10 px-2 py-0.5 stencil text-[9px] tracking-[0.12em] text-amber-200">PRE-ORDER</span>
+              ) : null}
+            </div>
             <h1 className="mt-2 font-display text-4xl font-semibold uppercase tracking-wide text-fg sm:text-5xl">{product.name}</h1>
             {product.sku ? <p className="mt-2 font-mono text-[10px] text-subtle">SKU {product.sku}</p> : null}
 
@@ -170,6 +181,12 @@ function StoreProductPage() {
             </div>
             <div className="mt-1"><StoreCurrencyNote baseCurrency={product.currency} /></div>
 
+            {selectedPreOrder ? (
+              <div className="mt-4 rounded-lg border border-amber-300/30 bg-amber-300/10 p-4 text-sm leading-relaxed text-amber-100">
+                <strong>Pre-order item.</strong> This can be ordered before stock is ready. Website Staff will contact you as part of the normal order process.
+              </div>
+            ) : null}
+
             {product.description ? <p className="mt-5 whitespace-pre-line text-sm leading-7 text-muted sm:text-base">{product.description}</p> : null}
 
             {activeVariants.length || hasCustomPrintRequest ? (
@@ -179,20 +196,23 @@ function StoreProductPage() {
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   <button
                     type="button"
-                    disabled={product.trackStock && product.stockQuantity <= 0}
+                    disabled={standardUnavailable}
                     onClick={() => setVariantId("")}
-                    className={`rounded-md border p-3 text-left transition-colors ${variantId === "" ? "border-primary bg-primary/10" : "border-border bg-black/25 hover:border-primary/45"} ${product.trackStock && product.stockQuantity <= 0 ? "cursor-not-allowed opacity-45" : ""}`}
+                    className={`rounded-md border p-3 text-left transition-colors ${variantId === "" ? "border-primary bg-primary/10" : "border-border bg-black/25 hover:border-primary/45"} ${standardUnavailable ? "cursor-not-allowed opacity-45" : ""}`}
                   >
-                    <p className="font-display text-base font-semibold uppercase tracking-wide text-fg">Standard product</p>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-display text-base font-semibold uppercase tracking-wide text-fg">Standard product</p>
+                      {product.preOrder ? <span className="rounded border border-amber-300/35 px-1.5 py-0.5 stencil text-[8px] text-amber-200">PRE-ORDER</span> : null}
+                    </div>
                     <p className="mt-1 text-xs text-muted">No optional selection</p>
                     <p className="mt-2 font-mono text-[10px] text-subtle">
                       {parseMoney(product.price) > 0 ? <StoreMoney amount={parseMoney(product.price)} currency={product.currency} /> : "Price pending"}
-                      {product.trackStock ? ` · ${product.stockQuantity} in stock` : ""}
+                      {product.preOrder ? " · Pre-order" : product.trackStock ? ` · ${product.stockQuantity} in stock` : ""}
                     </p>
                   </button>
 
                   {activeVariants.map((item) => {
-                    const soldOut = product.trackStock && item.stockQuantity <= 0;
+                    const soldOut = product.trackStock && item.stockQuantity <= 0 && !item.preOrder;
                     return (
                       <button
                         key={item.id}
@@ -201,11 +221,14 @@ function StoreProductPage() {
                         onClick={() => setVariantId(item.id)}
                         className={`rounded-md border p-3 text-left transition-colors ${variantId === item.id ? "border-primary bg-primary/10" : "border-border bg-black/25 hover:border-primary/45"} ${soldOut ? "cursor-not-allowed opacity-45" : ""}`}
                       >
-                        <p className="font-display text-base font-semibold uppercase tracking-wide text-fg">{item.name}</p>
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="font-display text-base font-semibold uppercase tracking-wide text-fg">{item.name}</p>
+                          {item.preOrder ? <span className="rounded border border-amber-300/35 px-1.5 py-0.5 stencil text-[8px] text-amber-200">PRE-ORDER</span> : null}
+                        </div>
                         {item.options.length ? <p className="mt-1 text-xs text-muted">{item.options.map((option) => `${option.name}: ${option.value}`).join(" · ")}</p> : null}
                         <p className="mt-2 font-mono text-[10px] text-subtle">
                           {item.price?.trim() ? <StoreMoney amount={productPrice(product, item)} currency={product.currency} /> : <>Same price · <StoreMoney amount={productPrice(product, item)} currency={product.currency} /></>}
-                          {product.trackStock ? ` · ${item.stockQuantity} in stock` : ""}
+                          {item.preOrder ? " · Pre-order" : product.trackStock ? ` · ${item.stockQuantity} in stock` : ""}
                         </p>
                       </button>
                     );
@@ -229,7 +252,13 @@ function StoreProductPage() {
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <p className="stencil text-[9px] tracking-[0.12em] text-primary">Availability</p>
-                  <p className="mt-1 text-sm text-fg">{product.trackStock ? `${variant ? variant.stockQuantity : product.stockQuantity} available` : product.stockStatus}</p>
+                  <p className="mt-1 text-sm text-fg">
+                    {selectedPreOrder
+                      ? "Pre-order available"
+                      : product.trackStock
+                        ? `${variant ? variant.stockQuantity : product.stockQuantity} available`
+                        : product.stockStatus}
+                  </p>
                 </div>
                 <div className="flex items-center rounded-md border border-border-strong bg-black/45">
                   <button type="button" onClick={() => setQuantity((value) => Math.max(1, value - 1))} className="p-2.5 text-muted hover:text-fg" aria-label="Decrease quantity"><Minus className="h-4 w-4" /></button>
@@ -239,9 +268,13 @@ function StoreProductPage() {
               </div>
 
               <Button type="button" size="lg" className="mt-4 w-full" disabled={!canAdd} onClick={addToCart}>
-                {added ? <><CheckCircle2 className="h-4 w-4" />Added to Cart</> : <><ShoppingCart className="h-4 w-4" />{canAdd ? "Add to Cart" : "Unavailable"}</>}
+                {added ? (
+                  <><CheckCircle2 className="h-4 w-4" />Added to Cart</>
+                ) : (
+                  <><ShoppingCart className="h-4 w-4" />{canAdd ? (selectedPreOrder ? "Add Pre-order to Cart" : "Add to Cart") : "Unavailable"}</>
+                )}
               </Button>
-              <p className="mt-3 text-center text-xs leading-relaxed text-muted">Payment is not connected yet. Adding an item only saves it to your local cart.</p>
+              <p className="mt-3 text-center text-xs leading-relaxed text-muted">No payment is taken on this page. Website Staff contacts the customer after the order is submitted.</p>
             </div>
 
             {product.tags.length ? (
