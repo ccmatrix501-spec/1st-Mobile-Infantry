@@ -12,6 +12,21 @@ export const Route = createFileRoute("/leadership")({
   }),
 });
 
+let hatchetBattleCryAudio: HTMLAudioElement | null = null;
+
+function playHatchetBattleCry() {
+  if (typeof window === "undefined") return;
+
+  if (!hatchetBattleCryAudio) {
+    hatchetBattleCryAudio = new Audio("/HatchetsBattleCry.mp3");
+    hatchetBattleCryAudio.preload = "auto";
+  }
+
+  hatchetBattleCryAudio.pause();
+  hatchetBattleCryAudio.currentTime = 0;
+  void hatchetBattleCryAudio.play().catch(() => undefined);
+}
+
 function LeadershipPage() {
   const config = useSiteAdminConfig();
   const command = config.leadership.filter((person) => person.tier === "command");
@@ -84,6 +99,7 @@ function OfficerCard({ person, featured, config }: {
   const companyLogo = person.company
     ? config.companies.find((company) => company.callsign.toLowerCase() === person.company?.toLowerCase())?.logo
     : undefined;
+  const isHatchet = person.name.trim().toLowerCase() === "hatchet";
 
   return (
     <article className={`panel panel-lift p-6 ${featured ? "sm:p-7" : ""}`}>
@@ -93,9 +109,21 @@ function OfficerCard({ person, featured, config }: {
             <img src={companyLogo} alt={`${person.company} company logo`} className="h-full w-full object-contain" decoding="async" />
           </span>
         ) : person.portrait ? (
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border-strong bg-black">
-            <img src={person.portrait} alt={`${person.rank} ${person.name}`} className="h-full w-full object-cover object-top" decoding="async" />
-          </span>
+          isHatchet ? (
+            <button
+              type="button"
+              onClick={playHatchetBattleCry}
+              aria-label="Play General Hatchet's battle cry"
+              title="Play Hatchet's battle cry"
+              className="flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border border-primary/45 bg-black transition hover:border-primary hover:shadow-[0_0_18px_rgba(40,200,95,.25)] focus:outline-none focus:ring-2 focus:ring-primary/50"
+            >
+              <img src={person.portrait} alt={`${person.rank} ${person.name}`} className="h-full w-full object-cover object-top" decoding="async" />
+            </button>
+          ) : (
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border-strong bg-black">
+              <img src={person.portrait} alt={`${person.rank} ${person.name}`} className="h-full w-full object-cover object-top" decoding="async" />
+            </span>
+          )
         ) : (
           <span className="flex h-12 w-12 items-center justify-center rounded-md border border-primary/25 bg-primary/10 font-display text-sm font-semibold text-primary">{initials}</span>
         )}
@@ -106,14 +134,34 @@ function OfficerCard({ person, featured, config }: {
       </div>
 
       {person.portrait ? (
-        <div className="mx-auto mt-4 max-w-[420px] overflow-hidden rounded-md border border-border bg-black/60">
-          <img
-            src={person.portrait}
-            alt={`${person.rank} ${person.name}`}
-            className="aspect-[4/5] w-full object-cover object-top"
-            decoding="async"
-          />
-        </div>
+        isHatchet ? (
+          <button
+            type="button"
+            onClick={playHatchetBattleCry}
+            aria-label="Play General Hatchet's battle cry"
+            title="Click to play Hatchet's battle cry"
+            className="group relative mx-auto mt-4 block max-w-[420px] cursor-pointer overflow-hidden rounded-md border border-primary/35 bg-black/60 text-left transition hover:border-primary hover:shadow-[0_0_28px_rgba(40,200,95,.18)] focus:outline-none focus:ring-2 focus:ring-primary/50"
+          >
+            <img
+              src={person.portrait}
+              alt={`${person.rank} ${person.name}`}
+              className="aspect-[4/5] w-full object-cover object-top"
+              decoding="async"
+            />
+            <span className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-md border border-primary/35 bg-black/80 px-3 py-1.5 stencil text-[9px] tracking-[0.12em] text-primary opacity-90 transition group-hover:bg-primary/15">
+              Click portrait · Play battle cry
+            </span>
+          </button>
+        ) : (
+          <div className="mx-auto mt-4 max-w-[420px] overflow-hidden rounded-md border border-border bg-black/60">
+            <img
+              src={person.portrait}
+              alt={`${person.rank} ${person.name}`}
+              className="aspect-[4/5] w-full object-cover object-top"
+              decoding="async"
+            />
+          </div>
+        )
       ) : null}
 
       <p className="mt-3 font-mono text-xs text-muted">{person.billet}</p>
