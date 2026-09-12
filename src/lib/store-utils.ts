@@ -45,9 +45,17 @@ export function productPrimaryImage(product: StoreProduct): string {
   return product.images.find((image) => image.url)?.url || product.image || "";
 }
 
+export function productIsPreOrder(
+  product: StoreProduct,
+  variant?: StoreProductVariant | null,
+): boolean {
+  return variant ? variant.preOrder === true : product.preOrder === true;
+}
+
 export function productIsPurchasable(product: StoreProduct, variant?: StoreProductVariant | null): boolean {
   if (product.status !== "published") return false;
   if (variant && !variant.active) return false;
+  if (productIsPreOrder(product, variant)) return true;
   if (product.trackStock) {
     const quantity = variant ? variant.stockQuantity : product.stockQuantity;
     return quantity > 0;
