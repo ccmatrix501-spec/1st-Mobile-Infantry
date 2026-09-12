@@ -115,9 +115,8 @@ function OfficerCard({ person, featured, config }: {
             <button
               type="button"
               onClick={playHatchetBattleCry}
-              aria-label="Play General Hatchet's battle cry"
-              title="Play Hatchet's battle cry"
-              className="flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border border-primary/45 bg-black transition hover:border-primary hover:shadow-[0_0_18px_rgba(40,200,95,.25)] focus:outline-none focus:ring-2 focus:ring-primary/50"
+              aria-label={`${person.rank} ${person.name}`}
+              className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border-strong bg-black focus:outline-none"
             >
               <img src={person.portrait} alt={`${person.rank} ${person.name}`} className="h-full w-full object-cover object-top" decoding="async" />
             </button>
@@ -140,9 +139,8 @@ function OfficerCard({ person, featured, config }: {
           <button
             type="button"
             onClick={playHatchetBattleCry}
-            aria-label="Play General Hatchet's battle cry"
-            title="Click to play Hatchet's battle cry"
-            className="group relative mx-auto mt-4 block max-w-[420px] cursor-pointer overflow-hidden rounded-md border border-primary/35 bg-black/60 text-left transition hover:border-primary hover:shadow-[0_0_28px_rgba(40,200,95,.18)] focus:outline-none focus:ring-2 focus:ring-primary/50"
+            aria-label={`${person.rank} ${person.name}`}
+            className="mx-auto mt-4 block max-w-[420px] overflow-hidden rounded-md border border-border bg-black/60 text-left focus:outline-none"
           >
             <img
               src={person.portrait}
@@ -150,9 +148,6 @@ function OfficerCard({ person, featured, config }: {
               className="aspect-[4/5] w-full object-cover object-top"
               decoding="async"
             />
-            <span className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-md border border-primary/35 bg-black/80 px-3 py-1.5 stencil text-[9px] tracking-[0.12em] text-primary opacity-90 transition group-hover:bg-primary/15">
-              Click portrait · Play battle cry
-            </span>
           </button>
         ) : (
           <div className="mx-auto mt-4 max-w-[420px] overflow-hidden rounded-md border border-border bg-black/60">
