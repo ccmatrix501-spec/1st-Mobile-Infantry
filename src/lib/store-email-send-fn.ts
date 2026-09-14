@@ -150,9 +150,9 @@ export const sendLeadershipStoreEmail = createServerFn({ method: "POST" })
       let historyRecorded = false;
       let historyError: string | null = null;
 
-      if (data.history?.orderId && data.history?.orderNumber) {
-        try {
-          const history = await import("@/lib/store-email-history-fn");
+      try {
+        const history = await import("@/lib/store-email-history-fn");
+        if (data.history?.orderId && data.history?.orderNumber) {
           await history.recordStoreEmailHistoryServer({
             orderId: data.history.orderId,
             orderNumber: data.history.orderNumber,
@@ -170,9 +170,19 @@ export const sendLeadershipStoreEmail = createServerFn({ method: "POST" })
             plainText: text,
           });
           historyRecorded = true;
-        } catch (error) {
-          historyError = error instanceof Error ? error.message : "Could not save email history.";
+        } else {
+          const recorded = await history.recordSentStoreEmailForMatchingOrder({
+            recipientEmail: to[0] || "",
+            senderEmail: fromAddress,
+            subject,
+            htmlBody: html,
+            plainText: text,
+            providerMessageId: result.id || "",
+          });
+          historyRecorded = Boolean(recorded);
         }
+      } catch (error) {
+        historyError = error instanceof Error ? error.message : "Could not save email history.";
       }
 
       return {
