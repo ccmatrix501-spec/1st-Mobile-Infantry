@@ -1,5 +1,15 @@
 import { createServerFn } from "@tanstack/react-start";
 
+export type StoreEmailSendHistoryInput = {
+  orderId: string;
+  orderNumber: string;
+  recipientName: string;
+  emailType: string;
+  orderStatus: string;
+  trackingNumber?: string;
+  estimatedDelivery?: string;
+};
+
 export type StoreEmailSendInput = {
   to: string;
   cc?: string;
@@ -7,6 +17,7 @@ export type StoreEmailSendInput = {
   subject: string;
   text: string;
   html: string;
+  history?: StoreEmailSendHistoryInput;
 };
 
 export type StoreEmailSendResult = {
@@ -14,6 +25,8 @@ export type StoreEmailSendResult = {
   id: string | null;
   from: string;
   to: string[];
+  historyRecorded: boolean;
+  historyError: string | null;
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
@@ -91,9 +104,6 @@ export const sendLeadershipStoreEmail = createServerFn({ method: "POST" })
       throw new Error("STORE_MAIL_FROM / MAIL_FROM is not a valid email address.");
     }
 
-    // Always send a hidden archive copy to the domain mailbox so website-sent
-    // messages arrive in the Gmail inbox via Cloudflare Email Routing.
-    // STORE_MAIL_ARCHIVE_BCC can override the archive destination if required.
     const archiveBcc = archiveMailbox(fromAddress).filter(
       (email) => !to.includes(email) && !cc.includes(email),
     );
@@ -137,11 +147,41 @@ export const sendLeadershipStoreEmail = createServerFn({ method: "POST" })
         );
       }
 
+      let historyRecorded = false;
+      let historyError: string | null = null;
+
+      if (data.history?.orderId && data.history?.orderNumber) {
+        try {
+          const history = await import("@/lib/store-email-history-fn");
+          await history.recordStoreEmailHistoryServer({
+            orderId: data.history.orderId,
+            orderNumber: data.history.orderNumber,
+            recipientEmail: to[0] || "",
+            recipientName: data.history.recipientName || "",
+            senderEmail: fromAddress,
+            emailType: data.history.emailType || "store",
+            subject,
+            orderStatus: data.history.orderStatus || "",
+            trackingNumber: data.history.trackingNumber || "",
+            estimatedDelivery: data.history.estimatedDelivery || "",
+            deliveryMethod: "resend",
+            providerMessageId: result.id || "",
+            htmlBody: html,
+            plainText: text,
+          });
+          historyRecorded = true;
+        } catch (error) {
+          historyError = error instanceof Error ? error.message : "Could not save email history.";
+        }
+      }
+
       return {
         ok: true,
         id: result.id ?? null,
         from: fromAddress,
         to,
+        historyRecorded,
+        historyError,
       };
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
