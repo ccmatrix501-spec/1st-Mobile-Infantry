@@ -9,9 +9,7 @@ import { SiteFooter } from "@/components/site-footer";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const showStoreAdminNav =
-    pathname === "/leadership-store" ||
-    pathname.startsWith("/leadership-store/orders");
+  const showStoreAdminNav = pathname.startsWith("/leadership-store");
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -52,6 +50,16 @@ export function AppShell({ children }: { children: ReactNode }) {
               }`}
             >
               Store Orders
+            </Link>
+            <Link
+              to="/leadership-store/email"
+              className={`rounded-md border px-3 py-2 font-display text-xs font-semibold uppercase tracking-[0.08em] transition-colors ${
+                pathname.startsWith("/leadership-store/email")
+                  ? "border-primary bg-primary text-black"
+                  : "border-border-strong bg-black/30 text-fg hover:border-primary/50"
+              }`}
+            >
+              Email Hub
             </Link>
           </div>
         </div>
