@@ -52,6 +52,15 @@ function mailFromName(): string {
   return process.env.STORE_MAIL_FROM_NAME?.trim() || "1st M.I. Merchandise";
 }
 
+function archiveMailbox(fromAddress: string): string[] {
+  const configured = process.env.STORE_MAIL_ARCHIVE_BCC?.trim() || fromAddress;
+  return validateRecipients(configured, "Store mail archive Bcc");
+}
+
+function mergeUniqueRecipients(...groups: string[][]): string[] {
+  return [...new Set(groups.flat().map((email) => email.toLowerCase()))];
+}
+
 export const sendLeadershipStoreEmail = createServerFn({ method: "POST" })
   .inputValidator((input: StoreEmailSendInput) => input)
   .handler(async ({ data }): Promise<StoreEmailSendResult> => {
@@ -67,7 +76,7 @@ export const sendLeadershipStoreEmail = createServerFn({ method: "POST" })
 
     const to = validateRecipients(data.to, "To", true);
     const cc = validateRecipients(data.cc, "Cc");
-    const bcc = validateRecipients(data.bcc, "Bcc");
+    const requestedBcc = validateRecipients(data.bcc, "Bcc");
     const subject = cleanSubject(data.subject);
     const text = String(data.text ?? "").trim();
     const html = String(data.html ?? "").trim();
@@ -77,8 +86,20 @@ export const sendLeadershipStoreEmail = createServerFn({ method: "POST" })
       throw new Error("Email content is too large to send from the Store Manager.");
     }
 
-    const fromAddress = mailFrom();
-    if (!EMAIL_RE.test(fromAddress)) throw new Error("STORE_MAIL_FROM / MAIL_FROM is not a valid email address.");
+    const fromAddress = mailFrom().toLowerCase();
+    if (!EMAIL_RE.test(fromAddress)) {
+      throw new Error("STORE_MAIL_FROM / MAIL_FROM is not a valid email address.");
+    }
+
+    // Always send a hidden archive copy to the domain mailbox so website-sent
+    // messages arrive in the Gmail inbox via Cloudflare Email Routing.
+    // STORE_MAIL_ARCHIVE_BCC can override the archive destination if required.
+    const archiveBcc = archiveMailbox(fromAddress).filter(
+      (email) => !to.includes(email) && !cc.includes(email),
+    );
+    const bcc = mergeUniqueRecipients(requestedBcc, archiveBcc).filter(
+      (email) => !to.includes(email) && !cc.includes(email),
+    );
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15_000);
