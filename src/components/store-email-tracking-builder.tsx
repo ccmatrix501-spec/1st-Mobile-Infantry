@@ -91,8 +91,6 @@ export function StoreEmailTrackingBuilder({ order }: { order: StoreOrder }) {
   );
 
   const subject = useMemo(() => trackedStoreEmailSubject(order, extras), [order, extras]);
-  const html = useMemo(() => buildTrackedStoreEmailHtml(order, extras), [order, extras]);
-  const plainText = useMemo(() => trackedStoreEmailPlainText(order, extras), [order, extras]);
 
   async function saveTracking(showNotice = true) {
     setSavingTracking(true);
@@ -119,16 +117,31 @@ export function StoreEmailTrackingBuilder({ order }: { order: StoreOrder }) {
     }
   }
 
+  async function ensureTrackingAccess() {
+    if (trackingUrl) {
+      return {
+        url: trackingUrl,
+        trackingNumber,
+        estimatedDelivery,
+      };
+    }
+    const access = await ensureLeadershipStoreOrderTrackingLink({ data: { orderId: order.id } });
+    setTrackingUrl(access.url);
+    if (!trackingNumber && access.trackingNumber) setTrackingNumber(access.trackingNumber);
+    if (!estimatedDelivery && access.estimatedDelivery) setEstimatedDelivery(access.estimatedDelivery);
+    return access;
+  }
+
   async function copyCustomerEmail() {
     setCopying(true);
     setNotice(null);
     try {
-      await saveTracking(false);
+      const saved = await saveTracking(false);
       const currentExtras: TrackedStoreEmailExtras = {
         ...extras,
-        trackingUrl,
-        trackingNumber,
-        estimatedDelivery,
+        trackingUrl: saved.url,
+        trackingNumber: saved.trackingNumber,
+        estimatedDelivery: saved.estimatedDelivery,
       };
       const currentHtml = buildTrackedStoreEmailHtml(order, currentExtras);
       const currentText = trackedStoreEmailPlainText(order, currentExtras);
@@ -164,24 +177,30 @@ export function StoreEmailTrackingBuilder({ order }: { order: StoreOrder }) {
   async function copyTrackingLink() {
     setNotice(null);
     try {
-      let url = trackingUrl;
-      if (!url) {
-        const access = await ensureLeadershipStoreOrderTrackingLink({ data: { orderId: order.id } });
-        url = access.url;
-        setTrackingUrl(access.url);
-      }
-      await navigator.clipboard.writeText(url);
+      const access = await ensureTrackingAccess();
+      await navigator.clipboard.writeText(access.url);
       setNotice("Customer tracking link copied.");
     } catch (error) {
       setNotice(error instanceof Error ? `Could not copy tracking link: ${error.message}` : "Could not copy tracking link.");
     }
   }
 
-  function previewCustomerEmail() {
-    const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    window.open(url, "_blank", "noopener,noreferrer");
-    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  async function previewCustomerEmail() {
+    setNotice(null);
+    try {
+      const access = await ensureTrackingAccess();
+      const currentExtras: TrackedStoreEmailExtras = {
+        ...extras,
+        trackingUrl: access.url,
+      };
+      const currentHtml = buildTrackedStoreEmailHtml(order, currentExtras);
+      const blob = new Blob([currentHtml], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank", "noopener,noreferrer");
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (error) {
+      setNotice(error instanceof Error ? `Could not preview email: ${error.message}` : "Could not preview the email.");
+    }
   }
 
   function openEmailApp() {
@@ -288,7 +307,7 @@ export function StoreEmailTrackingBuilder({ order }: { order: StoreOrder }) {
             {copying ? "Copying…" : "Copy Email"}
           </Button>
 
-          <Button type="button" variant="secondary" onClick={previewCustomerEmail}>
+          <Button type="button" variant="secondary" onClick={() => void previewCustomerEmail()}>
             <Eye className="h-4 w-4" /> Preview Email
           </Button>
 
