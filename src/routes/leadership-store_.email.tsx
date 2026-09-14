@@ -3,7 +3,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowLeft,
   CheckCircle2,
+  Eye,
   ExternalLink,
+  History,
   Mail,
   PackageCheck,
   RefreshCw,
@@ -15,6 +17,11 @@ import {
 import { AppShell, PageHero } from "@/components/app-shell";
 import { StoreEmailTrackingBuilder } from "@/components/store-email-tracking-builder";
 import { Button } from "@/components/ui/button";
+import {
+  fetchLeadershipStoreEmailHistory,
+  fetchLeadershipStoreEmailHistoryDetail,
+  type StoreEmailHistoryEntry,
+} from "@/lib/store-email-history-fn";
 import { fetchLeadershipStoreOrders } from "@/lib/store-orders-fn";
 import {
   storeOrderCustomerName,
@@ -43,13 +50,21 @@ function formatDate(value: string): string {
   }).format(date);
 }
 
+function emailTypeLabel(value: string): string {
+  return String(value || "Store email")
+    .replaceAll("-", " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 function LeadershipStoreEmailHubPage() {
   const [orders, setOrders] = useState<StoreOrder[]>([]);
+  const [history, setHistory] = useState<StoreEmailHistoryEntry[]>([]);
   const [selectedOrderId, setSelectedOrderId] = useState<string>("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [openingHistoryId, setOpeningHistoryId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async (quiet = false) => {
@@ -58,14 +73,18 @@ function LeadershipStoreEmailHubPage() {
     setError(null);
 
     try {
-      const nextOrders = await fetchLeadershipStoreOrders();
+      const [nextOrders, nextHistory] = await Promise.all([
+        fetchLeadershipStoreOrders(),
+        fetchLeadershipStoreEmailHistory(),
+      ]);
       setOrders(nextOrders);
+      setHistory(nextHistory);
       setSelectedOrderId((current) => {
         if (current && nextOrders.some((order) => order.id === current)) return current;
         return nextOrders[0]?.id || "";
       });
     } catch (err) {
-      const text = err instanceof Error ? err.message : "Could not load store orders.";
+      const text = err instanceof Error ? err.message : "Could not load the Store Email Hub.";
       if (text.toLowerCase().includes("session")) {
         const next = "/leadership-store/email";
         window.location.href = `/login?next=${encodeURIComponent(next)}`;
@@ -80,6 +99,16 @@ function LeadershipStoreEmailHubPage() {
 
   useEffect(() => {
     void load();
+  }, [load]);
+
+  useEffect(() => {
+    const refreshHistory = () => void load(true);
+    window.addEventListener("store-email-history-updated", refreshHistory);
+    const timer = window.setInterval(() => void load(true), 15_000);
+    return () => {
+      window.removeEventListener("store-email-history-updated", refreshHistory);
+      window.clearInterval(timer);
+    };
   }, [load]);
 
   const filteredOrders = useMemo(() => {
@@ -119,12 +148,37 @@ function LeadershipStoreEmailHubPage() {
   const shippedCount = orders.filter((order) => order.status === "shipped").length;
   const completedCount = orders.filter((order) => order.status === "completed").length;
 
+  async function viewSentEmail(entry: StoreEmailHistoryEntry) {
+    setOpeningHistoryId(entry.id);
+    setError(null);
+    try {
+      const detail = await fetchLeadershipStoreEmailHistoryDetail({ data: { id: entry.id } });
+      if (!detail) throw new Error("Sent email history entry was not found.");
+      const content = detail.htmlBody || `<pre>${detail.plainText}</pre>`;
+      const blob = new Blob([content], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank", "noopener,noreferrer");
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not open the sent email.");
+    } finally {
+      setOpeningHistoryId(null);
+    }
+  }
+
+  function selectHistoryOrder(entry: StoreEmailHistoryEntry) {
+    if (orders.some((order) => order.id === entry.orderId)) {
+      setSelectedOrderId(entry.orderId);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
   return (
     <AppShell>
       <PageHero
         kicker="Quartermaster communications"
         title="Store Email Hub"
-        body="A small leadership-only email desk for finding an order, building the branded customer email, updating tracking details and copying everything into Outlook."
+        body="A leadership-only email desk for finding an order, sending branded customer emails, updating tracking and reviewing messages already sent from the website."
         meta="1ST MI DIV · STORE ADMIN · CUSTOMER COMMS"
       />
 
@@ -157,7 +211,8 @@ function LeadershipStoreEmailHubPage() {
           </div>
         ) : null}
 
-        <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <StatCard label="Sent emails" value={history.length} icon={<History className="h-5 w-5" />} />
           <StatCard label="Active orders" value={activeCount} icon={<Mail className="h-5 w-5" />} />
           <StatCard label="Packing" value={packingCount} icon={<PackageCheck className="h-5 w-5" />} />
           <StatCard label="Shipped" value={shippedCount} icon={<Truck className="h-5 w-5" />} />
@@ -281,12 +336,88 @@ function LeadershipStoreEmailHubPage() {
                 <Mail className="mx-auto h-10 w-10 text-primary" />
                 <h2 className="mt-4 font-display text-2xl font-semibold uppercase text-fg">Select an Order</h2>
                 <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-muted">
-                  Choose an order from the left to create its customer email, save tracking information, preview the branded message and copy it into Outlook.
+                  Choose an order from the left to create its customer email, save tracking information and send the branded message.
                 </p>
               </section>
             )}
           </main>
         </div>
+
+        <section className="mt-8 panel panel-feature overflow-hidden p-0">
+          <div className="flex flex-col gap-3 border-b border-border px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div className="flex items-center gap-3">
+              <History className="h-5 w-5 text-primary" />
+              <div>
+                <p className="stencil text-[9px] tracking-[0.14em] text-primary">Website delivery log</p>
+                <h2 className="mt-1 font-display text-2xl font-semibold uppercase text-fg">Sent Email History</h2>
+              </div>
+            </div>
+            <p className="text-xs text-muted">Newest first · up to 200 records</p>
+          </div>
+
+          {!history.length ? (
+            <div className="px-6 py-12 text-center">
+              <Mail className="mx-auto h-9 w-9 text-primary" />
+              <h3 className="mt-4 font-display text-xl font-semibold uppercase text-fg">No website-sent emails yet</h3>
+              <p className="mx-auto mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+                Emails sent with the Send Email button will be recorded here automatically after Resend accepts the message.
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {history.map((entry) => (
+                <article key={entry.id} className="grid gap-4 px-5 py-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full border border-primary/25 bg-primary/5 px-2 py-1 stencil text-[8px] tracking-[0.09em] text-primary">
+                        SENT
+                      </span>
+                      <span className="rounded-full border border-border bg-black/25 px-2 py-1 text-[10px] text-muted">
+                        {emailTypeLabel(entry.emailType)}
+                      </span>
+                      <span className="text-[10px] text-subtle">{formatDate(entry.sentAt)}</span>
+                    </div>
+
+                    <h3 className="mt-2 truncate font-display text-lg font-semibold text-fg" title={entry.subject}>
+                      {entry.subject}
+                    </h3>
+                    <p className="mt-1 truncate text-sm text-muted">
+                      To: {entry.recipientName || entry.recipientEmail} · {entry.recipientEmail}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-subtle">
+                      <span>Order: {entry.orderNumber}</span>
+                      <span>From: {entry.senderEmail || "merch@1stmid.com"}</span>
+                      {entry.providerMessageId ? <span>Resend ID: {entry.providerMessageId}</span> : null}
+                      {entry.trackingNumber ? <span>Tracking: {entry.trackingNumber}</span> : null}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 lg:justify-end">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      disabled={openingHistoryId === entry.id}
+                      onClick={() => void viewSentEmail(entry)}
+                    >
+                      <Eye className="h-4 w-4" />
+                      {openingHistoryId === entry.id ? "Opening…" : "View Email"}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => selectHistoryOrder(entry)}
+                      disabled={!orders.some((order) => order.id === entry.orderId)}
+                    >
+                      <ShoppingBag className="h-4 w-4" /> Order
+                    </Button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
       </section>
     </AppShell>
   );
