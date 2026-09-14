@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Mail, X } from "lucide-react";
 import { useRouterState } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { StoreEmailBuilder } from "@/components/store-email-builder";
+import { StoreEmailTrackingBuilder } from "@/components/store-email-tracking-builder";
 import { fetchLeadershipStoreOrder } from "@/lib/store-orders-fn";
 import type { StoreOrder } from "@/lib/store-orders";
 
@@ -63,7 +63,7 @@ export function StoreEmailBuilderDock() {
           <div className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-xl border border-border-strong bg-bg shadow-[0_30px_100px_rgba(0,0,0,.75)]">
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-black/90 px-4 py-3 backdrop-blur-md sm:px-6">
               <div>
-                <p className="stencil text-[9px] tracking-[0.14em] text-primary">Quartermaster email builder</p>
+                <p className="stencil text-[9px] tracking-[0.14em] text-primary">Quartermaster email & tracking builder</p>
                 <p className="mt-1 font-display text-lg font-semibold uppercase text-fg">
                   {order.orderNumber} · {order.customer.email}
                 </p>
@@ -74,7 +74,7 @@ export function StoreEmailBuilderDock() {
             </div>
 
             <div className="p-3 sm:p-6">
-              <StoreEmailBuilder order={order} />
+              <StoreEmailTrackingBuilder order={order} />
             </div>
           </div>
         </div>
