@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { randomUUID } from "node:crypto";
 import type {
   StoreOrderAddress,
   StoreOrderCustomer,
@@ -101,7 +100,7 @@ function siteUrl(): string {
 }
 
 function newAccessToken(): string {
-  return `${randomUUID()}${randomUUID()}`.replaceAll("-", "");
+  return `${globalThis.crypto.randomUUID()}${globalThis.crypto.randomUUID()}`.replaceAll("-", "");
 }
 
 async function getSql() {
