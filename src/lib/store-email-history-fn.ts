@@ -1,5 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 
+type OrderCustomer = {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+};
+
 export type StoreEmailHistoryEntry = {
   id: string;
   orderId: string;
@@ -41,6 +47,10 @@ export type StoreEmailHistoryRecordInput = {
 
 function cleanText(value: unknown, max: number): string {
   return String(value ?? "").trim().slice(0, max);
+}
+
+function asJson<T>(value: T | string): T {
+  return typeof value === "string" ? (JSON.parse(value) as T) : value;
 }
 
 async function requireLeadership() {
@@ -211,6 +221,94 @@ export async function recordStoreEmailHistoryServer(
 
   if (!rows[0]) throw new Error("Could not record the sent email.");
   return toSummary(rows[0]);
+}
+
+export async function recordSentStoreEmailForMatchingOrder(input: {
+  recipientEmail: string;
+  senderEmail: string;
+  subject: string;
+  htmlBody: string;
+  plainText: string;
+  providerMessageId?: string;
+}): Promise<StoreEmailHistoryEntry | null> {
+  const recipientEmail = cleanText(input.recipientEmail, 240).toLowerCase();
+  const subject = cleanText(input.subject, 400);
+  if (!recipientEmail || !subject) return null;
+
+  const sql = await getSql();
+  type MatchRow = {
+    id: string;
+    order_number: string;
+    status: string;
+    customer: OrderCustomer | string;
+    tracking_number?: string | null;
+    estimated_delivery?: string | null;
+  };
+
+  let rows: MatchRow[] = [];
+  try {
+    rows = await sql.query<MatchRow>(
+      `select
+         o.id,
+         o.order_number,
+         o.status,
+         o.customer,
+         a.tracking_number,
+         a.estimated_delivery
+       from store_orders o
+       left join store_order_customer_access a on a.order_id = o.id
+       where position(lower(o.order_number) in lower($1)) > 0
+       order by o.placed_at desc
+       limit 1`,
+      [subject],
+    );
+  } catch {
+    rows = await sql.query<MatchRow>(
+      `select id, order_number, status, customer
+         from store_orders
+        where position(lower(order_number) in lower($1)) > 0
+        order by placed_at desc
+        limit 1`,
+      [subject],
+    );
+  }
+
+  if (!rows[0]) {
+    const fallback = await sql.query<MatchRow>(
+      `select id, order_number, status, customer
+         from store_orders
+        where lower(customer->>'email') = lower($1)
+        order by placed_at desc
+        limit 1`,
+      [recipientEmail],
+    );
+    rows = fallback;
+  }
+
+  const row = rows[0];
+  if (!row) return null;
+  const customer = asJson<OrderCustomer>(row.customer);
+  const recipientName = `${customer.firstName || ""} ${customer.lastName || ""}`.trim();
+
+  const typeMatch = subject.match(/—\s*([^—]+?)\s*—\s*1st M\.I\. Store/i);
+  const emailType = typeMatch?.[1]?.trim().toLowerCase().replace(/\s+/g, "-") || "store-email";
+
+  return recordStoreEmailHistoryServer({
+    orderId: row.id,
+    orderNumber: row.order_number,
+    recipientEmail,
+    recipientName,
+    senderEmail: input.senderEmail,
+    emailType,
+    subject,
+    orderStatus: row.status || "",
+    trackingNumber: row.tracking_number || "",
+    estimatedDelivery: row.estimated_delivery || "",
+    deliveryMethod: "resend",
+    providerMessageId: input.providerMessageId || "",
+    htmlBody: input.htmlBody,
+    plainText: input.plainText,
+  });
 }
 
 export const fetchLeadershipStoreEmailHistory = createServerFn({ method: "GET" }).handler(
