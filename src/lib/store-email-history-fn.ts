@@ -1,0 +1,242 @@
+import { createServerFn } from "@tanstack/react-start";
+
+export type StoreEmailHistoryEntry = {
+  id: string;
+  orderId: string;
+  orderNumber: string;
+  recipientEmail: string;
+  recipientName: string;
+  emailType: string;
+  subject: string;
+  orderStatus: string;
+  trackingNumber: string;
+  estimatedDelivery: string;
+  deliveryMethod: string;
+  sentAt: string;
+};
+
+export type StoreEmailHistoryDetail = StoreEmailHistoryEntry & {
+  htmlBody: string;
+  plainText: string;
+};
+
+function cleanText(value: unknown, max: number): string {
+  return String(value ?? "").trim().slice(0, max);
+}
+
+async function requireLeadership() {
+  const access = await import("@/lib/local-leadership-access.server");
+  return access.requireLocalLeadership();
+}
+
+async function getSql() {
+  const db = await import("@/lib/db");
+  return db.getSql();
+}
+
+async function ensureEmailHistoryTable() {
+  const sql = await getSql();
+  await sql.query(`
+    create table if not exists store_email_history (
+      id text primary key,
+      order_id text not null,
+      order_number text not null,
+      recipient_email text not null,
+      recipient_name text not null default '',
+      email_type text not null,
+      subject text not null,
+      order_status text not null default '',
+      tracking_number text not null default '',
+      estimated_delivery text not null default '',
+      delivery_method text not null default 'manual-outlook',
+      html_body text not null default '',
+      plain_text text not null default '',
+      sent_at timestamptz not null default now()
+    )
+  `);
+  await sql.query(`
+    create index if not exists store_email_history_sent_at_idx
+      on store_email_history (sent_at desc)
+  `);
+  await sql.query(`
+    create index if not exists store_email_history_order_id_idx
+      on store_email_history (order_id, sent_at desc)
+  `);
+  return sql;
+}
+
+function toIso(value: Date | string): string {
+  if (value instanceof Date) return value.toISOString();
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? String(value) : date.toISOString();
+}
+
+type HistoryRow = {
+  id: string;
+  order_id: string;
+  order_number: string;
+  recipient_email: string;
+  recipient_name: string;
+  email_type: string;
+  subject: string;
+  order_status: string;
+  tracking_number: string;
+  estimated_delivery: string;
+  delivery_method: string;
+  html_body?: string;
+  plain_text?: string;
+  sent_at: Date | string;
+};
+
+function toSummary(row: HistoryRow): StoreEmailHistoryEntry {
+  return {
+    id: row.id,
+    orderId: row.order_id,
+    orderNumber: row.order_number,
+    recipientEmail: row.recipient_email,
+    recipientName: row.recipient_name,
+    emailType: row.email_type,
+    subject: row.subject,
+    orderStatus: row.order_status,
+    trackingNumber: row.tracking_number || "",
+    estimatedDelivery: row.estimated_delivery || "",
+    deliveryMethod: row.delivery_method || "manual-outlook",
+    sentAt: toIso(row.sent_at),
+  };
+}
+
+export const fetchLeadershipStoreEmailHistory = createServerFn({ method: "GET" }).handler(
+  async (): Promise<StoreEmailHistoryEntry[]> => {
+    await requireLeadership();
+    const sql = await ensureEmailHistoryTable();
+    const rows = await sql.query<HistoryRow>(`
+      select
+        id,
+        order_id,
+        order_number,
+        recipient_email,
+        recipient_name,
+        email_type,
+        subject,
+        order_status,
+        tracking_number,
+        estimated_delivery,
+        delivery_method,
+        sent_at
+      from store_email_history
+      order by sent_at desc
+      limit 200
+    `);
+    return rows.map(toSummary);
+  },
+);
+
+export const fetchLeadershipStoreEmailHistoryDetail = createServerFn({ method: "GET" })
+  .inputValidator((input: { id: string }) => input)
+  .handler(async ({ data }): Promise<StoreEmailHistoryDetail | null> => {
+    await requireLeadership();
+    const id = cleanText(data.id, 160);
+    if (!id) return null;
+    const sql = await ensureEmailHistoryTable();
+    const rows = await sql.query<HistoryRow>(
+      `select * from store_email_history where id = $1 limit 1`,
+      [id],
+    );
+    const row = rows[0];
+    if (!row) return null;
+    return {
+      ...toSummary(row),
+      htmlBody: row.html_body || "",
+      plainText: row.plain_text || "",
+    };
+  });
+
+export const recordLeadershipStoreEmailSent = createServerFn({ method: "POST" })
+  .inputValidator(
+    (input: {
+      orderId: string;
+      orderNumber: string;
+      recipientEmail: string;
+      recipientName: string;
+      emailType: string;
+      subject: string;
+      orderStatus: string;
+      trackingNumber: string;
+      estimatedDelivery: string;
+      htmlBody: string;
+      plainText: string;
+      deliveryMethod?: string;
+    }) => input,
+  )
+  .handler(async ({ data }): Promise<StoreEmailHistoryEntry> => {
+    await requireLeadership();
+
+    const orderId = cleanText(data.orderId, 200);
+    const orderNumber = cleanText(data.orderNumber, 120);
+    const recipientEmail = cleanText(data.recipientEmail, 240);
+    const recipientName = cleanText(data.recipientName, 220);
+    const emailType = cleanText(data.emailType, 80);
+    const subject = cleanText(data.subject, 400);
+    const orderStatus = cleanText(data.orderStatus, 80);
+    const trackingNumber = cleanText(data.trackingNumber, 180);
+    const estimatedDelivery = cleanText(data.estimatedDelivery, 180);
+    const deliveryMethod = cleanText(data.deliveryMethod, 80) || "manual-outlook";
+    const htmlBody = String(data.htmlBody ?? "").slice(0, 500_000);
+    const plainText = String(data.plainText ?? "").slice(0, 100_000);
+
+    if (!orderId || !orderNumber || !recipientEmail || !emailType || !subject) {
+      throw new Error("Email history is missing required order or recipient details.");
+    }
+
+    const sql = await ensureEmailHistoryTable();
+    const id = globalThis.crypto.randomUUID();
+    const rows = await sql.query<HistoryRow>(
+      `insert into store_email_history (
+         id,
+         order_id,
+         order_number,
+         recipient_email,
+         recipient_name,
+         email_type,
+         subject,
+         order_status,
+         tracking_number,
+         estimated_delivery,
+         delivery_method,
+         html_body,
+         plain_text,
+         sent_at
+       ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,now())
+       returning
+         id,
+         order_id,
+         order_number,
+         recipient_email,
+         recipient_name,
+         email_type,
+         subject,
+         order_status,
+         tracking_number,
+         estimated_delivery,
+         delivery_method,
+         sent_at`,
+      [
+        id,
+        orderId,
+        orderNumber,
+        recipientEmail,
+        recipientName,
+        emailType,
+        subject,
+        orderStatus,
+        trackingNumber,
+        estimatedDelivery,
+        deliveryMethod,
+        htmlBody,
+        plainText,
+      ],
+    );
+
+    if (!rows[0]) throw new Error("Could not record the sent email.");
+    return toSummary(rows[0]);
+  });
