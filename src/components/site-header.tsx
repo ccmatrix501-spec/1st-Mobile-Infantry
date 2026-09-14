@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
+import { LanguageSelector } from "@/components/language-selector";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { fetchLocalLeadershipProfile } from "@/lib/leadership-local-auth-fn";
@@ -30,6 +31,7 @@ export function SiteHeader() {
   const [storeEnabled, setStoreEnabled] = useState(false);
   const [leadershipSignedIn, setLeadershipSignedIn] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const showLanguageSelector = !pathname.startsWith("/leadership-") && pathname !== "/login";
 
   useEffect(() => {
     void Promise.all([
@@ -84,7 +86,7 @@ export function SiteHeader() {
       )}
     >
       <div className="relative mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:h-[4.25rem] sm:px-6">
-        <Link to="/" className="group flex min-w-0 items-center gap-3">
+        <Link to="/" className="notranslate group flex min-w-0 items-center gap-3" translate="no">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-black shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-primary)_35%,transparent),0_0_18px_color-mix(in_oklab,var(--color-primary)_22%,transparent)] transition-transform duration-200 group-hover:scale-[1.03]">
             <img
               src={logoImage}
@@ -128,6 +130,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="ml-auto hidden items-center gap-1 lg:flex">
+          {showLanguageSelector ? <LanguageSelector /> : null}
           {leadershipSignedIn ? (
             <div className="flex items-center gap-1 rounded-lg border border-primary/20 bg-black/35 p-1 backdrop-blur-md">
               {commandLinks.map((link) => (
@@ -188,6 +191,12 @@ export function SiteHeader() {
                 </li>
               );
             })}
+
+            {showLanguageSelector ? (
+              <li className="mt-2 border-t border-border pt-3">
+                <LanguageSelector mobile />
+              </li>
+            ) : null}
 
             {leadershipSignedIn ? (
               <li className="mt-2 border-t border-primary/20 pt-3">
