@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Copy, Eye, Link2, Mail, Save } from "lucide-react";
+import { CheckCircle2, Copy, Eye, Link2, Mail, Save, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   buildTrackedStoreEmailHtml,
@@ -7,6 +7,7 @@ import {
   trackedStoreEmailSubject,
   type TrackedStoreEmailExtras,
 } from "@/lib/store-email-tracking-template";
+import { sendLeadershipStoreEmail } from "@/lib/store-email-send-fn";
 import {
   ensureLeadershipStoreOrderTrackingLink,
   saveLeadershipStoreOrderTrackingDetails,
@@ -46,6 +47,7 @@ export function StoreEmailTrackingBuilder({ order }: { order: StoreOrder }) {
   const [productImages, setProductImages] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<string | null>(null);
   const [copying, setCopying] = useState(false);
+  const [sending, setSending] = useState(false);
   const [savingTracking, setSavingTracking] = useState(false);
 
   useEffect(() => {
@@ -132,29 +134,65 @@ export function StoreEmailTrackingBuilder({ order }: { order: StoreOrder }) {
     return access;
   }
 
+  async function buildCurrentEmail() {
+    const saved = await saveTracking(false);
+    const currentExtras: TrackedStoreEmailExtras = {
+      ...extras,
+      trackingUrl: saved.url,
+      trackingNumber: saved.trackingNumber,
+      estimatedDelivery: saved.estimatedDelivery,
+    };
+    return {
+      subject: trackedStoreEmailSubject(order, currentExtras),
+      html: buildTrackedStoreEmailHtml(order, currentExtras),
+      text: trackedStoreEmailPlainText(order, currentExtras),
+    };
+  }
+
+  async function sendCustomerEmail() {
+    if (sending) return;
+    const approved = window.confirm(
+      `Send this email now to ${order.customer.email} from merch@1stmid.com?`,
+    );
+    if (!approved) return;
+
+    setSending(true);
+    setNotice(null);
+    try {
+      const current = await buildCurrentEmail();
+      const sent = await sendLeadershipStoreEmail({
+        data: {
+          to: order.customer.email,
+          subject: current.subject,
+          text: current.text,
+          html: current.html,
+        },
+      });
+      setNotice(
+        `Email sent successfully from ${sent.from} to ${order.customer.email}${sent.id ? ` · Resend ID ${sent.id}` : ""}.`,
+      );
+    } catch (error) {
+      setNotice(error instanceof Error ? `Could not send email: ${error.message}` : "Could not send the email.");
+    } finally {
+      setSending(false);
+    }
+  }
+
   async function copyCustomerEmail() {
     setCopying(true);
     setNotice(null);
     try {
-      const saved = await saveTracking(false);
-      const currentExtras: TrackedStoreEmailExtras = {
-        ...extras,
-        trackingUrl: saved.url,
-        trackingNumber: saved.trackingNumber,
-        estimatedDelivery: saved.estimatedDelivery,
-      };
-      const currentHtml = buildTrackedStoreEmailHtml(order, currentExtras);
-      const currentText = trackedStoreEmailPlainText(order, currentExtras);
+      const current = await buildCurrentEmail();
 
       if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
         const item = new ClipboardItem({
-          "text/html": new Blob([currentHtml], { type: "text/html" }),
-          "text/plain": new Blob([currentText], { type: "text/plain" }),
+          "text/html": new Blob([current.html], { type: "text/html" }),
+          "text/plain": new Blob([current.text], { type: "text/plain" }),
         });
         await navigator.clipboard.write([item]);
-        setNotice("Branded tracking email copied. Paste it into Outlook with Ctrl+V.");
+        setNotice("Branded tracking email copied. Paste it into any email app with Ctrl+V.");
       } else {
-        await navigator.clipboard.writeText(currentText);
+        await navigator.clipboard.writeText(current.text);
         setNotice("Your browser copied the plain-text version because rich clipboard copy is not supported.");
       }
     } catch (error) {
@@ -215,7 +253,7 @@ export function StoreEmailTrackingBuilder({ order }: { order: StoreOrder }) {
         <div>
           <h2 className="font-display text-2xl font-semibold uppercase text-fg">Customer Email & Tracking</h2>
           <p className="mt-1 text-xs text-muted">
-            Build a branded email from this order. The email includes a secure link the customer can use to follow order progress.
+            Build and send a branded email directly from the Store Manager. Messages are delivered through Resend as merch@1stmid.com, and replies return to the domain mailbox.
           </p>
         </div>
       </div>
@@ -287,7 +325,10 @@ export function StoreEmailTrackingBuilder({ order }: { order: StoreOrder }) {
         </div>
 
         <div className="rounded-md border border-border bg-black/25 p-4">
-          <p className="stencil text-[9px] tracking-[0.12em] text-primary">Email to</p>
+          <p className="stencil text-[9px] tracking-[0.12em] text-primary">From</p>
+          <p className="mt-1 text-sm text-fg">1st M.I. Merchandise · merch@1stmid.com</p>
+
+          <p className="mt-4 stencil text-[9px] tracking-[0.12em] text-primary">Email to</p>
           <p className="mt-1 break-all text-sm text-fg">{order.customer.email}</p>
 
           <p className="mt-4 stencil text-[9px] tracking-[0.12em] text-primary">Subject</p>
@@ -302,7 +343,12 @@ export function StoreEmailTrackingBuilder({ order }: { order: StoreOrder }) {
         ) : null}
 
         <div className="flex flex-wrap gap-3">
-          <Button type="button" disabled={copying} onClick={() => void copyCustomerEmail()}>
+          <Button type="button" disabled={sending || savingTracking} onClick={() => void sendCustomerEmail()}>
+            <Send className="h-4 w-4" />
+            {sending ? "Sending…" : "Send Email"}
+          </Button>
+
+          <Button type="button" variant="secondary" disabled={copying || sending} onClick={() => void copyCustomerEmail()}>
             <Copy className="h-4 w-4" />
             {copying ? "Copying…" : "Copy Email"}
           </Button>
@@ -311,7 +357,7 @@ export function StoreEmailTrackingBuilder({ order }: { order: StoreOrder }) {
             <Eye className="h-4 w-4" /> Preview Email
           </Button>
 
-          <Button type="button" variant="secondary" disabled={savingTracking} onClick={() => void saveTracking()}>
+          <Button type="button" variant="secondary" disabled={savingTracking || sending} onClick={() => void saveTracking()}>
             <Save className="h-4 w-4" /> {savingTracking ? "Saving…" : "Save Tracking"}
           </Button>
 
@@ -324,12 +370,12 @@ export function StoreEmailTrackingBuilder({ order }: { order: StoreOrder }) {
           </Button>
 
           <Button type="button" variant="secondary" onClick={openEmailApp}>
-            <Mail className="h-4 w-4" /> Open Outlook / Email App
+            <Mail className="h-4 w-4" /> Open Email App
           </Button>
         </div>
 
         <p className="text-xs leading-relaxed text-muted">
-          When you copy the email, the tracking number and estimated delivery are saved first. The customer can keep using the same secure link as you move the order through New, Paid, Approved, Packing, Shipped and Completed.
+          Send Email saves the latest tracking details first, builds the current branded order email, then sends it through Resend from merch@1stmid.com. Copy Email and Open Email App remain available as fallbacks.
         </p>
       </div>
     </section>
