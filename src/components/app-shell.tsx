@@ -3,6 +3,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { LiveSiteContent } from "@/components/live-site-content";
 import { LiveSiteAdminAppearance } from "@/components/live-site-admin-appearance";
 import { LeadershipStoreControl } from "@/components/leadership-store-control";
+import { StoreEmailBuilderDock } from "@/components/store-email-builder-dock";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 
@@ -56,6 +57,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       ) : null}
       <main className="flex-1">{children}</main>
+      <StoreEmailBuilderDock />
       <LeadershipStoreControl />
       <SiteFooter />
     </div>
