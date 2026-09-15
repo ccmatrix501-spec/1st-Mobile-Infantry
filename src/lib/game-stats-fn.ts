@@ -28,6 +28,13 @@ export type HllvStatsFeed = {
   error: string | null;
 };
 
+export type HllvLiveFeed = {
+  available: boolean;
+  updatedAt: string;
+  activePlayers: number;
+  players: HllvPlayerStat[];
+};
+
 type RawFavourite = {
   id?: unknown;
   name?: unknown;
@@ -50,6 +57,12 @@ type RawPublicStats = {
   game?: unknown;
   tracked_players?: unknown;
   last_poll_at?: unknown;
+  players?: RawPlayer[];
+};
+
+type RawLiveStats = {
+  updated_at?: unknown;
+  active_players?: unknown;
   players?: RawPlayer[];
 };
 
@@ -125,6 +138,19 @@ async function fetchPublicStats(base: string): Promise<RawPublicStats> {
   return (await response.json()) as RawPublicStats;
 }
 
+async function fetchPublicLiveStats(base: string): Promise<RawLiveStats> {
+  const response = await fetch(`${base}/public/stats/hllv/live`, {
+    headers: {
+      Accept: "application/json",
+      "User-Agent": "1st-Mobile-Infantry-Website/1.0",
+    },
+    cache: "no-store",
+    signal: AbortSignal.timeout(8_000),
+  });
+  if (!response.ok) throw new Error(`Live controller returned HTTP ${response.status}`);
+  return (await response.json()) as RawLiveStats;
+}
+
 async function fetchAuthenticatedFallback(base: string): Promise<RawPublicStats> {
   const password = process.env.HLLV_CONTROLLER_PASSWORD?.trim();
   if (!password) throw new Error("No controller password fallback configured.");
@@ -193,6 +219,18 @@ async function fetchFromAnyController(): Promise<RawPublicStats> {
   throw lastError instanceof Error ? lastError : new Error("No HLL:V controller responded.");
 }
 
+async function fetchLiveFromAnyController(): Promise<RawLiveStats> {
+  let lastError: unknown = null;
+  for (const base of controllerBaseUrls()) {
+    try {
+      return await fetchPublicLiveStats(base);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("No HLL:V live controller responded.");
+}
+
 export const fetchHllvPublicStats = createServerFn({ method: "GET" }).handler(
   async (): Promise<HllvStatsFeed> => {
     const fetchedAt = new Date().toISOString();
@@ -220,6 +258,30 @@ export const fetchHllvPublicStats = createServerFn({ method: "GET" }).handler(
         fetchedAt,
         players: [],
         error: "The HLL:V stats feed is temporarily unavailable.",
+      };
+    }
+  },
+);
+
+export const fetchHllvLiveStats = createServerFn({ method: "GET" }).handler(
+  async (): Promise<HllvLiveFeed> => {
+    try {
+      const raw = await fetchLiveFromAnyController();
+      const players = Array.isArray(raw.players)
+        ? raw.players.map(normalisePlayer).filter((player): player is HllvPlayerStat => Boolean(player))
+        : [];
+      return {
+        available: true,
+        updatedAt: optionalText(raw.updated_at) || new Date().toISOString(),
+        activePlayers: finiteInt(raw.active_players) || players.length,
+        players,
+      };
+    } catch {
+      return {
+        available: false,
+        updatedAt: new Date().toISOString(),
+        activePlayers: 0,
+        players: [],
       };
     }
   },
