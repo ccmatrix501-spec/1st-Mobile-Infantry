@@ -12,6 +12,7 @@ const publicNavLinks = [
   { to: "/", label: "Home", exact: true },
   { to: "/companies", label: "Companies" },
   { to: "/events", label: "Events" },
+  { to: "/stats", label: "Stats" },
   { to: "/store", label: "Store", requiresStore: true },
   { to: "/leadership", label: "Leadership" },
   { to: "/rules", label: "Rules" },
