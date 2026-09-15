@@ -16,6 +16,7 @@ import {
 import { AppShell, PageHero } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import {
+  fetchHllvLiveStats,
   fetchHllvPublicStats,
   type HllvPlayerStat,
   type HllvStatsFeed,
@@ -67,23 +68,56 @@ function StatsPage() {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("kills");
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+  const [liveUpdatedAt, setLiveUpdatedAt] = useState<string | null>(null);
 
-  async function loadHllv(manual = false) {
+  async function loadHllv(manual = false, background = false) {
     if (manual) setRefreshing(true);
-    else setLoading(true);
+    else if (!background) setLoading(true);
     try {
       setFeed(await fetchHllvPublicStats());
     } finally {
-      setLoading(false);
+      if (!background) setLoading(false);
       setRefreshing(false);
     }
   }
 
+  async function loadHllvLive() {
+    const live = await fetchHllvLiveStats();
+    if (!live.available) return;
+
+    setLiveUpdatedAt(live.updatedAt);
+    setFeed((current) => {
+      if (!current.available || live.players.length === 0) return current;
+
+      const replacements = new Map(live.players.map((player) => [player.playerId, player]));
+      const known = new Set(current.players.map((player) => player.playerId));
+      const merged = current.players.map((player) => replacements.get(player.playerId) || player);
+
+      for (const player of live.players) {
+        if (!known.has(player.playerId)) merged.push(player);
+      }
+
+      return {
+        ...current,
+        players: merged,
+        fetchedAt: live.updatedAt,
+      };
+    });
+  }
+
   useEffect(() => {
     if (game !== "hllv") return;
+
     void loadHllv();
-    const timer = window.setInterval(() => void loadHllv(), 60_000);
-    return () => window.clearInterval(timer);
+    const firstLive = window.setTimeout(() => void loadHllvLive(), 2_500);
+    const liveTimer = window.setInterval(() => void loadHllvLive(), 5_000);
+    const fullTimer = window.setInterval(() => void loadHllv(false, true), 60_000);
+
+    return () => {
+      window.clearTimeout(firstLive);
+      window.clearInterval(liveTimer);
+      window.clearInterval(fullTimer);
+    };
   }, [game]);
 
   const players = useMemo(() => {
@@ -162,6 +196,7 @@ function StatsPage() {
                 query={query}
                 sort={sort}
                 selectedPlayer={selectedPlayer}
+                liveUpdatedAt={liveUpdatedAt}
                 onQuery={setQuery}
                 onSort={setSort}
                 onSelectPlayer={setSelectedPlayerId}
@@ -253,6 +288,7 @@ function HllvStats({
   query,
   sort,
   selectedPlayer,
+  liveUpdatedAt,
   onQuery,
   onSort,
   onSelectPlayer,
@@ -265,6 +301,7 @@ function HllvStats({
   query: string;
   sort: SortKey;
   selectedPlayer: HllvPlayerStat | null;
+  liveUpdatedAt: string | null;
   onQuery: (value: string) => void;
   onSort: (value: SortKey) => void;
   onSelectPlayer: (value: string | null) => void;
@@ -284,13 +321,21 @@ function HllvStats({
               }`}>
                 {feed.available ? "RCON FEED ONLINE" : "FEED UNAVAILABLE"}
               </span>
+              {feed.available ? (
+                <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[9px] text-primary">
+                  LIVE · 5 SEC
+                </span>
+              ) : null}
             </div>
             <h2 className="mt-2 font-display text-3xl font-semibold uppercase tracking-wide text-fg">
               Server Service Records
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted">
-              These are statistics recorded by the 1st M.I. HLL:V server tracker from the point tracking was enabled. They are not global lifetime HLL statistics.
+              These are statistics recorded by the 1st M.I. HLL:V server tracker from the point tracking was enabled. Active-player totals are merged into this page every 5 seconds while it is open.
             </p>
+            {liveUpdatedAt ? (
+              <p className="mt-2 font-mono text-[10px] text-subtle">Last live sync: {formatDate(liveUpdatedAt)}</p>
+            ) : null}
           </div>
           <Button type="button" variant="secondary" onClick={onRefresh} disabled={refreshing}>
             <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} aria-hidden />
@@ -424,7 +469,10 @@ function PlayerRecord({ player, onClose }: { player: HllvPlayerStat; onClose: ()
     <div className="panel panel-static border-primary/25 p-5 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="stencil text-[10px] tracking-[0.14em] text-primary">Trooper service record</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="stencil text-[10px] tracking-[0.14em] text-primary">Trooper service record</p>
+            <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[9px] text-primary">LIVE</span>
+          </div>
           <h3 className="mt-2 font-display text-3xl font-semibold uppercase tracking-wide text-fg">{player.playerName}</h3>
           <p className="mt-1 text-xs text-muted">Last recorded activity: {formatDate(player.lastSeen)}</p>
         </div>
