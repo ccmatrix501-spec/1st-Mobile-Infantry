@@ -4,12 +4,14 @@ import { LiveSiteContent } from "@/components/live-site-content";
 import { LiveSiteAdminAppearance } from "@/components/live-site-admin-appearance";
 import { LeadershipStoreControl } from "@/components/leadership-store-control";
 import { StoreEmailBuilderDock } from "@/components/store-email-builder-dock";
+import { StoreOrderInvoiceShortcut } from "@/components/store-order-invoice-shortcut";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const showStoreAdminNav = pathname.startsWith("/leadership-store");
+  const showStoreAdminNav = pathname.startsWith("/leadership-store") || pathname === "/leadership-order";
+  const orderView = pathname === "/leadership-order";
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -44,7 +46,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link
               to="/leadership-store/orders"
               className={`rounded-md border px-3 py-2 font-display text-xs font-semibold uppercase tracking-[0.08em] transition-colors ${
-                pathname.startsWith("/leadership-store/orders")
+                pathname.startsWith("/leadership-store/orders") || orderView
                   ? "border-primary bg-primary text-black"
                   : "border-border-strong bg-black/30 text-fg hover:border-primary/50"
               }`}
@@ -61,6 +63,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             >
               Email Hub
             </Link>
+            {orderView ? <StoreOrderInvoiceShortcut /> : null}
           </div>
         </div>
       ) : null}
