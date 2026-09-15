@@ -53,12 +53,25 @@ type RawPublicStats = {
   players?: RawPlayer[];
 };
 
-const DEFAULT_CONTROLLER_URL = "https://hll.1stmid.com";
+const FALLBACK_CONTROLLER_URLS = [
+  "https://hllv-controller-production.up.railway.app",
+  "https://hll.1stmid.com",
+] as const;
 
-function controllerBaseUrl(): string {
-  const configured = process.env.HLLV_CONTROLLER_URL?.trim() || DEFAULT_CONTROLLER_URL;
-  const withProtocol = /^https?:\/\//i.test(configured) ? configured : `https://${configured}`;
+function normaliseBaseUrl(value: string): string {
+  const trimmed = value.trim();
+  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
   return withProtocol.replace(/\/$/, "");
+}
+
+function controllerBaseUrls(): string[] {
+  const candidates = [
+    process.env.HLLV_CONTROLLER_URL?.trim() || "",
+    ...FALLBACK_CONTROLLER_URLS,
+  ]
+    .filter(Boolean)
+    .map(normaliseBaseUrl);
+  return [...new Set(candidates)];
 }
 
 function finiteInt(value: unknown): number {
@@ -113,7 +126,7 @@ async function fetchPublicStats(base: string): Promise<RawPublicStats> {
 
 async function fetchAuthenticatedFallback(base: string): Promise<RawPublicStats> {
   const password = process.env.HLLV_CONTROLLER_PASSWORD?.trim();
-  if (!password) throw new Error("Public stats endpoint is not available yet.");
+  if (!password) throw new Error("No controller password fallback configured.");
 
   const login = await fetch(`${base}/controller/login`, {
     method: "POST",
@@ -156,18 +169,34 @@ async function fetchAuthenticatedFallback(base: string): Promise<RawPublicStats>
   };
 }
 
+async function fetchFromAnyController(): Promise<RawPublicStats> {
+  const bases = controllerBaseUrls();
+  let lastError: unknown = null;
+
+  for (const base of bases) {
+    try {
+      return await fetchPublicStats(base);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (bases.length > 0 && process.env.HLLV_CONTROLLER_PASSWORD?.trim()) {
+    try {
+      return await fetchAuthenticatedFallback(bases[0]);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error("No HLL:V controller responded.");
+}
+
 export const fetchHllvPublicStats = createServerFn({ method: "GET" }).handler(
   async (): Promise<HllvStatsFeed> => {
     const fetchedAt = new Date().toISOString();
     try {
-      const base = controllerBaseUrl();
-      let raw: RawPublicStats;
-      try {
-        raw = await fetchPublicStats(base);
-      } catch {
-        raw = await fetchAuthenticatedFallback(base);
-      }
-
+      const raw = await fetchFromAnyController();
       const players = Array.isArray(raw.players)
         ? raw.players.map(normalisePlayer).filter((player): player is HllvPlayerStat => Boolean(player))
         : [];
