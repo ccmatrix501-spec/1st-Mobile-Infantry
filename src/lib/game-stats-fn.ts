@@ -53,6 +53,7 @@ type RawPublicStats = {
   players?: RawPlayer[];
 };
 
+const MAX_PUBLIC_PLAYERS = 10000;
 const FALLBACK_CONTROLLER_URLS = [
   "https://hllv-controller-production.up.railway.app",
   "https://hll.1stmid.com",
@@ -113,12 +114,12 @@ function normalisePlayer(raw: RawPlayer): HllvPlayerStat | null {
 }
 
 async function fetchPublicStats(base: string): Promise<RawPublicStats> {
-  const response = await fetch(`${base}/public/stats/hllv?limit=1000`, {
+  const response = await fetch(`${base}/public/stats/hllv?limit=${MAX_PUBLIC_PLAYERS}`, {
     headers: {
       Accept: "application/json",
       "User-Agent": "1st-Mobile-Infantry-Website/1.0",
     },
-    signal: AbortSignal.timeout(8_000),
+    signal: AbortSignal.timeout(15_000),
   });
   if (!response.ok) throw new Error(`Controller returned HTTP ${response.status}`);
   return (await response.json()) as RawPublicStats;
@@ -145,9 +146,9 @@ async function fetchAuthenticatedFallback(base: string): Promise<RawPublicStats>
   if (!sessionCookie) throw new Error("Controller did not return a session cookie.");
 
   const [statsResponse, statusResponse] = await Promise.all([
-    fetch(`${base}/api/v2/player-stats?limit=1000`, {
+    fetch(`${base}/api/v2/public-player-stats?limit=${MAX_PUBLIC_PLAYERS}`, {
       headers: { Accept: "application/json", Cookie: sessionCookie },
-      signal: AbortSignal.timeout(8_000),
+      signal: AbortSignal.timeout(15_000),
     }),
     fetch(`${base}/api/v2/player-stats/status`, {
       headers: { Accept: "application/json", Cookie: sessionCookie },
@@ -156,14 +157,14 @@ async function fetchAuthenticatedFallback(base: string): Promise<RawPublicStats>
   ]);
 
   if (!statsResponse.ok) throw new Error(`Stats endpoint returned HTTP ${statsResponse.status}`);
-  const stats = (await statsResponse.json()) as { players?: RawPlayer[] };
+  const stats = (await statsResponse.json()) as { players?: RawPlayer[]; tracked_players?: unknown };
   const status = statusResponse.ok
     ? ((await statusResponse.json()) as { tracked_players?: unknown; last_poll_at?: unknown })
     : {};
 
   return {
     game: "Hell Let Loose: Vietnam",
-    tracked_players: status.tracked_players,
+    tracked_players: status.tracked_players ?? stats.tracked_players,
     last_poll_at: status.last_poll_at,
     players: Array.isArray(stats.players) ? stats.players : [],
   };
