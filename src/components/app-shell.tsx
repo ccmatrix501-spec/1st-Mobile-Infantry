@@ -119,10 +119,6 @@ export function SectionHeading({
   kicker: string;
   title: string;
   body?: string;
-}: {
-  kicker: string;
-  title: string;
-  body?: string;
 }) {
   return (
     <div className="max-w-2xl">
