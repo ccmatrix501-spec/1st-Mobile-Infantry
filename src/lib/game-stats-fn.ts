@@ -1,5 +1,3 @@
-import { createServerFn } from "@tanstack/react-start";
-
 export type HllvFavourite = {
   id: string;
   name: string;
@@ -54,7 +52,6 @@ type RawPlayer = {
 };
 
 type RawPublicStats = {
-  game?: unknown;
   tracked_players?: unknown;
   last_poll_at?: unknown;
   players?: RawPlayer[];
@@ -67,26 +64,10 @@ type RawLiveStats = {
 };
 
 const MAX_PUBLIC_PLAYERS = 10000;
-const FALLBACK_CONTROLLER_URLS = [
+const CONTROLLER_URLS = [
   "https://hllv-controller-production.up.railway.app",
   "https://hll.1stmid.com",
 ] as const;
-
-function normaliseBaseUrl(value: string): string {
-  const trimmed = value.trim();
-  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
-  return withProtocol.replace(/\/$/, "");
-}
-
-function controllerBaseUrls(): string[] {
-  const candidates = [
-    process.env.HLLV_CONTROLLER_URL?.trim() || "",
-    ...FALLBACK_CONTROLLER_URLS,
-  ]
-    .filter(Boolean)
-    .map(normaliseBaseUrl);
-  return [...new Set(candidates)];
-}
 
 function finiteInt(value: unknown): number {
   const number = Number(value);
@@ -126,104 +107,47 @@ function normalisePlayer(raw: RawPlayer): HllvPlayerStat | null {
   };
 }
 
-async function fetchPublicStats(base: string): Promise<RawPublicStats> {
-  const response = await fetch(`${base}/public/stats/hllv?limit=${MAX_PUBLIC_PLAYERS}`, {
-    headers: {
-      Accept: "application/json",
-      "User-Agent": "1st-Mobile-Infantry-Website/1.0",
-    },
-    signal: AbortSignal.timeout(15_000),
-  });
-  if (!response.ok) throw new Error(`Controller returned HTTP ${response.status}`);
-  return (await response.json()) as RawPublicStats;
+async function fetchJson<T>(url: string, timeoutMs: number, cache: RequestCache = "default"): Promise<T> {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      cache,
+      signal: controller.signal,
+    });
+    if (!response.ok) throw new Error(`Stats endpoint returned HTTP ${response.status}`);
+    return (await response.json()) as T;
+  } finally {
+    window.clearTimeout(timeout);
+  }
 }
 
-async function fetchPublicLiveStats(base: string): Promise<RawLiveStats> {
-  const response = await fetch(`${base}/public/stats/hllv/live`, {
-    headers: {
-      Accept: "application/json",
-      "User-Agent": "1st-Mobile-Infantry-Website/1.0",
-    },
-    cache: "no-store",
-    signal: AbortSignal.timeout(8_000),
-  });
-  if (!response.ok) throw new Error(`Live controller returned HTTP ${response.status}`);
-  return (await response.json()) as RawLiveStats;
-}
-
-async function fetchAuthenticatedFallback(base: string): Promise<RawPublicStats> {
-  const password = process.env.HLLV_CONTROLLER_PASSWORD?.trim();
-  if (!password) throw new Error("No controller password fallback configured.");
-
-  const login = await fetch(`${base}/controller/login`, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      "User-Agent": "1st-Mobile-Infantry-Website/1.0",
-    },
-    body: JSON.stringify({ password }),
-    signal: AbortSignal.timeout(8_000),
-  });
-  if (!login.ok) throw new Error("Controller authentication failed.");
-
-  const setCookie = login.headers.get("set-cookie");
-  const sessionCookie = setCookie?.split(";", 1)[0];
-  if (!sessionCookie) throw new Error("Controller did not return a session cookie.");
-
-  const [statsResponse, statusResponse] = await Promise.all([
-    fetch(`${base}/api/v2/public-player-stats?limit=${MAX_PUBLIC_PLAYERS}`, {
-      headers: { Accept: "application/json", Cookie: sessionCookie },
-      signal: AbortSignal.timeout(15_000),
-    }),
-    fetch(`${base}/api/v2/player-stats/status`, {
-      headers: { Accept: "application/json", Cookie: sessionCookie },
-      signal: AbortSignal.timeout(8_000),
-    }),
-  ]);
-
-  if (!statsResponse.ok) throw new Error(`Stats endpoint returned HTTP ${statsResponse.status}`);
-  const stats = (await statsResponse.json()) as { players?: RawPlayer[]; tracked_players?: unknown };
-  const status = statusResponse.ok
-    ? ((await statusResponse.json()) as { tracked_players?: unknown; last_poll_at?: unknown })
-    : {};
-
-  return {
-    game: "Hell Let Loose: Vietnam",
-    tracked_players: status.tracked_players ?? stats.tracked_players,
-    last_poll_at: status.last_poll_at,
-    players: Array.isArray(stats.players) ? stats.players : [],
-  };
-}
-
-async function fetchFromAnyController(): Promise<RawPublicStats> {
-  const bases = controllerBaseUrls();
+async function fetchPublicFromController(): Promise<RawPublicStats> {
   let lastError: unknown = null;
-
-  for (const base of bases) {
+  for (const base of CONTROLLER_URLS) {
     try {
-      return await fetchPublicStats(base);
+      return await fetchJson<RawPublicStats>(
+        `${base}/public/stats/hllv?limit=${MAX_PUBLIC_PLAYERS}`,
+        15_000,
+      );
     } catch (error) {
       lastError = error;
     }
   }
-
-  if (bases.length > 0 && process.env.HLLV_CONTROLLER_PASSWORD?.trim()) {
-    try {
-      return await fetchAuthenticatedFallback(bases[0]);
-    } catch (error) {
-      lastError = error;
-    }
-  }
-
   throw lastError instanceof Error ? lastError : new Error("No HLL:V controller responded.");
 }
 
-async function fetchLiveFromAnyController(): Promise<RawLiveStats> {
+async function fetchLiveFromController(): Promise<RawLiveStats> {
   let lastError: unknown = null;
-  for (const base of controllerBaseUrls()) {
+  for (const base of CONTROLLER_URLS) {
     try {
-      return await fetchPublicLiveStats(base);
+      return await fetchJson<RawLiveStats>(
+        `${base}/public/stats/hllv/live`,
+        8_000,
+        "no-store",
+      );
     } catch (error) {
       lastError = error;
     }
@@ -231,58 +155,64 @@ async function fetchLiveFromAnyController(): Promise<RawLiveStats> {
   throw lastError instanceof Error ? lastError : new Error("No HLL:V live controller responded.");
 }
 
-export const fetchHllvPublicStats = createServerFn({ method: "GET" }).handler(
-  async (): Promise<HllvStatsFeed> => {
-    const fetchedAt = new Date().toISOString();
-    try {
-      const raw = await fetchFromAnyController();
-      const players = Array.isArray(raw.players)
-        ? raw.players.map(normalisePlayer).filter((player): player is HllvPlayerStat => Boolean(player))
-        : [];
+export async function fetchHllvPublicStats(): Promise<HllvStatsFeed> {
+  const fetchedAt = new Date().toISOString();
+  try {
+    const raw = await fetchPublicFromController();
+    const players = Array.isArray(raw.players)
+      ? raw.players.map(normalisePlayer).filter((player): player is HllvPlayerStat => Boolean(player))
+      : [];
 
-      return {
-        game: "Hell Let Loose: Vietnam",
-        available: true,
-        trackedPlayers: finiteInt(raw.tracked_players) || players.length,
-        lastPollAt: optionalText(raw.last_poll_at),
-        fetchedAt,
-        players,
-        error: null,
-      };
-    } catch {
-      return {
-        game: "Hell Let Loose: Vietnam",
-        available: false,
-        trackedPlayers: 0,
-        lastPollAt: null,
-        fetchedAt,
-        players: [],
-        error: "The HLL:V stats feed is temporarily unavailable.",
-      };
-    }
-  },
-);
+    return {
+      game: "Hell Let Loose: Vietnam",
+      available: true,
+      trackedPlayers: finiteInt(raw.tracked_players) || players.length,
+      lastPollAt: optionalText(raw.last_poll_at),
+      fetchedAt,
+      players,
+      error: null,
+    };
+  } catch {
+    return {
+      game: "Hell Let Loose: Vietnam",
+      available: false,
+      trackedPlayers: 0,
+      lastPollAt: null,
+      fetchedAt,
+      players: [],
+      error: "The HLL:V stats feed is temporarily unavailable.",
+    };
+  }
+}
 
-export const fetchHllvLiveStats = createServerFn({ method: "GET" }).handler(
-  async (): Promise<HllvLiveFeed> => {
-    try {
-      const raw = await fetchLiveFromAnyController();
-      const players = Array.isArray(raw.players)
-        ? raw.players.map(normalisePlayer).filter((player): player is HllvPlayerStat => Boolean(player))
-        : [];
-      return {
-        available: true,
-        updatedAt: optionalText(raw.updated_at) || new Date().toISOString(),
-        activePlayers: finiteInt(raw.active_players) || players.length,
-        players,
-      };
-    } catch {
-      return {
-        available: false,
-        updatedAt: new Date().toISOString(),
-        activePlayers: 0,
-        players: [],
-      };
-    }
-  },
-);
+export async function fetchHllvLiveStats(): Promise<HllvLiveFeed> {
+  // Do not keep polling Railway while the browser tab is hidden.
+  if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+    return {
+      available: false,
+      updatedAt: new Date().toISOString(),
+      activePlayers: 0,
+      players: [],
+    };
+  }
+
+  try {
+    const raw = await fetchLiveFromController();
+    const players = Array.isArray(raw.players)
+      ? raw.players.map(normalisePlayer).filter((player): player is HllvPlayerStat => Boolean(player))
+      : [];
+    return {
+      available: true,
+      updatedAt: optionalText(raw.updated_at) || new Date().toISOString(),
+      activePlayers: finiteInt(raw.active_players) || players.length,
+      players,
+    };
+  } catch {
+    return {
+      available: false,
+      updatedAt: new Date().toISOString(),
+      activePlayers: 0,
+      players: [],
+    };
+  }
+}
