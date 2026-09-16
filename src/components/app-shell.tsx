@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
+import { Analytics } from "@vercel/analytics/react";
 import { LiveSiteContent } from "@/components/live-site-content";
 import { LiveSiteAdminAppearance } from "@/components/live-site-admin-appearance";
 import { LeadershipStoreControl } from "@/components/leadership-store-control";
@@ -71,6 +72,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <StoreEmailBuilderDock />
       <LeadershipStoreControl />
       <SiteFooter />
+      <Analytics />
     </div>
   );
 }
