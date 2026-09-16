@@ -38,10 +38,7 @@ export function printStoreAddressLabel(order: StoreOrder): void {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${orderNumber} Address Label</title>
   <style>
-    @page {
-      size: 62mm 100mm;
-      margin: 0;
-    }
+    @page { size: 62mm 85mm; margin: 0; }
     * { box-sizing: border-box; }
     html, body {
       margin: 0;
@@ -50,137 +47,145 @@ export function printStoreAddressLabel(order: StoreOrder): void {
       color: #000;
       font-family: Arial, Helvetica, sans-serif;
     }
-    body { width: 62mm; }
     .label {
+      position: relative;
       width: 62mm;
-      height: 100mm;
-      padding: 2.7mm 3mm 2.5mm;
-      display: flex;
-      flex-direction: column;
+      height: 85mm;
       overflow: hidden;
       background: #fff;
     }
-    .brand {
-      display: grid;
-      grid-template-columns: 18mm 1fr;
-      gap: 2.2mm;
-      align-items: center;
-      padding-bottom: 2mm;
-      border-bottom: 0.45mm solid #000;
-    }
     .logo {
-      width: 17.5mm;
-      height: 17.5mm;
+      position: absolute;
+      left: 3mm;
+      top: 3mm;
+      width: 17mm;
+      height: 17mm;
       object-fit: contain;
-      filter: grayscale(1) contrast(1.15);
+      filter: grayscale(1) contrast(1.18);
     }
-    .brand-copy { min-width: 0; }
     .brand-title {
+      position: absolute;
+      left: 22mm;
+      top: 5mm;
       margin: 0;
       font-size: 14pt;
       font-weight: 900;
       line-height: 1;
-      letter-spacing: 0.2px;
       white-space: nowrap;
     }
     .site {
-      margin-top: 1.2mm;
+      position: absolute;
+      left: 22mm;
+      right: 3mm;
+      top: 12.8mm;
       padding-top: 1mm;
-      border-top: 0.3mm solid #000;
+      border-top: 0.35mm solid #000;
       font-size: 8pt;
       font-weight: 800;
     }
-    .destination {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 19mm;
-      gap: 2mm;
-      margin-top: 2.4mm;
-      align-items: start;
+    .top-line {
+      position: absolute;
+      left: 3mm;
+      right: 3mm;
+      top: 21.5mm;
+      border-top: 0.45mm solid #000;
     }
     .ship-to {
+      position: absolute;
+      left: 3mm;
+      top: 24.5mm;
       font-size: 7pt;
       font-weight: 900;
       letter-spacing: 1px;
-      margin-bottom: 1mm;
     }
     .name {
+      position: absolute;
+      left: 3mm;
+      top: 29mm;
+      width: 34mm;
       font-size: 11pt;
       font-weight: 900;
-      line-height: 1.08;
+      line-height: 1.05;
       overflow-wrap: anywhere;
-      margin-bottom: 1mm;
     }
-    .address {
-      font-size: 8.8pt;
+    .address-block {
+      position: absolute;
+      left: 3mm;
+      top: 35.5mm;
+      width: 34mm;
+      max-height: 19mm;
+      overflow: hidden;
+      font-size: 8.7pt;
       font-weight: 700;
-      line-height: 1.2;
+      line-height: 1.25;
       overflow-wrap: anywhere;
-      margin-top: 0.45mm;
     }
+    .address-block div { margin-bottom: 0.7mm; }
     .country {
-      font-size: 8.5pt;
       font-weight: 900;
-      line-height: 1.15;
       text-transform: uppercase;
-      margin-top: 0.8mm;
+      margin-top: 0.5mm;
     }
-    .qr-wrap { text-align: center; }
     .qr {
-      display: block;
+      position: absolute;
+      left: 41mm;
+      top: 25mm;
       width: 18mm;
       height: 18mm;
-      margin: 0 auto;
       object-fit: contain;
       image-rendering: pixelated;
     }
     .slogan {
-      margin-top: 1mm;
-      font-size: 5.8pt;
-      line-height: 1.13;
+      position: absolute;
+      left: 39.5mm;
+      top: 44.3mm;
+      width: 21mm;
+      font-size: 5.6pt;
+      line-height: 1.12;
       font-weight: 800;
       text-align: center;
     }
     .order {
-      margin-top: 3mm;
+      position: absolute;
+      left: 3mm;
+      right: 3mm;
+      top: 57mm;
       padding-bottom: 2mm;
       border-bottom: 0.4mm solid #000;
       font-size: 9.5pt;
       font-weight: 800;
     }
-    .bottom {
-      margin-top: auto;
-      display: grid;
-      gap: 1mm;
-    }
-    .store-row {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 2mm;
-    }
     .store-name {
+      position: absolute;
+      left: 3mm;
+      top: 65mm;
       font-size: 10.5pt;
       font-weight: 900;
-      letter-spacing: 0.15px;
       white-space: nowrap;
     }
     .thanks {
-      font-size: 7pt;
+      position: absolute;
+      right: 3mm;
+      top: 64mm;
+      font-size: 6.8pt;
       font-weight: 800;
+      line-height: 1.05;
       text-align: right;
       white-space: nowrap;
     }
     .community {
+      position: absolute;
+      left: 3mm;
+      right: 3mm;
+      top: 75mm;
       font-size: 6.8pt;
       font-weight: 800;
-      line-height: 1.1;
       text-align: center;
-      letter-spacing: 0.05px;
+      white-space: nowrap;
     }
     .screen-note { display: none; }
     @media screen {
       body {
-        width: auto;
         min-height: 100vh;
         display: grid;
         place-items: start center;
@@ -204,38 +209,28 @@ export function printStoreAddressLabel(order: StoreOrder): void {
 </head>
 <body>
   <main class="label">
-    <header class="brand">
-      <img class="logo" src="${logoUrl}" alt="Mobile Infantry 1st Division logo" />
-      <div class="brand-copy">
-        <p class="brand-title">1ST M.I.</p>
-        <div class="site">1stmid.com</div>
-      </div>
-    </header>
+    <img class="logo" src="${logoUrl}" alt="Mobile Infantry 1st Division logo" />
+    <p class="brand-title">1ST M.I.</p>
+    <div class="site">1stmid.com</div>
+    <div class="top-line"></div>
 
-    <section class="destination">
-      <div>
-        <div class="ship-to">SHIP TO</div>
-        <div class="name">${customerName || "CUSTOMER"}</div>
-        ${street ? `<div class="address">${street}</div>` : ""}
-        ${localityLine ? `<div class="address">${localityLine}</div>` : ""}
-        ${country ? `<div class="country">${country}</div>` : ""}
-      </div>
-      <div class="qr-wrap">
-        <img class="qr" src="${qrUrl}" alt="1stmid.com QR code" />
-        <div class="slogan">No One Stacks Them High,<br />Like The 1st M.I.</div>
-      </div>
-    </section>
+    <div class="ship-to">SHIP TO</div>
+    <div class="name">${customerName || "CUSTOMER"}</div>
+    <div class="address-block">
+      ${street ? `<div>${street}</div>` : ""}
+      ${localityLine ? `<div>${localityLine}</div>` : ""}
+      ${country ? `<div class="country">${country}</div>` : ""}
+    </div>
+
+    <img class="qr" src="${qrUrl}" alt="1stmid.com QR code" />
+    <div class="slogan">No One Stacks Them High,<br />Like The 1st M.I.</div>
 
     <div class="order">Order #${orderNumber}</div>
-
-    <footer class="bottom">
-      <div class="store-row">
-        <span class="store-name">1ST M.I. STORE</span>
-        <span class="thanks">Thank you<br />FOR YOUR SUPPORT</span>
-      </div>
-      <div class="community">Friendship - Good Vibes - Community</div>
-    </footer>
+    <div class="store-name">1ST M.I. STORE</div>
+    <div class="thanks">Thank you<br />FOR YOUR SUPPORT</div>
+    <div class="community">Friendship - Good Vibes - Community</div>
   </main>
+
   <p class="screen-note">Brother QL-700 test settings: select a 62 mm continuous roll, Portrait, Actual Size / 100%, margins None, and turn browser headers and footers off.</p>
   <script>
     window.addEventListener('load', function () {
