@@ -26,7 +26,7 @@ export function printStoreAddressLabel(order: StoreOrder): void {
   const postcode = clean(order.shippingAddress.postalCode);
   const country = clean(order.shippingAddress.country);
   const orderNumber = clean(order.orderNumber);
-  const logoUrl = `${window.location.origin}/label-mobile-infantry-logo.jpg`;
+  const logoUrl = `${window.location.origin}/ql700-mi-logo-print-ready.svg`;
   const qrUrl = `${window.location.origin}/1stmid-qr-code.png`;
   const localityLine = [city, state, postcode].filter(Boolean).join(" ");
 
