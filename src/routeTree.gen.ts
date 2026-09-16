@@ -10,13 +10,43 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CompaniesRouteImport } from './routes/companies'
+import { Route as EventsRouteImport } from './routes/events'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as LeadershipRouteImport } from './routes/leadership'
+import { Route as LeadershipControlRouteImport } from './routes/leadership-control'
+import { Route as LeadershipMediaRouteImport } from './routes/leadership-media'
+import { Route as LeadershipOrderRouteImport } from './routes/leadership-order'
+import { Route as LeadershipStoreRouteImport } from './routes/leadership-store'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as RulesRouteImport } from './routes/rules'
+import { Route as StoreRouteImport } from './routes/store'
+import { Route as StoreOrderBotApiRouteImport } from './routes/store-order-bot-api'
+import { Route as LeadershipStoreOrdersRouteImport } from './routes/leadership-store_.orders'
+import { Route as MediaIdRouteImport } from './routes/media.$id'
+import { Route as StoreIndexRouteImport } from './routes/store.index'
+import { Route as StoreProductIdRouteImport } from './routes/store.$productId'
+import { Route as StoreCartRouteImport } from './routes/store.cart'
+import { Route as StoreCategoriesRouteImport } from './routes/store.categories'
+import { Route as StoreCheckoutRouteImport } from './routes/store.checkout'
+import { Route as StoreCustom3dPrintRouteImport } from './routes/store.custom-3d-print'
+import { Route as StoreOrderRequestRouteImport } from './routes/store.order-request'
+import { Route as LeadershipStoreOrdersOrderIdRouteImport } from './routes/leadership-store_.orders.$orderId'
+import { Route as StoreCategoryCategorySlugRouteImport } from './routes/store.category.$categorySlug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompaniesRoute = CompaniesRouteImport.update({
+  id: '/companies',
+  path: '/companies',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsRoute = EventsRouteImport.update({
+  id: '/events',
+  path: '/events',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JoinRoute = JoinRouteImport.update({
@@ -29,44 +59,278 @@ const LeadershipRoute = LeadershipRouteImport.update({
   path: '/leadership',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LeadershipControlRoute = LeadershipControlRouteImport.update({
+  id: '/leadership-control',
+  path: '/leadership-control',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LeadershipMediaRoute = LeadershipMediaRouteImport.update({
+  id: '/leadership-media',
+  path: '/leadership-media',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LeadershipOrderRoute = LeadershipOrderRouteImport.update({
+  id: '/leadership-order',
+  path: '/leadership-order',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LeadershipStoreRoute = LeadershipStoreRouteImport.update({
+  id: '/leadership-store',
+  path: '/leadership-store',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RulesRoute = RulesRouteImport.update({
   id: '/rules',
   path: '/rules',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StoreRoute = StoreRouteImport.update({
+  id: '/store',
+  path: '/store',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StoreOrderBotApiRoute = StoreOrderBotApiRouteImport.update({
+  id: '/store-order-bot-api',
+  path: '/store-order-bot-api',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LeadershipStoreOrdersRoute = LeadershipStoreOrdersRouteImport.update({
+  id: '/leadership-store_/orders',
+  path: '/leadership-store/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MediaIdRoute = MediaIdRouteImport.update({
+  id: '/media/$id',
+  path: '/media/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StoreIndexRoute = StoreIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreProductIdRoute = StoreProductIdRouteImport.update({
+  id: '/$productId',
+  path: '/$productId',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreCartRoute = StoreCartRouteImport.update({
+  id: '/cart',
+  path: '/cart',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreCategoriesRoute = StoreCategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreCheckoutRoute = StoreCheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreCustom3dPrintRoute = StoreCustom3dPrintRouteImport.update({
+  id: '/custom-3d-print',
+  path: '/custom-3d-print',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreOrderRequestRoute = StoreOrderRequestRouteImport.update({
+  id: '/order-request',
+  path: '/order-request',
+  getParentRoute: () => StoreRoute,
+} as any)
+const LeadershipStoreOrdersOrderIdRoute =
+  LeadershipStoreOrdersOrderIdRouteImport.update({
+    id: '/$orderId',
+    path: '/$orderId',
+    getParentRoute: () => LeadershipStoreOrdersRoute,
+  } as any)
+const StoreCategoryCategorySlugRoute =
+  StoreCategoryCategorySlugRouteImport.update({
+    id: '/category/$categorySlug',
+    path: '/category/$categorySlug',
+    getParentRoute: () => StoreRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/companies': typeof CompaniesRoute
+  '/events': typeof EventsRoute
   '/join': typeof JoinRoute
   '/leadership': typeof LeadershipRoute
+  '/leadership-control': typeof LeadershipControlRoute
+  '/leadership-media': typeof LeadershipMediaRoute
+  '/leadership-order': typeof LeadershipOrderRoute
+  '/leadership-store': typeof LeadershipStoreRoute
+  '/login': typeof LoginRoute
   '/rules': typeof RulesRoute
+  '/store': typeof StoreRouteWithChildren
+  '/store-order-bot-api': typeof StoreOrderBotApiRoute
+  '/leadership-store/orders': typeof LeadershipStoreOrdersRouteWithChildren
+  '/media/$id': typeof MediaIdRoute
+  '/store/$productId': typeof StoreProductIdRoute
+  '/store/cart': typeof StoreCartRoute
+  '/store/categories': typeof StoreCategoriesRoute
+  '/store/checkout': typeof StoreCheckoutRoute
+  '/store/custom-3d-print': typeof StoreCustom3dPrintRoute
+  '/store/order-request': typeof StoreOrderRequestRoute
+  '/store/': typeof StoreIndexRoute
+  '/leadership-store/orders/$orderId': typeof LeadershipStoreOrdersOrderIdRoute
+  '/store/category/$categorySlug': typeof StoreCategoryCategorySlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/companies': typeof CompaniesRoute
+  '/events': typeof EventsRoute
   '/join': typeof JoinRoute
   '/leadership': typeof LeadershipRoute
+  '/leadership-control': typeof LeadershipControlRoute
+  '/leadership-media': typeof LeadershipMediaRoute
+  '/leadership-order': typeof LeadershipOrderRoute
+  '/leadership-store': typeof LeadershipStoreRoute
+  '/login': typeof LoginRoute
   '/rules': typeof RulesRoute
+  '/store-order-bot-api': typeof StoreOrderBotApiRoute
+  '/leadership-store/orders': typeof LeadershipStoreOrdersRouteWithChildren
+  '/media/$id': typeof MediaIdRoute
+  '/store/$productId': typeof StoreProductIdRoute
+  '/store/cart': typeof StoreCartRoute
+  '/store/categories': typeof StoreCategoriesRoute
+  '/store/checkout': typeof StoreCheckoutRoute
+  '/store/custom-3d-print': typeof StoreCustom3dPrintRoute
+  '/store/order-request': typeof StoreOrderRequestRoute
+  '/store': typeof StoreIndexRoute
+  '/leadership-store/orders/$orderId': typeof LeadershipStoreOrdersOrderIdRoute
+  '/store/category/$categorySlug': typeof StoreCategoryCategorySlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/companies': typeof CompaniesRoute
+  '/events': typeof EventsRoute
   '/join': typeof JoinRoute
   '/leadership': typeof LeadershipRoute
+  '/leadership-control': typeof LeadershipControlRoute
+  '/leadership-media': typeof LeadershipMediaRoute
+  '/leadership-order': typeof LeadershipOrderRoute
+  '/leadership-store': typeof LeadershipStoreRoute
+  '/login': typeof LoginRoute
   '/rules': typeof RulesRoute
+  '/store': typeof StoreRouteWithChildren
+  '/store-order-bot-api': typeof StoreOrderBotApiRoute
+  '/leadership-store_/orders': typeof LeadershipStoreOrdersRouteWithChildren
+  '/media/$id': typeof MediaIdRoute
+  '/store/$productId': typeof StoreProductIdRoute
+  '/store/cart': typeof StoreCartRoute
+  '/store/categories': typeof StoreCategoriesRoute
+  '/store/checkout': typeof StoreCheckoutRoute
+  '/store/custom-3d-print': typeof StoreCustom3dPrintRoute
+  '/store/order-request': typeof StoreOrderRequestRoute
+  '/store/': typeof StoreIndexRoute
+  '/leadership-store_/orders/$orderId': typeof LeadershipStoreOrdersOrderIdRoute
+  '/store/category/$categorySlug': typeof StoreCategoryCategorySlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/join' | '/leadership' | '/rules'
+  fullPaths:
+    | '/'
+    | '/companies'
+    | '/events'
+    | '/join'
+    | '/leadership'
+    | '/leadership-control'
+    | '/leadership-media'
+    | '/leadership-order'
+    | '/leadership-store'
+    | '/login'
+    | '/rules'
+    | '/store'
+    | '/store-order-bot-api'
+    | '/leadership-store/orders'
+    | '/media/$id'
+    | '/store/$productId'
+    | '/store/cart'
+    | '/store/categories'
+    | '/store/checkout'
+    | '/store/custom-3d-print'
+    | '/store/order-request'
+    | '/store/'
+    | '/leadership-store/orders/$orderId'
+    | '/store/category/$categorySlug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/join' | '/leadership' | '/rules'
-  id: '__root__' | '/' | '/join' | '/leadership' | '/rules'
+  to:
+    | '/'
+    | '/companies'
+    | '/events'
+    | '/join'
+    | '/leadership'
+    | '/leadership-control'
+    | '/leadership-media'
+    | '/leadership-order'
+    | '/leadership-store'
+    | '/login'
+    | '/rules'
+    | '/store-order-bot-api'
+    | '/leadership-store/orders'
+    | '/media/$id'
+    | '/store/$productId'
+    | '/store/cart'
+    | '/store/categories'
+    | '/store/checkout'
+    | '/store/custom-3d-print'
+    | '/store/order-request'
+    | '/store'
+    | '/leadership-store/orders/$orderId'
+    | '/store/category/$categorySlug'
+  id:
+    | '__root__'
+    | '/'
+    | '/companies'
+    | '/events'
+    | '/join'
+    | '/leadership'
+    | '/leadership-control'
+    | '/leadership-media'
+    | '/leadership-order'
+    | '/leadership-store'
+    | '/login'
+    | '/rules'
+    | '/store'
+    | '/store-order-bot-api'
+    | '/leadership-store_/orders'
+    | '/media/$id'
+    | '/store/$productId'
+    | '/store/cart'
+    | '/store/categories'
+    | '/store/checkout'
+    | '/store/custom-3d-print'
+    | '/store/order-request'
+    | '/store/'
+    | '/leadership-store_/orders/$orderId'
+    | '/store/category/$categorySlug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CompaniesRoute: typeof CompaniesRoute
+  EventsRoute: typeof EventsRoute
   JoinRoute: typeof JoinRoute
   LeadershipRoute: typeof LeadershipRoute
+  LeadershipControlRoute: typeof LeadershipControlRoute
+  LeadershipMediaRoute: typeof LeadershipMediaRoute
+  LeadershipOrderRoute: typeof LeadershipOrderRoute
+  LeadershipStoreRoute: typeof LeadershipStoreRoute
+  LoginRoute: typeof LoginRoute
   RulesRoute: typeof RulesRoute
+  StoreRoute: typeof StoreRouteWithChildren
+  StoreOrderBotApiRoute: typeof StoreOrderBotApiRoute
+  LeadershipStoreOrdersRoute: typeof LeadershipStoreOrdersRouteWithChildren
+  MediaIdRoute: typeof MediaIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -76,6 +340,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/companies': {
+      id: '/companies'
+      path: '/companies'
+      fullPath: '/companies'
+      preLoaderRoute: typeof CompaniesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events': {
+      id: '/events'
+      path: '/events'
+      fullPath: '/events'
+      preLoaderRoute: typeof EventsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/join': {
@@ -92,6 +370,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LeadershipRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/leadership-control': {
+      id: '/leadership-control'
+      path: '/leadership-control'
+      fullPath: '/leadership-control'
+      preLoaderRoute: typeof LeadershipControlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/leadership-media': {
+      id: '/leadership-media'
+      path: '/leadership-media'
+      fullPath: '/leadership-media'
+      preLoaderRoute: typeof LeadershipMediaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/leadership-order': {
+      id: '/leadership-order'
+      path: '/leadership-order'
+      fullPath: '/leadership-order'
+      preLoaderRoute: typeof LeadershipOrderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/leadership-store': {
+      id: '/leadership-store'
+      path: '/leadership-store'
+      fullPath: '/leadership-store'
+      preLoaderRoute: typeof LeadershipStoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/rules': {
       id: '/rules'
       path: '/rules'
@@ -99,14 +412,153 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RulesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/store': {
+      id: '/store'
+      path: '/store'
+      fullPath: '/store'
+      preLoaderRoute: typeof StoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/store-order-bot-api': {
+      id: '/store-order-bot-api'
+      path: '/store-order-bot-api'
+      fullPath: '/store-order-bot-api'
+      preLoaderRoute: typeof StoreOrderBotApiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/leadership-store_/orders': {
+      id: '/leadership-store_/orders'
+      path: '/leadership-store/orders'
+      fullPath: '/leadership-store/orders'
+      preLoaderRoute: typeof LeadershipStoreOrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/media/$id': {
+      id: '/media/$id'
+      path: '/media/$id'
+      fullPath: '/media/$id'
+      preLoaderRoute: typeof MediaIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/store/': {
+      id: '/store/'
+      path: '/'
+      fullPath: '/store/'
+      preLoaderRoute: typeof StoreIndexRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/$productId': {
+      id: '/store/$productId'
+      path: '/$productId'
+      fullPath: '/store/$productId'
+      preLoaderRoute: typeof StoreProductIdRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/cart': {
+      id: '/store/cart'
+      path: '/cart'
+      fullPath: '/store/cart'
+      preLoaderRoute: typeof StoreCartRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/categories': {
+      id: '/store/categories'
+      path: '/categories'
+      fullPath: '/store/categories'
+      preLoaderRoute: typeof StoreCategoriesRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/checkout': {
+      id: '/store/checkout'
+      path: '/checkout'
+      fullPath: '/store/checkout'
+      preLoaderRoute: typeof StoreCheckoutRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/custom-3d-print': {
+      id: '/store/custom-3d-print'
+      path: '/custom-3d-print'
+      fullPath: '/store/custom-3d-print'
+      preLoaderRoute: typeof StoreCustom3dPrintRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/order-request': {
+      id: '/store/order-request'
+      path: '/order-request'
+      fullPath: '/store/order-request'
+      preLoaderRoute: typeof StoreOrderRequestRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/leadership-store_/orders/$orderId': {
+      id: '/leadership-store_/orders/$orderId'
+      path: '/$orderId'
+      fullPath: '/leadership-store/orders/$orderId'
+      preLoaderRoute: typeof LeadershipStoreOrdersOrderIdRouteImport
+      parentRoute: typeof LeadershipStoreOrdersRoute
+    }
+    '/store/category/$categorySlug': {
+      id: '/store/category/$categorySlug'
+      path: '/category/$categorySlug'
+      fullPath: '/store/category/$categorySlug'
+      preLoaderRoute: typeof StoreCategoryCategorySlugRouteImport
+      parentRoute: typeof StoreRoute
+    }
   }
 }
 
+interface StoreRouteChildren {
+  StoreProductIdRoute: typeof StoreProductIdRoute
+  StoreCartRoute: typeof StoreCartRoute
+  StoreCategoriesRoute: typeof StoreCategoriesRoute
+  StoreCheckoutRoute: typeof StoreCheckoutRoute
+  StoreCustom3dPrintRoute: typeof StoreCustom3dPrintRoute
+  StoreOrderRequestRoute: typeof StoreOrderRequestRoute
+  StoreIndexRoute: typeof StoreIndexRoute
+  StoreCategoryCategorySlugRoute: typeof StoreCategoryCategorySlugRoute
+}
+
+const StoreRouteChildren: StoreRouteChildren = {
+  StoreProductIdRoute: StoreProductIdRoute,
+  StoreCartRoute: StoreCartRoute,
+  StoreCategoriesRoute: StoreCategoriesRoute,
+  StoreCheckoutRoute: StoreCheckoutRoute,
+  StoreCustom3dPrintRoute: StoreCustom3dPrintRoute,
+  StoreOrderRequestRoute: StoreOrderRequestRoute,
+  StoreIndexRoute: StoreIndexRoute,
+  StoreCategoryCategorySlugRoute: StoreCategoryCategorySlugRoute,
+}
+
+const StoreRouteWithChildren = StoreRoute._addFileChildren(StoreRouteChildren)
+
+interface LeadershipStoreOrdersRouteChildren {
+  LeadershipStoreOrdersOrderIdRoute: typeof LeadershipStoreOrdersOrderIdRoute
+}
+
+const LeadershipStoreOrdersRouteChildren: LeadershipStoreOrdersRouteChildren = {
+  LeadershipStoreOrdersOrderIdRoute: LeadershipStoreOrdersOrderIdRoute,
+}
+
+const LeadershipStoreOrdersRouteWithChildren =
+  LeadershipStoreOrdersRoute._addFileChildren(
+    LeadershipStoreOrdersRouteChildren,
+  )
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CompaniesRoute: CompaniesRoute,
+  EventsRoute: EventsRoute,
   JoinRoute: JoinRoute,
   LeadershipRoute: LeadershipRoute,
+  LeadershipControlRoute: LeadershipControlRoute,
+  LeadershipMediaRoute: LeadershipMediaRoute,
+  LeadershipOrderRoute: LeadershipOrderRoute,
+  LeadershipStoreRoute: LeadershipStoreRoute,
+  LoginRoute: LoginRoute,
   RulesRoute: RulesRoute,
+  StoreRoute: StoreRouteWithChildren,
+  StoreOrderBotApiRoute: StoreOrderBotApiRoute,
+  LeadershipStoreOrdersRoute: LeadershipStoreOrdersRouteWithChildren,
+  MediaIdRoute: MediaIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
