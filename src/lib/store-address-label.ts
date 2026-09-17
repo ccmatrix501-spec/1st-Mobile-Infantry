@@ -40,10 +40,10 @@ export function printStoreAddressLabel(order: StoreOrder): void {
   const localityRaw = [rawCity, rawState, rawPostcode].filter(Boolean).join(" ");
   const localityLine = clean(localityRaw);
 
-  const namePt = fittedPt(rawCustomerName, 10.5, 9.2, 8.1);
-  const streetPt = fittedPt(rawStreet, 8.4, 7.4, 6.6);
-  const localityPt = fittedPt(localityRaw, 8.4, 7.4, 6.6);
-  const countryPt = fittedPt(rawCountry, 8.1, 7.2, 6.5);
+  const namePt = fittedPt(rawCustomerName, 11.2, 9.8, 8.5);
+  const streetPt = fittedPt(rawStreet, 9.0, 7.8, 6.8);
+  const localityPt = fittedPt(localityRaw, 9.0, 7.8, 6.8);
+  const countryPt = fittedPt(rawCountry, 8.7, 7.6, 6.7);
 
   const logoUrl = `${window.location.origin}/ql700-mi-logo-print-ready.svg`;
   const qrUrl = `${window.location.origin}/1stmid-qr-code.png`;
@@ -60,29 +60,27 @@ export function printStoreAddressLabel(order: StoreOrder): void {
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; background: #fff; color: #080808; font-family: Arial, Helvetica, sans-serif; }
     .label { position: relative; width: 120mm; height: 62mm; overflow: hidden; background: #fff; border: 0.7mm solid #0a0a0a; clip-path: polygon(1.5mm 0, calc(100% - 1.5mm) 0, 100% 1.5mm, 100% calc(100% - 1.5mm), calc(100% - 1.5mm) 100%, 1.5mm 100%, 0 calc(100% - 1.5mm), 0 1.5mm); }
-    .concept-row { position: absolute; left: 1.5mm; right: 1.5mm; top: 1.4mm; height: 7.1mm; display: flex; align-items: center; padding: 0 2.3mm; border: 0.45mm solid #0a0a0a; font-family: Impact, "Arial Narrow", Arial, sans-serif; font-size: 11pt; font-weight: 900; letter-spacing: 0.25mm; white-space: nowrap; }
-    .concept-chevron { margin-left: auto; font-size: 15pt; letter-spacing: -0.4mm; transform: skewX(-12deg); }
-    .brand-row { position: absolute; left: 1.5mm; right: 1.5mm; top: 9mm; height: 7.1mm; display: grid; grid-template-columns: 41mm 1fr; align-items: center; background: #0a0a0a; color: #fff; padding: 0 2.5mm; font-family: Impact, "Arial Narrow", Arial, sans-serif; font-weight: 900; letter-spacing: 0.2mm; }
-    .brand-store { font-size: 10.5pt; white-space: nowrap; }
-    .brand-values { text-align: right; font-size: 7.2pt; letter-spacing: 0.25mm; white-space: nowrap; }
-    .main-row { position: absolute; left: 1.5mm; right: 1.5mm; top: 16.7mm; height: 26.8mm; border-left: 0.4mm solid #0a0a0a; border-right: 0.4mm solid #0a0a0a; border-bottom: 0.45mm solid #0a0a0a; }
-    .emblem-box { position: absolute; left: 0; top: 0; width: 32mm; height: 26.8mm; display: grid; place-items: center; border-right: 0.45mm solid #0a0a0a; }
-    .logo { width: 26.2mm; height: 24.8mm; object-fit: contain; }
-    .address-box { position: absolute; left: 32mm; top: 0; width: 54.2mm; height: 26.8mm; padding: 2.2mm 3.6mm 1.8mm; border-right: 0.45mm solid #0a0a0a; }
-    .ship-to { margin: 0 0 1.2mm; font-family: Impact, "Arial Narrow", Arial, sans-serif; font-size: 12pt; font-weight: 900; letter-spacing: 0.3mm; line-height: 1; }
-    .name { margin: 0 0 0.8mm; font-weight: 900; line-height: 1.02; white-space: nowrap; }
-    .address-line { margin-top: 0.8mm; font-weight: 800; line-height: 1.02; white-space: nowrap; }
+    .brand-row { position: absolute; left: 1.5mm; right: 1.5mm; top: 1.5mm; height: 7.8mm; display: grid; grid-template-columns: 43mm 1fr; align-items: center; background: #0a0a0a; color: #fff; padding: 0 2.5mm; font-family: Impact, "Arial Narrow", Arial, sans-serif; font-weight: 900; letter-spacing: 0.2mm; }
+    .brand-store { font-size: 11.5pt; white-space: nowrap; }
+    .brand-values { text-align: right; font-size: 7.5pt; letter-spacing: 0.25mm; white-space: nowrap; }
+    .main-row { position: absolute; left: 1.5mm; right: 1.5mm; top: 9.8mm; height: 31.2mm; border-left: 0.4mm solid #0a0a0a; border-right: 0.4mm solid #0a0a0a; border-bottom: 0.45mm solid #0a0a0a; }
+    .emblem-box { position: absolute; left: 0; top: 0; width: 32mm; height: 31.2mm; display: grid; place-items: center; border-right: 0.45mm solid #0a0a0a; }
+    .logo { width: 28mm; height: 28mm; object-fit: contain; }
+    .address-box { position: absolute; left: 32mm; top: 0; width: 54.2mm; height: 31.2mm; padding: 2.6mm 3.6mm 1.8mm; border-right: 0.45mm solid #0a0a0a; }
+    .ship-to { margin: 0 0 1.5mm; font-family: Impact, "Arial Narrow", Arial, sans-serif; font-size: 13pt; font-weight: 900; letter-spacing: 0.3mm; line-height: 1; }
+    .name { margin: 0 0 1mm; font-weight: 900; line-height: 1.02; white-space: nowrap; }
+    .address-line { margin-top: 1mm; font-weight: 800; line-height: 1.02; white-space: nowrap; }
     .country { text-transform: uppercase; }
-    .qr-box { position: absolute; left: 86.2mm; right: 0; top: 0; height: 26.8mm; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5mm 1.5mm 1.2mm; }
-    .qr { width: 19.2mm; height: 19.2mm; object-fit: contain; image-rendering: pixelated; }
-    .order { margin-top: 0.9mm; font-family: Impact, "Arial Narrow", Arial, sans-serif; font-size: 7.2pt; font-weight: 900; letter-spacing: 0.08mm; white-space: nowrap; }
-    .message-row { position: absolute; left: 1.5mm; right: 1.5mm; top: 43.5mm; height: 10.1mm; display: grid; grid-template-columns: 27.8mm 1fr 31.8mm; border-left: 0.4mm solid #0a0a0a; border-right: 0.4mm solid #0a0a0a; border-bottom: 0.45mm solid #0a0a0a; }
-    .site-box { display: flex; align-items: center; padding: 0 2.2mm; border-right: 0.45mm solid #0a0a0a; font-family: Impact, "Arial Narrow", Arial, sans-serif; font-size: 10.5pt; font-weight: 900; white-space: nowrap; }
-    .slogan-box { display: flex; align-items: center; justify-content: center; padding: 0 1.5mm; border-right: 0.45mm solid #0a0a0a; font-family: "Arial Narrow", Arial, sans-serif; font-size: 7.4pt; font-weight: 900; font-style: italic; white-space: nowrap; }
-    .supply-box { position: relative; display: flex; align-items: center; padding-left: 2.7mm; padding-right: 9mm; background: #0a0a0a; color: #fff; font-family: Impact, "Arial Narrow", Arial, sans-serif; font-size: 7.2pt; font-weight: 900; line-height: 1.06; letter-spacing: 0.14mm; }
-    .supply-stripes { position: absolute; right: 2.1mm; top: 1.4mm; width: 5.5mm; height: 7.2mm; background: repeating-linear-gradient(120deg, #fff 0 1.4mm, transparent 1.4mm 3mm); }
-    .footer-row { position: absolute; left: 1.5mm; right: 1.5mm; bottom: 1.5mm; height: 6.7mm; display: flex; align-items: center; justify-content: center; border: 0.4mm solid #0a0a0a; font-family: "Arial Narrow", Arial, sans-serif; font-size: 7pt; font-weight: 900; letter-spacing: 0.55mm; white-space: nowrap; }
-    .footer-stripes { position: absolute; width: 14mm; height: 5.2mm; top: 0.7mm; background: repeating-linear-gradient(120deg, #0a0a0a 0 2.2mm, transparent 2.2mm 4.6mm); }
+    .qr-box { position: absolute; left: 86.2mm; right: 0; top: 0; height: 31.2mm; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5mm 1.5mm 1.2mm; }
+    .qr { width: 21.5mm; height: 21.5mm; object-fit: contain; image-rendering: pixelated; }
+    .order { margin-top: 1.1mm; font-family: Impact, "Arial Narrow", Arial, sans-serif; font-size: 7.8pt; font-weight: 900; letter-spacing: 0.08mm; white-space: nowrap; }
+    .message-row { position: absolute; left: 1.5mm; right: 1.5mm; top: 41.2mm; height: 11.5mm; display: grid; grid-template-columns: 27.8mm 1fr 31.8mm; border-left: 0.4mm solid #0a0a0a; border-right: 0.4mm solid #0a0a0a; border-bottom: 0.45mm solid #0a0a0a; }
+    .site-box { display: flex; align-items: center; padding: 0 2.2mm; border-right: 0.45mm solid #0a0a0a; font-family: Impact, "Arial Narrow", Arial, sans-serif; font-size: 11pt; font-weight: 900; white-space: nowrap; }
+    .slogan-box { display: flex; align-items: center; justify-content: center; padding: 0 1.5mm; border-right: 0.45mm solid #0a0a0a; font-family: "Arial Narrow", Arial, sans-serif; font-size: 7.6pt; font-weight: 900; font-style: italic; white-space: nowrap; }
+    .supply-box { position: relative; display: flex; align-items: center; padding-left: 2.7mm; padding-right: 9mm; background: #0a0a0a; color: #fff; font-family: Impact, "Arial Narrow", Arial, sans-serif; font-size: 7.5pt; font-weight: 900; line-height: 1.06; letter-spacing: 0.14mm; }
+    .supply-stripes { position: absolute; right: 2.1mm; top: 1.7mm; width: 5.5mm; height: 8mm; background: repeating-linear-gradient(120deg, #fff 0 1.4mm, transparent 1.4mm 3mm); }
+    .footer-row { position: absolute; left: 1.5mm; right: 1.5mm; bottom: 1.5mm; height: 7mm; display: flex; align-items: center; justify-content: center; border: 0.4mm solid #0a0a0a; font-family: "Arial Narrow", Arial, sans-serif; font-size: 7.2pt; font-weight: 900; letter-spacing: 0.55mm; white-space: nowrap; }
+    .footer-stripes { position: absolute; width: 14mm; height: 5.5mm; top: 0.7mm; background: repeating-linear-gradient(120deg, #0a0a0a 0 2.2mm, transparent 2.2mm 4.6mm); }
     .footer-stripes.left { left: 1.8mm; }
     .footer-stripes.right { right: 1.8mm; transform: scaleX(-1); }
     .screen-note { display: none; }
@@ -91,7 +89,6 @@ export function printStoreAddressLabel(order: StoreOrder): void {
 </head>
 <body>
   <main class="label">
-    <div class="concept-row"><span>DESIGN 18 - FIELD-MANUAL STYLE</span><span class="concept-chevron">////</span></div>
     <div class="brand-row"><div class="brand-store">1ST M.I. STORE &nbsp;››</div><div class="brand-values">SUPPLY | COMMUNITY | GOOD VIBES</div></div>
     <section class="main-row">
       <div class="emblem-box"><img class="logo" src="${logoUrl}" alt="Mobile Infantry 1st Division emblem" /></div>
