@@ -6,6 +6,7 @@ import { LiveSiteAdminAppearance } from "@/components/live-site-admin-appearance
 import { LeadershipStoreControl } from "@/components/leadership-store-control";
 import { StoreEmailBuilderDock } from "@/components/store-email-builder-dock";
 import { StoreOrderInvoiceShortcut } from "@/components/store-order-invoice-shortcut";
+import { StoreOrderLabelShortcut } from "@/components/store-order-label-shortcut";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 
@@ -65,6 +66,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               Email Hub
             </Link>
             {orderView ? <StoreOrderInvoiceShortcut /> : null}
+            {orderView ? <StoreOrderLabelShortcut /> : null}
           </div>
         </div>
       ) : null}
