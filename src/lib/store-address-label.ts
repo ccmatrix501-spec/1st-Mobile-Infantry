@@ -46,7 +46,7 @@ export function printStoreAddressLabel(order: StoreOrder): void {
   const countryPt = fittedPt(rawCountry, 9.8, 8.4, 7.2);
 
   const logoUrl = `${window.location.origin}/ql700-mi-logo-print-ready.svg`;
-  const qrUrl = `${window.location.origin}/1stmid-qr-code.png`;
+  const qrUrl = `${window.location.origin}/1stmid-qr-code.png?v=20260918`;
 
   printWindow.document.open();
   printWindow.document.write(`<!doctype html>
@@ -64,6 +64,8 @@ export function printStoreAddressLabel(order: StoreOrder): void {
       background: #fff;
       color: #080808;
       font-family: Arial, Helvetica, sans-serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
     .label {
       position: relative;
@@ -171,20 +173,35 @@ export function printStoreAddressLabel(order: StoreOrder): void {
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 1mm 1.5mm 1.2mm;
+      padding: 0.8mm 1.4mm 1mm;
+      background: #fff;
+    }
+    .qr-wrap {
+      width: 24.8mm;
+      height: 24.8mm;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.2mm;
+      background: #fff;
+      overflow: hidden;
     }
     .qr {
-      width: 23mm;
-      height: 23mm;
+      display: block;
+      width: 100%;
+      height: 100%;
+      aspect-ratio: 1 / 1;
       object-fit: contain;
+      background: #fff;
       image-rendering: pixelated;
+      image-rendering: crisp-edges;
     }
     .order {
-      margin-top: 0.8mm;
+      margin-top: 0.7mm;
       font-family: Impact, "Arial Black", "Arial Narrow", Arial, sans-serif;
-      font-size: 9pt;
+      font-size: 8.7pt;
       font-weight: 900;
-      letter-spacing: 0.05mm;
+      letter-spacing: 0.04mm;
       white-space: nowrap;
     }
     .message-row {
@@ -309,7 +326,9 @@ export function printStoreAddressLabel(order: StoreOrder): void {
         ${country ? `<div class="address-line country" style="font-size:${countryPt}pt">${country}</div>` : ""}
       </div>
       <div class="qr-box">
-        <img class="qr" src="${qrUrl}" alt="1stmid.com QR code" />
+        <div class="qr-wrap">
+          <img class="qr" src="${qrUrl}" alt="1stmid.com QR code" />
+        </div>
         <div class="order">Order #${orderNumber}</div>
       </div>
     </section>
@@ -340,7 +359,7 @@ export function printStoreAddressLabel(order: StoreOrder): void {
           img.addEventListener('load', resolve, { once: true });
           img.addEventListener('error', resolve, { once: true });
         });
-      })).then(function () { setTimeout(function () { window.print(); }, 200); });
+      })).then(function () { setTimeout(function () { window.print(); }, 250); });
     });
   </script>
 </body>
