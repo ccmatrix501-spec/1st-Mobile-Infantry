@@ -160,6 +160,18 @@ export function SiteHeader() {
           )}
         </div>
 
+        {!leadershipSignedIn ? (
+          /* Mobile/tablet leadership hotspot: invisible 44px tap target immediately left of the menu button. */
+          <Link
+            to="/login"
+            aria-label="Leadership Sign In"
+            title=""
+            className="absolute right-[4.25rem] top-1/2 h-11 w-11 -translate-y-1/2 cursor-default rounded-md opacity-0 lg:hidden"
+          >
+            <span className="sr-only">Leadership Sign In</span>
+          </Link>
+        ) : null}
+
         <Button
           variant="secondary"
           size="icon"
