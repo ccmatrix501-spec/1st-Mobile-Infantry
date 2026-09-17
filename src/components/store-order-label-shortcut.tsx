@@ -13,7 +13,6 @@ export function StoreOrderLabelShortcut() {
       setError("No order id was found for this order.");
       return;
     }
-
     setLoading(true);
     setError(null);
     try {
