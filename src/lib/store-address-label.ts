@@ -46,7 +46,7 @@ export function printStoreAddressLabel(order: StoreOrder): void {
   const countryPt = fittedPt(rawCountry, 9.8, 8.4, 7.2);
 
   const logoUrl = `${window.location.origin}/ql700-mi-logo-print-ready.svg`;
-  const qrUrl = `${window.location.origin}/1stmid-qr-code.png?v=20260918`;
+  const qrUrl = `${window.location.origin}/1stmid-qr-code.png?v=20260918b`;
 
   printWindow.document.open();
   printWindow.document.write(`<!doctype html>
@@ -172,17 +172,19 @@ export function printStoreAddressLabel(order: StoreOrder): void {
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 0.8mm 1.4mm 1mm;
+      justify-content: flex-start;
+      padding: 0.65mm 1.4mm 0.7mm;
       background: #fff;
+      overflow: hidden;
     }
     .qr-wrap {
-      width: 24.8mm;
-      height: 24.8mm;
+      flex: 0 0 auto;
+      width: 25.5mm;
+      height: 25.5mm;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 1.2mm;
+      padding: 0.9mm;
       background: #fff;
       overflow: hidden;
     }
@@ -197,11 +199,16 @@ export function printStoreAddressLabel(order: StoreOrder): void {
       image-rendering: crisp-edges;
     }
     .order {
-      margin-top: 0.7mm;
-      font-family: Impact, "Arial Black", "Arial Narrow", Arial, sans-serif;
-      font-size: 8.7pt;
+      width: 32mm;
+      margin-top: 0.35mm;
+      overflow: hidden;
+      color: #080808;
+      font-family: "Arial Narrow", Arial, Helvetica, sans-serif;
+      font-size: 5.8pt;
       font-weight: 900;
-      letter-spacing: 0.04mm;
+      line-height: 1;
+      letter-spacing: -0.05mm;
+      text-align: center;
       white-space: nowrap;
     }
     .message-row {
@@ -354,12 +361,12 @@ export function printStoreAddressLabel(order: StoreOrder): void {
     window.addEventListener('load', function () {
       var images = Array.from(document.images);
       Promise.all(images.map(function (img) {
-        if (img.complete) return Promise.resolve();
+        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
         return new Promise(function (resolve) {
           img.addEventListener('load', resolve, { once: true });
           img.addEventListener('error', resolve, { once: true });
         });
-      })).then(function () { setTimeout(function () { window.print(); }, 250); });
+      })).then(function () { setTimeout(function () { window.print(); }, 350); });
     });
   </script>
 </body>
