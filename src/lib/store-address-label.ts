@@ -336,7 +336,7 @@ export function printStoreAddressLabel(order: StoreOrder): void {
         <div class="qr-wrap">
           <img class="qr" src="${qrUrl}" alt="1stmid.com QR code" />
         </div>
-        <div class="order">Order #${orderNumber}</div>
+        <div class="order">www.1stmid.com</div>
       </div>
     </section>
 
