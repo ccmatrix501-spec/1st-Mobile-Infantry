@@ -103,7 +103,9 @@ function CompaniesPage() {
                       <h2 className="mt-1 font-display text-3xl font-bold uppercase tracking-wide text-fg">
                         {company.callsign}
                       </h2>
-                      <p className="mt-1 font-mono text-xs text-muted">Company</p>
+                      <p className="mt-1 font-mono text-xs text-muted">
+                        {company.callsign.toLowerCase().includes("battalion") ? "Battalion" : "Company"}
+                      </p>
                     </div>
                   </div>
 
