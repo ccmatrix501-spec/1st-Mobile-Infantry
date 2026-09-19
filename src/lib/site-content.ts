@@ -4,7 +4,7 @@ export const SITE_CONTENT_DEFAULTS = {
   motto: "No one stacks them high like the First M.I.",
   secondaryMotto: "The First to Drop. The Last to Leave.",
   intro:
-    "Five companies. Five active theaters. Demon holds the ARC, Cerberus answers the call, Nightmare fuels the war, Hellfire hunts the enemy, and Alpha drives the fifth line. Service Guarantees Citizenship.",
+    "Five formations. Five active theaters. Demon holds the ARC, Cerberus answers the call, Nightmare fuels the war, Hellfire hunts the enemy, and Hell Hounds Battalion drives the fifth line. Service Guarantees Citizenship.",
   established: "Federal Year 2148",
   homebase: "San Diego Recruit Depot · Terra",
   theaterTitle: "The five theaters",
@@ -21,8 +21,17 @@ export const SITE_CONTENT_KEYS = Object.keys(
 export function mergeSiteContent(
   values?: Partial<Record<SiteContentKey, string>> | null,
 ): SiteContent {
-  return {
+  const merged = {
     ...SITE_CONTENT_DEFAULTS,
     ...(values ?? {}),
   };
+
+  if (merged.intro.includes("Alpha drives the fifth line")) {
+    merged.intro = merged.intro.replace(
+      "Alpha drives the fifth line",
+      "Hell Hounds Battalion drives the fifth line",
+    );
+  }
+
+  return merged;
 }
