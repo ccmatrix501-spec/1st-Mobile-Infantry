@@ -81,7 +81,7 @@ const hellHoundsBattalion: ManagedCompany = {
 const temporaryHellHoundsCaptain: ManagedLeader = {
   rank: "General · Temporary Captain",
   name: "Hatchet",
-  billet: "Hell Hounds Battalion · Temporary Company Command",
+  billet: "Hell Hounds Battalion · Temporary Battalion Command",
   note: "General Hatchet is temporarily commanding Hell Hounds Battalion while retaining overall command of the 1st Mobile Infantry.",
   tier: "captain",
   company: "Hell Hounds Battalion",
