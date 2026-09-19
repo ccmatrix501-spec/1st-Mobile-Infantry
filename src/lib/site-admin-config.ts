@@ -172,6 +172,7 @@ export function mergeSiteAdminConfig(input?: Partial<SiteAdminConfig> | null): S
             code: "Fifth Battalion",
             role: company.role === "Fifth line company" ? "Flexible line battalion" : company.role,
             captain: "General Hatchet",
+            logo: "/hell-hounds-battalion.webp",
             summary:
               callsign === "alpha" ||
               company.summary.toLowerCase().includes("alpha company")
