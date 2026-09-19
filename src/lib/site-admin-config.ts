@@ -72,7 +72,7 @@ const hellHoundsBattalion: ManagedCompany = {
   role: "Flexible line battalion",
   winCon: "Hold the line",
   captain: "General Hatchet",
-  logo: "/company-alpha.png",
+  logo: "/hell-hounds-battalion.webp",
   traits: ["Flexible tasking", "Line operations", "Combined arms", "Rapid support"],
   summary:
     "Hell Hounds Battalion is the fifth formation of the 1st Mobile Infantry, reinforcing the line wherever Division Command needs additional combat power.",
