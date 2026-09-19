@@ -166,7 +166,11 @@ function CompaniesPage() {
                             </span>
                           )}
                           <div className="min-w-0">
-                            <p className="stencil text-[9px] tracking-[0.14em] text-primary">Company command</p>
+                            <p className="stencil text-[9px] tracking-[0.14em] text-primary">
+                              {company.callsign.toLowerCase().includes("battalion")
+                                ? "Battalion command"
+                                : "Company command"}
+                            </p>
                             <p className="mt-1 truncate font-display text-xl font-semibold uppercase tracking-wide text-fg">
                               {captain?.name || company.captain}
                             </p>
