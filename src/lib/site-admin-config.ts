@@ -166,7 +166,7 @@ export function mergeSiteAdminConfig(input?: Partial<SiteAdminConfig> | null): S
     ? copy(input.companies).map((company) => {
         const callsign = company.callsign.trim().toLowerCase();
         const isHellHounds =
-          callsign === "alpha" ||
+          callsign.startsWith("alpha") ||
           callsign.includes("hell hounds") ||
           callsign.includes("hellhounds");
         if (isHellHounds) {
@@ -200,7 +200,7 @@ export function mergeSiteAdminConfig(input?: Partial<SiteAdminConfig> | null): S
             person.name.trim().toLowerCase() === "hatchet" &&
             (() => {
               const company = person.company?.trim().toLowerCase() || "";
-              return company === "alpha" || company.includes("hell hounds") || company.includes("hellhounds");
+              return company.startsWith("alpha") || company.includes("hell hounds") || company.includes("hellhounds");
             })()
           ),
       )
