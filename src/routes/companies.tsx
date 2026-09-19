@@ -57,6 +57,7 @@ function CompaniesPage() {
 
         <div className="mt-10 space-y-6">
           {companies.map((company, index) => {
+            const isBattalion = company.callsign.toLowerCase().includes("battalion");
             const captain = managed.leadership.find(
               (person) =>
                 person.tier === "captain" &&
@@ -70,8 +71,12 @@ function CompaniesPage() {
                 id={`company-${slug(company.callsign)}`}
                 className="panel panel-feature scroll-mt-24 overflow-hidden"
               >
-                <div className="grid lg:grid-cols-[260px_1fr]">
-                  <div className="relative flex min-h-64 items-center justify-center border-b border-border bg-black/55 p-8 lg:min-h-full lg:border-b-0 lg:border-r">
+                <div className={`grid ${isBattalion ? "lg:grid-cols-[380px_1fr]" : "lg:grid-cols-[260px_1fr]"}`}>
+                  <div
+                    className={`relative flex min-h-64 items-center justify-center border-b border-border bg-black/55 lg:min-h-full lg:border-b-0 lg:border-r ${
+                      isBattalion ? "p-5 sm:p-6" : "p-8"
+                    }`}
+                  >
                     <div
                       className="pointer-events-none absolute inset-0 opacity-50"
                       aria-hidden
@@ -82,13 +87,19 @@ function CompaniesPage() {
                     />
                     <div className="relative flex flex-col items-center text-center">
                       {company.logo ? (
-                        <div className="flex h-36 w-36 items-center justify-center overflow-hidden rounded-xl border border-primary/30 bg-black/70 p-3 shadow-[0_0_35px_color-mix(in_oklab,var(--color-primary)_15%,transparent)]">
+                        <div
+                          className={
+                            isBattalion
+                              ? "flex h-44 w-full max-w-[340px] items-center justify-center overflow-hidden rounded-xl border border-primary/30 bg-black/70 p-2 shadow-[0_0_35px_color-mix(in_oklab,var(--color-primary)_15%,transparent)] sm:h-48 lg:h-52 lg:max-w-[350px]"
+                              : "flex h-36 w-36 items-center justify-center overflow-hidden rounded-xl border border-primary/30 bg-black/70 p-3 shadow-[0_0_35px_color-mix(in_oklab,var(--color-primary)_15%,transparent)]"
+                          }
+                        >
                           <img
                             src={company.logo}
-                            alt={`${company.callsign} Company logo`}
-                            width={144}
-                            height={144}
-                            className="h-full w-full object-contain"
+                            alt={`${company.callsign} ${isBattalion ? "Battalion" : "Company"} logo`}
+                            width={isBattalion ? 350 : 144}
+                            height={isBattalion ? 208 : 144}
+                            className={isBattalion ? "h-full w-full object-contain" : "h-full w-full object-contain"}
                             decoding="async"
                           />
                         </div>
@@ -104,7 +115,7 @@ function CompaniesPage() {
                         {company.callsign}
                       </h2>
                       <p className="mt-1 font-mono text-xs text-muted">
-                        {company.callsign.toLowerCase().includes("battalion") ? "Battalion" : "Company"}
+                        {isBattalion ? "Battalion" : "Company"}
                       </p>
                     </div>
                   </div>
@@ -167,9 +178,7 @@ function CompaniesPage() {
                           )}
                           <div className="min-w-0">
                             <p className="stencil text-[9px] tracking-[0.14em] text-primary">
-                              {company.callsign.toLowerCase().includes("battalion")
-                                ? "Battalion command"
-                                : "Company command"}
+                              {isBattalion ? "Battalion command" : "Company command"}
                             </p>
                             <p className="mt-1 truncate font-display text-xl font-semibold uppercase tracking-wide text-fg">
                               {captain?.name || company.captain}
