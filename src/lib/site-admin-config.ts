@@ -72,7 +72,7 @@ const hellHoundsBattalion: ManagedCompany = {
   role: "Flexible line battalion",
   winCon: "Hold the line",
   captain: "General Hatchet",
-  logo: "/hell-hounds-battalion-v4.webp",
+  logo: "/hell-hounds-battalion-v5.webp",
   traits: ["Flexible tasking", "Line operations", "Combined arms", "Rapid support"],
   summary:
     "Hell Hounds Battalion is the fifth formation of the 1st Mobile Infantry, reinforcing the line wherever Division Command needs additional combat power.",
@@ -165,16 +165,20 @@ export function mergeSiteAdminConfig(input?: Partial<SiteAdminConfig> | null): S
   const inputCompanies = Array.isArray(input.companies)
     ? copy(input.companies).map((company) => {
         const callsign = company.callsign.trim().toLowerCase();
-        if (callsign === "alpha" || callsign === "hell hounds battalion") {
+        const isHellHounds =
+          callsign === "alpha" ||
+          callsign.includes("hell hounds") ||
+          callsign.includes("hellhounds");
+        if (isHellHounds) {
           return {
             ...company,
             callsign: "Hell Hounds Battalion",
             code: "Fifth Battalion",
             role: company.role === "Fifth line company" ? "Flexible line battalion" : company.role,
             captain: "General Hatchet",
-            logo: "/hell-hounds-battalion-v4.webp",
+            logo: "/hell-hounds-battalion-v5.webp",
             summary:
-              callsign === "alpha" ||
+              isHellHounds ||
               company.summary.toLowerCase().includes("alpha company")
                 ? "Hell Hounds Battalion is the fifth formation of the 1st Mobile Infantry, reinforcing the line wherever Division Command needs additional combat power."
                 : company.summary,
@@ -194,9 +198,10 @@ export function mergeSiteAdminConfig(input?: Partial<SiteAdminConfig> | null): S
           !(
             person.tier === "captain" &&
             person.name.trim().toLowerCase() === "hatchet" &&
-            ["alpha", "hell hounds battalion"].includes(
-              person.company?.trim().toLowerCase() || "",
-            )
+            (() => {
+              const company = person.company?.trim().toLowerCase() || "";
+              return company === "alpha" || company.includes("hell hounds") || company.includes("hellhounds");
+            })()
           ),
       )
     : defaults.leadership.filter(
