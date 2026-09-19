@@ -203,6 +203,47 @@ export const submitStoreOrderRequest = createServerFn({ method: "POST" })
       { test: leadershipTestMode },
     );
 
+    let confirmationEmailSent = false;
+    let confirmationEmailError: string | null = null;
+
+    try {
+      const productImages: Record<string, string> = {};
+      for (const product of settings.products) {
+        const image = product.images[0]?.url || product.image;
+        if (image) productImages[product.id] = image;
+      }
+
+      const template = await import("@/lib/store-email-template");
+      const sender = await import("@/lib/store-email.server");
+      const extras = {
+        type: "confirmed" as const,
+        message:
+          `We've received your order request. No payment was taken on the website. Website Staff will contact you with the ${paymentLabel} payment details before your order is approved for processing.`,
+        productImages,
+      };
+
+      await sender.sendStoreEmailServer({
+        to: order.customer.email,
+        subject: template.storeEmailSubject(order, extras),
+        text: template.storeEmailPlainText(order, extras),
+        html: template.buildStoreEmailHtml(order, extras),
+        history: {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          recipientName: `${order.customer.firstName} ${order.customer.lastName}`.trim(),
+          emailType: "confirmed",
+          orderStatus: order.status,
+        },
+      });
+      confirmationEmailSent = true;
+    } catch (error) {
+      confirmationEmailError =
+        error instanceof Error ? error.message : "Could not send the confirmation email.";
+      console.warn(
+        `Store confirmation email failed for ${order.orderNumber}: ${confirmationEmailError}`,
+      );
+    }
+
     return {
       ok: true,
       orderNumber: order.orderNumber,
@@ -213,5 +254,7 @@ export const submitStoreOrderRequest = createServerFn({ method: "POST" })
       testMode: leadershipTestMode,
       discordNotified: order.discordNotified,
       discordError: order.discordError,
+      confirmationEmailSent,
+      confirmationEmailError,
     };
   });
