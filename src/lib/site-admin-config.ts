@@ -66,18 +66,27 @@ export type SiteAdminConfig = {
   };
 };
 
-const alphaCompany: ManagedCompany = {
-  callsign: "Alpha",
-  code: "Fifth Company",
-  role: "Fifth line company",
+const hellHoundsBattalion: ManagedCompany = {
+  callsign: "Hell Hounds Battalion",
+  code: "Fifth Battalion",
+  role: "Flexible line battalion",
   winCon: "Hold the line",
-  captain: "Vacant",
+  captain: "General Hatchet",
   logo: "/company-alpha.png",
   traits: ["Flexible tasking", "Line operations", "Combined arms", "Rapid support"],
   summary:
-    "Alpha Company is the fifth company of the 1st Mobile Infantry, reinforcing the line wherever Division command needs additional combat power.",
+    "Hell Hounds Battalion is the fifth formation of the 1st Mobile Infantry, reinforcing the line wherever Division Command needs additional combat power.",
 };
 
+const temporaryHellHoundsCaptain: ManagedLeader = {
+  rank: "General · Temporary Captain",
+  name: "Hatchet",
+  billet: "Hell Hounds Battalion · Temporary Company Command",
+  note: "General Hatchet is temporarily commanding Hell Hounds Battalion while retaining overall command of the 1st Mobile Infantry.",
+  tier: "captain",
+  company: "Hell Hounds Battalion",
+  portrait: "/roster-hatchet.jpg",
+};
 
 const defaultLeadership: ManagedLeader[] = [
   ...roster
@@ -90,7 +99,8 @@ const defaultLeadership: ManagedLeader[] = [
       tier: person.tier as "command" | "captain",
       company: "company" in person ? person.company : undefined,
       portrait: "portrait" in person && person.portrait ? person.portrait : "",
-    }))
+    })),
+  temporaryHellHoundsCaptain,
 ];
 
 export const DEFAULT_SITE_ADMIN_CONFIG: SiteAdminConfig = {
@@ -109,7 +119,7 @@ export const DEFAULT_SITE_ADMIN_CONFIG: SiteAdminConfig = {
       traits: [...company.traits],
       summary: company.summary,
     })),
-    alphaCompany,
+    hellHoundsBattalion,
   ],
   leadership: defaultLeadership,
   rules: {
@@ -153,23 +163,53 @@ export function mergeSiteAdminConfig(input?: Partial<SiteAdminConfig> | null): S
   if (!input) return defaults;
 
   const inputCompanies = Array.isArray(input.companies)
-    ? copy(input.companies).map((company) =>
-        company.callsign.trim().toLowerCase() === "alpha" &&
-        company.captain.trim().toLowerCase() === "hookngaffe"
-          ? { ...company, captain: "Vacant" }
-          : company,
-      )
+    ? copy(input.companies).map((company) => {
+        const callsign = company.callsign.trim().toLowerCase();
+        if (callsign === "alpha" || callsign === "hell hounds battalion") {
+          return {
+            ...company,
+            callsign: "Hell Hounds Battalion",
+            code: "Fifth Battalion",
+            role: company.role === "Fifth line company" ? "Flexible line battalion" : company.role,
+            captain: "General Hatchet",
+            summary:
+              callsign === "alpha" ||
+              company.summary.toLowerCase().includes("alpha company")
+                ? "Hell Hounds Battalion is the fifth formation of the 1st Mobile Infantry, reinforcing the line wherever Division Command needs additional combat power."
+                : company.summary,
+          };
+        }
+        return company;
+      })
     : defaults.companies;
 
-  const inputLeadership = Array.isArray(input.leadership)
+  const storedLeadership = Array.isArray(input.leadership)
     ? copy(input.leadership).filter(
         (person) =>
           !(
             person.name.trim().toLowerCase() === "hookngaffe" &&
             person.company?.trim().toLowerCase() === "alpha"
+          ) &&
+          !(
+            person.tier === "captain" &&
+            person.name.trim().toLowerCase() === "hatchet" &&
+            ["alpha", "hell hounds battalion"].includes(
+              person.company?.trim().toLowerCase() || "",
+            )
           ),
       )
-    : defaults.leadership;
+    : defaults.leadership.filter(
+        (person) =>
+          !(
+            person.tier === "captain" &&
+            person.name.trim().toLowerCase() === "hatchet"
+          ),
+      );
+
+  const inputLeadership = [
+    ...storedLeadership,
+    copy(temporaryHellHoundsCaptain),
+  ];
 
   return {
     appearance: {
