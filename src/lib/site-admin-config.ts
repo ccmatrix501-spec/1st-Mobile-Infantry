@@ -1,4 +1,3 @@
-import { hooknGaffePortraitHQ } from "@/data/hookngaffe-portrait-hq";
 import {
   companies as baseCompanies,
   enlistSteps,
@@ -72,22 +71,13 @@ const alphaCompany: ManagedCompany = {
   code: "Fifth Company",
   role: "Fifth line company",
   winCon: "Hold the line",
-  captain: "HooknGaffe",
+  captain: "Vacant",
   logo: "/company-alpha.png",
   traits: ["Flexible tasking", "Line operations", "Combined arms", "Rapid support"],
   summary:
     "Alpha Company is the fifth company of the 1st Mobile Infantry, reinforcing the line wherever Division command needs additional combat power.",
 };
 
-const alphaCaptain: ManagedLeader = {
-  rank: "Captain",
-  name: "HooknGaffe",
-  billet: "Alpha Company · Fifth Company",
-  note: "Commands Alpha Company, the fifth company of the 1st Mobile Infantry.",
-  tier: "captain",
-  company: "Alpha",
-  portrait: hooknGaffePortraitHQ,
-};
 
 const defaultLeadership: ManagedLeader[] = [
   ...roster
@@ -100,8 +90,7 @@ const defaultLeadership: ManagedLeader[] = [
       tier: person.tier as "command" | "captain",
       company: "company" in person ? person.company : undefined,
       portrait: "portrait" in person && person.portrait ? person.portrait : "",
-    })),
-  alphaCaptain,
+    }))
 ];
 
 export const DEFAULT_SITE_ADMIN_CONFIG: SiteAdminConfig = {
@@ -163,13 +152,32 @@ export function mergeSiteAdminConfig(input?: Partial<SiteAdminConfig> | null): S
   const defaults = copy(DEFAULT_SITE_ADMIN_CONFIG);
   if (!input) return defaults;
 
+  const inputCompanies = Array.isArray(input.companies)
+    ? copy(input.companies).map((company) =>
+        company.callsign.trim().toLowerCase() === "alpha" &&
+        company.captain.trim().toLowerCase() === "hookngaffe"
+          ? { ...company, captain: "Vacant" }
+          : company,
+      )
+    : defaults.companies;
+
+  const inputLeadership = Array.isArray(input.leadership)
+    ? copy(input.leadership).filter(
+        (person) =>
+          !(
+            person.name.trim().toLowerCase() === "hookngaffe" &&
+            person.company?.trim().toLowerCase() === "alpha"
+          ),
+      )
+    : defaults.leadership;
+
   return {
     appearance: {
       ...defaults.appearance,
       ...(input.appearance ?? {}),
     },
-    companies: Array.isArray(input.companies) ? copy(input.companies) : defaults.companies,
-    leadership: Array.isArray(input.leadership) ? copy(input.leadership) : defaults.leadership,
+    companies: inputCompanies,
+    leadership: inputLeadership,
     rules: {
       ...defaults.rules,
       ...(input.rules ?? {}),
