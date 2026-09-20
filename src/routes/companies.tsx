@@ -71,7 +71,7 @@ function CompaniesPage() {
                 id={`company-${slug(company.callsign)}`}
                 className="panel panel-feature scroll-mt-24 overflow-hidden"
               >
-                <div className={`grid ${isBattalion ? "lg:grid-cols-[380px_1fr]" : "lg:grid-cols-[260px_1fr]"}`}>
+                <div className={`grid ${isBattalion ? "lg:grid-cols-[300px_1fr]" : "lg:grid-cols-[260px_1fr]"}`}>
                   <div
                     className={`relative flex min-h-64 items-center justify-center border-b border-border bg-black/55 lg:min-h-full lg:border-b-0 lg:border-r ${
                       isBattalion ? "p-5 sm:p-6" : "p-8"
@@ -90,15 +90,15 @@ function CompaniesPage() {
                         <div
                           className={
                             isBattalion
-                              ? "flex h-44 w-full max-w-[340px] items-center justify-center overflow-hidden rounded-xl border border-primary/30 bg-black/70 p-2 shadow-[0_0_35px_color-mix(in_oklab,var(--color-primary)_15%,transparent)] sm:h-48 lg:h-52 lg:max-w-[350px]"
+                              ? "flex aspect-[1190/1322] w-[210px] items-center justify-center overflow-hidden rounded-xl border border-primary/30 bg-black/70 p-2 shadow-[0_0_35px_color-mix(in_oklab,var(--color-primary)_15%,transparent)] sm:w-[225px] lg:w-[235px]"
                               : "flex h-36 w-36 items-center justify-center overflow-hidden rounded-xl border border-primary/30 bg-black/70 p-3 shadow-[0_0_35px_color-mix(in_oklab,var(--color-primary)_15%,transparent)]"
                           }
                         >
                           <img
                             src={company.logo}
                             alt={`${company.callsign} ${isBattalion ? "Battalion" : "Company"} logo`}
-                            width={isBattalion ? 350 : 144}
-                            height={isBattalion ? 208 : 144}
+                            width={isBattalion ? 1190 : 144}
+                            height={isBattalion ? 1322 : 144}
                             className={isBattalion ? "h-full w-full object-contain" : "h-full w-full object-contain"}
                             decoding="async"
                           />
