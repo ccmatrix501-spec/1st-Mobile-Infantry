@@ -6,6 +6,7 @@ import {
   ImageIcon,
   PackagePlus,
   Plus,
+  Printer,
   Save,
   ShieldCheck,
   Store,
@@ -20,6 +21,15 @@ import {
   fetchLeadershipStoreSettings,
   saveLeadershipStoreSettings,
 } from "@/lib/store-settings-fn";
+import {
+  fetchLeadershipStoreReturnAddress,
+  saveLeadershipStoreReturnAddress,
+} from "@/lib/store-return-address-fn";
+import {
+  DEFAULT_STORE_RETURN_ADDRESS,
+  type StoreReturnAddress,
+} from "@/lib/store-return-address";
+import { printStoreReturnAddressLabel } from "@/lib/store-return-address-label";
 import {
   DEFAULT_STORE_SETTINGS,
   mergeStoreSettings,
@@ -134,17 +144,28 @@ function LeadershipStorePage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [returnAddress, setReturnAddress] = useState<StoreReturnAddress>(() => ({
+    ...DEFAULT_STORE_RETURN_ADDRESS,
+  }));
+  const [returnAddressSaving, setReturnAddressSaving] = useState(false);
+  const [returnAddressSaved, setReturnAddressSaved] = useState(false);
+  const [returnAddressError, setReturnAddressError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    void Promise.all([fetchLocalLeadershipProfile(), fetchLeadershipStoreSettings()])
-      .then(([profile, current]) => {
+    void Promise.all([
+      fetchLocalLeadershipProfile(),
+      fetchLeadershipStoreSettings(),
+      fetchLeadershipStoreReturnAddress(),
+    ])
+      .then(([profile, current, savedReturnAddress]) => {
         if (cancelled) return;
         if (!profile) {
           window.location.href = "/login";
           return;
         }
         setSettings(mergeStoreSettings(current));
+        setReturnAddress(savedReturnAddress);
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : "Could not load Store Manager.");
@@ -297,6 +318,29 @@ function LeadershipStorePage() {
     }));
   }
 
+  function updateReturnAddress(patch: Partial<StoreReturnAddress>) {
+    setReturnAddressSaved(false);
+    setReturnAddressError(null);
+    setReturnAddress((current) => ({ ...current, ...patch }));
+  }
+
+  async function saveReturnAddress() {
+    setReturnAddressSaving(true);
+    setReturnAddressSaved(false);
+    setReturnAddressError(null);
+    try {
+      const savedAddress = await saveLeadershipStoreReturnAddress({ data: returnAddress });
+      setReturnAddress(savedAddress);
+      setReturnAddressSaved(true);
+    } catch (err) {
+      setReturnAddressError(
+        err instanceof Error ? err.message : "Could not save the return address.",
+      );
+    } finally {
+      setReturnAddressSaving(false);
+    }
+  }
+
   async function saveStore() {
     setSaving(true);
     setSaved(false);
@@ -408,6 +452,109 @@ function LeadershipStorePage() {
                 </Field>
               </div>
             ))}
+          </div>
+        </ManagerPanel>
+
+        <ManagerPanel kicker="Dispatch" title="Return Address Label" icon={<Printer className="h-5 w-5" />}>
+          <div className="space-y-5">
+            <div>
+              <p className="text-sm leading-relaxed text-muted">
+                Save the address used when a parcel cannot be delivered or needs to be returned.
+                These details are kept in the leadership store settings and are not shown on the public storefront.
+              </p>
+            </div>
+
+            {returnAddressError ? (
+              <div className="rounded-md border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                {returnAddressError}
+              </div>
+            ) : null}
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Return name / business">
+                <input
+                  value={returnAddress.name}
+                  onChange={(event) => updateReturnAddress({ name: event.target.value })}
+                  className={inputClass}
+                  placeholder="1st M.I. Store / your name"
+                />
+              </Field>
+              <Field label="Street address">
+                <input
+                  value={returnAddress.address}
+                  onChange={(event) => updateReturnAddress({ address: event.target.value })}
+                  className={inputClass}
+                  placeholder="Street address"
+                />
+              </Field>
+              <Field label="Suburb / city">
+                <input
+                  value={returnAddress.city}
+                  onChange={(event) => updateReturnAddress({ city: event.target.value })}
+                  className={inputClass}
+                  placeholder="Suburb or city"
+                />
+              </Field>
+              <Field label="State">
+                <input
+                  value={returnAddress.state}
+                  onChange={(event) => updateReturnAddress({ state: event.target.value })}
+                  className={inputClass}
+                  placeholder="QLD"
+                />
+              </Field>
+              <Field label="Postcode">
+                <input
+                  value={returnAddress.postalCode}
+                  onChange={(event) => updateReturnAddress({ postalCode: event.target.value })}
+                  className={inputClass}
+                  placeholder="4560"
+                  inputMode="numeric"
+                />
+              </Field>
+              <Field label="Country">
+                <input
+                  value={returnAddress.country}
+                  onChange={(event) => updateReturnAddress({ country: event.target.value })}
+                  className={inputClass}
+                  placeholder="Australia"
+                />
+              </Field>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <Button type="button" onClick={saveReturnAddress} disabled={returnAddressSaving}>
+                <Save className="h-4 w-4" />
+                {returnAddressSaving ? "Saving…" : "Save Return Address"}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setReturnAddressError(null);
+                  try {
+                    printStoreReturnAddressLabel(returnAddress);
+                  } catch (err) {
+                    setReturnAddressError(
+                      err instanceof Error ? err.message : "Could not open the return label.",
+                    );
+                  }
+                }}
+              >
+                <Printer className="h-4 w-4" />
+                Print Return Label
+              </Button>
+              {returnAddressSaved ? (
+                <span className="inline-flex items-center gap-2 text-sm text-emerald-300">
+                  <CheckCircle2 className="h-4 w-4" /> Saved
+                </span>
+              ) : null}
+            </div>
+
+            <p className="text-xs leading-relaxed text-muted">
+              QL-700 print size: 62 mm continuous roll × 45 mm label length. Use Actual Size / 100%,
+              margins None, and Background graphics On.
+            </p>
           </div>
         </ManagerPanel>
 
