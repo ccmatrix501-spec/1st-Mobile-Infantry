@@ -1,4 +1,5 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
+import { Analytics } from "@vercel/analytics/react";
 import { AuthProvider } from "@/lib/auth/provider";
 import appCss from "../styles.css?url";
 
@@ -333,6 +334,7 @@ function RootDocument() {
         <AuthProvider>
           <Outlet />
         </AuthProvider>
+        <Analytics />
         <Scripts />
       </body>
     </html>
