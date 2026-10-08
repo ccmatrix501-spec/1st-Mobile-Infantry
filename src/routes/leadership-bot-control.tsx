@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { AppShell, PageHero } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
+import { BotControlSettings } from "@/components/bot-control-settings";
 import { fetchLocalLeadershipProfile } from "@/lib/leadership-local-auth-fn";
 import {
   cancelLeadershipBotOperation,
@@ -253,6 +254,8 @@ function LeadershipBotControlPage() {
             good={true}
           />
         </div>
+
+        <BotControlSettings />
 
         <ControllerPanel
           kicker="Live infrastructure"

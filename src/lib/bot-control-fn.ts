@@ -365,3 +365,102 @@ export const undoLeadershipBotAudit = createServerFn({ method: "POST" }).handler
     );
   },
 );
+
+
+export type BotGuildRoleOption = {
+  id: string;
+  name: string;
+  position: number;
+  managed: boolean;
+  editable: boolean;
+  botCanManage: boolean;
+};
+
+export type BotGuildChannelOption = {
+  id: string;
+  name: string;
+  type: number;
+  parentId: string | null;
+  parentName: string | null;
+  textBased: boolean;
+  voiceBased: boolean;
+};
+
+export type BotGuildOptions = {
+  guild: { id: string; name: string };
+  roles: BotGuildRoleOption[];
+  channels: BotGuildChannelOption[];
+};
+
+export type LeadershipBotSettings = Record<string, unknown>;
+
+export type LeadershipBotSettingsResponse = {
+  settings: LeadershipBotSettings;
+  editableSections: string[];
+  onboardingCompletionCount: number;
+};
+
+export const fetchLeadershipBotGuildOptions = createServerFn({ method: "GET" }).handler(
+  async (): Promise<BotGuildOptions> => {
+    const leadership = await requireLeadership();
+    const result = await requestBot<{ ok: boolean } & BotGuildOptions>(
+      "/website-control/guild-options",
+      {},
+      leadership.id,
+    );
+    return {
+      guild: result.guild,
+      roles: Array.isArray(result.roles) ? result.roles : [],
+      channels: Array.isArray(result.channels) ? result.channels : [],
+    };
+  },
+);
+
+export const fetchLeadershipBotSettings = createServerFn({ method: "GET" }).handler(
+  async (): Promise<LeadershipBotSettingsResponse> => {
+    const leadership = await requireLeadership();
+    const result = await requestBot<{ ok: boolean } & LeadershipBotSettingsResponse>(
+      "/website-control/settings",
+      {},
+      leadership.id,
+    );
+    return {
+      settings: result.settings || {},
+      editableSections: Array.isArray(result.editableSections) ? result.editableSections : [],
+      onboardingCompletionCount: Number(result.onboardingCompletionCount || 0),
+    };
+  },
+);
+
+export const saveLeadershipBotSettingsSection = createServerFn({ method: "POST" })
+  .inputValidator((input: { section: string; value: unknown }) => input)
+  .handler(async ({ data }) => {
+    const leadership = await requireLeadership();
+    const section = String(data.section || "").trim();
+    if (!/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(section)) {
+      throw new Error("Invalid settings section.");
+    }
+    return requestBot<{
+      ok: boolean;
+      section: string;
+      value: unknown;
+      settings: LeadershipBotSettings;
+    }>(
+      `/website-control/settings/${encodeURIComponent(section)}`,
+      { method: "PUT", body: JSON.stringify({ value: data.value }) },
+      leadership.id,
+    );
+  });
+
+export const resetLeadershipOnboardingMember = createServerFn({ method: "POST" })
+  .inputValidator((input: { memberId: string }) => input)
+  .handler(async ({ data }) => {
+    const leadership = await requireLeadership();
+    const memberId = String(data.memberId || "").trim();
+    if (!/^\d{15,22}$/.test(memberId)) throw new Error("Enter a valid Discord member ID.");
+    return requestBot<{ ok: boolean; memberId: string; cleared: boolean }>(
+      `/website-control/onboarding/${encodeURIComponent(memberId)}/reset`,
+      { method: "POST", body: "{}" },
+      leadership.id,
+    );
+  });
