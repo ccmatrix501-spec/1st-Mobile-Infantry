@@ -103,6 +103,7 @@ function botUrl(): string {
 
 function botSecret(): string {
   return (
+    process.env.LEADERSHIP_BOT_CONTROL_SECRET?.trim() ||
     process.env.STORE_ORDER_API_SECRET?.trim() ||
     process.env.STORE_BOT_ORDER_SECRET?.trim() ||
     ""
@@ -117,7 +118,7 @@ async function requestBot<T>(
   const secret = botSecret();
   if (!secret) {
     throw new Error(
-      "The website-to-bot control secret is not configured. STORE_ORDER_API_SECRET must match the Tech Support bot.",
+      "The website-to-bot control secret is not configured. Set LEADERSHIP_BOT_CONTROL_SECRET on both services, or keep the existing STORE_ORDER_API_SECRET fallback matched.",
     );
   }
 
