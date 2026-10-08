@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Activity,
@@ -652,7 +652,7 @@ function Metric({
   value,
   detail,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   value: string;
   detail: string;
@@ -678,9 +678,9 @@ function Panel({
 }: {
   title: string;
   subtitle: string;
-  icon: React.ReactNode;
-  action?: React.ReactNode;
-  children: React.ReactNode;
+  icon: ReactNode;
+  action?: ReactNode;
+  children: ReactNode;
 }) {
   return (
     <section className="panel panel-static p-5 sm:p-6">
