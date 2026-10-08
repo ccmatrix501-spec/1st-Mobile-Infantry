@@ -96,7 +96,6 @@ const ADVANCED_SECTIONS = [
   "onboarding",
   "roleAutomation",
   "transfer",
-  "modules",
   "nickname",
   "emojis",
   "steCompanyMerge",
