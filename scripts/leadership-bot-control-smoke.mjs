@@ -13,6 +13,7 @@ function requireToken(source, token, label) {
 const api = read("src/lib/bot-control-fn.ts");
 const route = read("src/routes/leadership-bot-control.tsx");
 const leadership = read("src/routes/leadership-control.tsx");
+const settingsControl = read("src/components/bot-control-settings.tsx");
 
 for (const token of [
   "requireLocalLeadership",
@@ -28,6 +29,11 @@ for (const token of [
   "/website-control/channels",
   "/website-control/tickets",
   "/website-control/operations",
+  "/website-control/guild-options",
+  "/website-control/settings",
+  "/website-control/onboarding/",
+  "saveLeadershipBotSettingsSection",
+  "resetLeadershipOnboardingMember",
 ]) {
   requireToken(api, token, token);
 }
@@ -50,8 +56,22 @@ for (const token of [
   "Tech Support Tickets",
   "Operation / Event Manager",
   "Leadership Audit + Undo",
+  "BotControlSettings",
 ]) {
   requireToken(route, token, token);
+}
+
+for (const token of [
+  "Bot Control Centre",
+  "Role Mapping",
+  "LFT & Recruit Alerts",
+  "AAR Control",
+  "Onboarding Member Reset",
+  "roleAutomation",
+  "transfer",
+  "onboarding",
+]) {
+  requireToken(settingsControl, token, token);
 }
 
 requireToken(
@@ -65,5 +85,5 @@ if (api.includes("TOKEN") || api.includes("DISCORD_TOKEN")) {
 }
 
 console.log(
-  "Leadership Tech Support Bot Controller smoke test passed: leadership auth, server-side secret bridge, status/safety/modules/member/tickets/operations/audit controls.",
+  "Leadership Tech Support Bot Controller smoke test passed: leadership auth, server-side secret bridge, status/safety/modules/member/tickets/operations/audit plus whole-bot roles/onboarding/AAR/LFT/automation/transfer controls.",
 );
