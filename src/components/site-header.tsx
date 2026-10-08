@@ -21,7 +21,7 @@ const publicNavLinks = [
 
 const commandLinks = [
   { to: "/leadership-control", label: "Control" },
-  { to: "/leadership-tech-support", label: "Tech Support" },
+  { to: "/leadership-bot-control", label: "Tech Support" },
   { to: "/leadership-store", label: "Store" },
   { to: "/leadership-media", label: "Media" },
 ] as const;
