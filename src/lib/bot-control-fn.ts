@@ -263,3 +263,14 @@ export const fetchLeadershipBotOperations = createServerFn({ method: "GET" }).ha
     return Array.isArray(result.operations) ? result.operations : [];
   },
 );
+
+export const undoLeadershipBotAudit = createServerFn({ method: "POST" }).handler(
+  async () => {
+    const leadership = await requireLeadership();
+    return requestBot<{ ok: boolean; undone: { id: string; action: string } }>(
+      "/website-control/audit/undo",
+      { method: "POST", body: "{}" },
+      leadership.id,
+    );
+  },
+);
