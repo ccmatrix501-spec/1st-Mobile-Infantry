@@ -1,17 +1,19 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Activity,
   ArrowLeft,
   Bot,
+  CalendarDays,
   CheckCircle2,
-  Clock3,
+  History,
   RefreshCw,
   RotateCcw,
   Search,
   Server,
   ShieldAlert,
   ShieldCheck,
+  Ticket,
   Users,
   Wrench,
   XCircle,
@@ -20,12 +22,17 @@ import { AppShell, PageHero } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { fetchLocalLeadershipProfile } from "@/lib/leadership-local-auth-fn";
 import {
+  cancelLeadershipBotOperation,
+  closeLeadershipBotTicket,
+  createLeadershipBotOperation,
   fetchLeadershipBotAudit,
+  fetchLeadershipBotChannels,
   fetchLeadershipBotMember,
   fetchLeadershipBotModules,
   fetchLeadershipBotOperations,
   fetchLeadershipBotSafety,
   fetchLeadershipBotStatus,
+  fetchLeadershipBotTickets,
   restartLeadershipBotModule,
   syncLeadershipAutomaticRoles,
   undoLeadershipBotAudit,
@@ -34,7 +41,9 @@ import {
   type BotMemberProfile,
   type BotSafety,
   type LeadershipAuditEntry,
+  type LeadershipDiscordChannel,
   type LeadershipOperation,
+  type LeadershipTicket,
 } from "@/lib/bot-control-fn";
 
 export const Route = createFileRoute("/leadership-bot-control")({
@@ -45,7 +54,9 @@ export const Route = createFileRoute("/leadership-bot-control")({
 });
 
 const inputClass =
-  "h-11 w-full rounded-md border border-border-strong bg-black/45 px-3 font-mono text-sm text-fg outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20";
+  "h-11 w-full rounded-md border border-border-strong bg-black/45 px-3 text-sm text-fg outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20";
+const textareaClass =
+  "min-h-24 w-full rounded-md border border-border-strong bg-black/45 px-3 py-2.5 text-sm text-fg outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20";
 
 function LeadershipBotControlPage() {
   const [loading, setLoading] = useState(true);
@@ -53,16 +64,23 @@ function LeadershipBotControlPage() {
   const [status, setStatus] = useState<BotControlStatus | null>(null);
   const [safety, setSafety] = useState<BotSafety | null>(null);
   const [modules, setModules] = useState<BotControlModule[]>([]);
-  const [audit, setAudit] = useState<LeadershipAuditEntry[]>([]);
+  const [tickets, setTickets] = useState<LeadershipTicket[]>([]);
   const [operations, setOperations] = useState<LeadershipOperation[]>([]);
+  const [audit, setAudit] = useState<LeadershipAuditEntry[]>([]);
+  const [channels, setChannels] = useState<LeadershipDiscordChannel[]>([]);
   const [memberId, setMemberId] = useState("");
   const [member, setMember] = useState<BotMemberProfile | null>(null);
-  const [memberLoading, setMemberLoading] = useState(false);
-  const [busyModule, setBusyModule] = useState<string | null>(null);
-  const [roleSyncing, setRoleSyncing] = useState(false);
-  const [undoing, setUndoing] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [operationDraft, setOperationDraft] = useState({
+    channelId: "",
+    title: "",
+    date: "",
+    time: "",
+    game: "",
+    details: "",
+  });
 
   const loadController = useCallback(async (quiet = false) => {
     if (!quiet) setRefreshing(true);
@@ -73,27 +91,36 @@ function LeadershipBotControlPage() {
         window.location.href = "/login?next=/leadership-bot-control";
         return;
       }
-
-      const [nextStatus, nextSafety, nextModules, nextAudit, nextOperations] =
-        await Promise.all([
-          fetchLeadershipBotStatus(),
-          fetchLeadershipBotSafety(),
-          fetchLeadershipBotModules(),
-          fetchLeadershipBotAudit({ data: { limit: 20 } }),
-          fetchLeadershipBotOperations(),
-        ]);
-
+      const [
+        nextStatus,
+        nextSafety,
+        nextModules,
+        nextTickets,
+        nextOperations,
+        nextAudit,
+        nextChannels,
+      ] = await Promise.all([
+        fetchLeadershipBotStatus(),
+        fetchLeadershipBotSafety(),
+        fetchLeadershipBotModules(),
+        fetchLeadershipBotTickets(),
+        fetchLeadershipBotOperations(),
+        fetchLeadershipBotAudit({ data: { limit: 30 } }),
+        fetchLeadershipBotChannels(),
+      ]);
       setStatus(nextStatus);
       setSafety(nextSafety);
       setModules(nextModules);
-      setAudit(nextAudit);
+      setTickets(nextTickets);
       setOperations(nextOperations);
+      setAudit(nextAudit);
+      setChannels(nextChannels);
+      setOperationDraft((current) => ({
+        ...current,
+        channelId: current.channelId || nextChannels[0]?.id || "",
+      }));
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Could not connect to the 1st M.I. Tech Support bot.",
-      );
+      setError(err instanceof Error ? err.message : "Could not connect to the Tech Support bot.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -104,75 +131,18 @@ function LeadershipBotControlPage() {
     void loadController(true);
   }, [loadController]);
 
-  async function restartModule(module: BotControlModule) {
-    if (!module.restartable) return;
-    const confirmed = window.confirm(
-      module.id === "discord-core"
-        ? "Restart the full 1st M.I. Tech Support bot? Persistent state will be flushed first."
-        : `Restart ${module.label}?`,
-    );
-    if (!confirmed) return;
-
-    setBusyModule(module.id);
-    setMessage(null);
+  async function runAction(key: string, action: () => Promise<unknown>, success: string) {
+    setBusy(key);
     setError(null);
-    try {
-      const result = await restartLeadershipBotModule({ data: { id: module.id } });
-      setMessage(
-        String(
-          (result as { message?: unknown }).message ||
-            `${module.label} restart requested.`,
-        ),
-      );
-      window.setTimeout(() => void loadController(true), 1800);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not restart module.");
-    } finally {
-      setBusyModule(null);
-    }
-  }
-
-  async function syncRoles() {
-    setRoleSyncing(true);
     setMessage(null);
-    setError(null);
     try {
-      const response = await syncLeadershipAutomaticRoles();
-      const result =
-        response && typeof response === "object" && "result" in response
-          ? (response as { result?: Record<string, unknown> }).result
-          : undefined;
-      setMessage(
-        `Automatic role sync finished. Members changed: ${Number(result?.changedMembers || 0)}, roles added: ${Number(result?.grantedRoles || 0)}, roles removed: ${Number(result?.removedRoles || 0)}.`,
-      );
+      await action();
+      setMessage(success);
       await loadController(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Automatic role sync failed.");
+      setError(err instanceof Error ? err.message : "Action failed.");
     } finally {
-      setRoleSyncing(false);
-    }
-  }
-
-  async function undoLastAuditAction() {
-    const reversible = audit.find((entry) => entry.undo && !entry.undoneAt);
-    if (!reversible) {
-      setError("There is no reversible leadership action available.");
-      return;
-    }
-    if (!window.confirm(`Undo the newest reversible action: ${reversible.action}?`)) {
-      return;
-    }
-    setUndoing(true);
-    setMessage(null);
-    setError(null);
-    try {
-      const result = await undoLeadershipBotAudit();
-      setMessage(`Undid ${result.undone.action}.`);
-      await loadController(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not undo the leadership action.");
-    } finally {
-      setUndoing(false);
+      setBusy(null);
     }
   }
 
@@ -182,18 +152,20 @@ function LeadershipBotControlPage() {
       setError("Enter the member's numeric Discord user ID.");
       return;
     }
-    setMemberLoading(true);
-    setMember(null);
-    setMessage(null);
+    setBusy("member");
     setError(null);
+    setMember(null);
     try {
       setMember(await fetchLeadershipBotMember({ data: { memberId: id } }));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Member lookup failed.");
     } finally {
-      setMemberLoading(false);
+      setBusy(null);
     }
   }
+
+  const openTickets = tickets.filter((ticket) => ticket.status === "open");
+  const activeOperations = operations.filter((operation) => operation.status === "active");
 
   if (loading) {
     return (
@@ -210,12 +182,12 @@ function LeadershipBotControlPage() {
       <PageHero
         kicker="Leadership-only infrastructure"
         title="Tech Support Bot Controller"
-        body="Monitor and control the 1st M.I. Tech Support bot from the secure Leadership area."
-        meta="1ST MI DIV · BOT SERVER CONTROL"
+        body="Live control and monitoring for the 1st M.I. Tech Support bot, protected by the existing Leadership account system."
+        meta="1ST MI DIV · SECURE BOT SERVER CONTROL"
       />
 
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-6 flex flex-wrap items-center gap-3">
           <Button asChild variant="secondary">
             <Link to="/leadership-control">
               <ArrowLeft className="h-4 w-4" />
@@ -225,24 +197,31 @@ function LeadershipBotControlPage() {
           <Button
             type="button"
             variant="secondary"
-            disabled={refreshing}
+            disabled={refreshing || Boolean(busy)}
             onClick={() => void loadController()}
           >
             <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-            {refreshing ? "Refreshing…" : "Refresh Controller"}
+            {refreshing ? "Refreshing…" : "Refresh Live Data"}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={Boolean(busy)}
+            onClick={() =>
+              void runAction(
+                "role-sync",
+                () => syncLeadershipAutomaticRoles(),
+                "Automatic Add/Remove role sync completed.",
+              )
+            }
+          >
+            <Users className="h-4 w-4" />
+            Sync Automatic Roles
           </Button>
         </div>
 
-        {error ? (
-          <div className="mb-6 rounded-md border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-            {error}
-          </div>
-        ) : null}
-        {message ? (
-          <div className="mb-6 rounded-md border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary">
-            {message}
-          </div>
-        ) : null}
+        {error ? <Notice tone="error">{error}</Notice> : null}
+        {message ? <Notice tone="success">{message}</Notice> : null}
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatusCard
@@ -260,56 +239,60 @@ function LeadershipBotControlPage() {
             good={Boolean(status?.botReady && (status?.websocketPing ?? 9999) < 1000)}
           />
           <StatusCard
-            icon={<Users className="h-5 w-5" />}
-            label="Discord members"
-            value={String(status?.guild?.memberCount ?? "—")}
-            detail="Current guild member count"
-            good={Boolean(status?.guild)}
+            icon={<Ticket className="h-5 w-5" />}
+            label="Open tickets"
+            value={String(openTickets.length)}
+            detail={`${tickets.length} stored ticket records`}
+            good={true}
           />
           <StatusCard
-            icon={<ShieldCheck className="h-5 w-5" />}
-            label="Safety score"
-            value={safety ? `${safety.score}%` : "—"}
-            detail={
-              safety
-                ? `${safety.checks.filter((check) => !check.ok).length} item(s) need attention`
-                : "Safety check unavailable"
-            }
-            good={Boolean(safety?.ok)}
+            icon={<CalendarDays className="h-5 w-5" />}
+            label="Active operations"
+            value={String(activeOperations.length)}
+            detail={`${status?.guild?.memberCount ?? "—"} Discord members`}
+            good={true}
           />
         </div>
 
         <ControllerPanel
           kicker="Live infrastructure"
-          title="Server Safety"
+          title="Server Safety Dashboard"
           icon={<ShieldAlert className="h-5 w-5" />}
         >
-          {safety ? (
-            <div className="grid gap-3 lg:grid-cols-2">
-              {safety.checks.map((check) => (
-                <div
-                  key={check.id}
-                  className={`rounded-md border p-3 ${check.ok ? "border-primary/20 bg-primary/5" : "border-red-400/25 bg-red-500/10"}`}
-                >
-                  <div className="flex items-start gap-3">
-                    {check.ok ? (
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                    ) : (
-                      <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-300" />
-                    )}
-                    <div>
-                      <p className="font-display text-sm font-semibold uppercase tracking-wide text-fg">
-                        {check.label}
-                      </p>
-                      <p className="mt-1 text-xs text-muted">{check.detail}</p>
-                    </div>
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <p className="text-sm text-muted">
+              Health score: <strong className="text-fg">{safety?.score ?? 0}%</strong>
+            </p>
+            <span className={safety?.ok ? "text-primary" : "text-red-300"}>
+              {safety?.ok ? "ALL REVIEWED CHECKS PASS" : "ATTENTION REQUIRED"}
+            </span>
+          </div>
+          <div className="grid gap-3 lg:grid-cols-2">
+            {(safety?.checks || []).map((check) => (
+              <div
+                key={check.id}
+                className={`rounded-md border p-3 ${
+                  check.ok
+                    ? "border-primary/20 bg-primary/5"
+                    : "border-red-400/25 bg-red-500/10"
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  {check.ok ? (
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  ) : (
+                    <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-300" />
+                  )}
+                  <div>
+                    <p className="font-display text-sm font-semibold uppercase tracking-wide text-fg">
+                      {check.label}
+                    </p>
+                    <p className="mt-1 text-xs text-muted">{check.detail}</p>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted">No safety result available.</p>
-          )}
+              </div>
+            ))}
+          </div>
         </ControllerPanel>
 
         <ControllerPanel
@@ -325,17 +308,13 @@ function LeadershipBotControlPage() {
               >
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={`h-2.5 w-2.5 rounded-full ${module.loaded ? "bg-primary" : "bg-red-400"}`}
-                    />
+                    <span className={`h-2.5 w-2.5 rounded-full ${module.loaded ? "bg-primary" : "bg-red-400"}`} />
                     <h3 className="font-display text-lg font-semibold uppercase tracking-wide text-fg">
                       {module.label}
                     </h3>
                     <span className="font-mono text-[10px] text-subtle">{module.id}</span>
                   </div>
-                  <p className="mt-2 text-sm text-muted">
-                    {module.detail || (module.loaded ? "Loaded" : "Not loaded")}
-                  </p>
+                  <p className="mt-2 text-sm text-muted">{module.detail || module.status}</p>
                   {module.lastError ? (
                     <p className="mt-1 text-xs text-red-300">Last error: {module.lastError}</p>
                   ) : null}
@@ -343,15 +322,18 @@ function LeadershipBotControlPage() {
                 <Button
                   type="button"
                   variant="secondary"
-                  disabled={!module.restartable || busyModule === module.id}
-                  onClick={() => void restartModule(module)}
+                  disabled={!module.restartable || Boolean(busy)}
+                  onClick={() => {
+                    if (!window.confirm(`Restart ${module.label}?`)) return;
+                    void runAction(
+                      `module-${module.id}`,
+                      () => restartLeadershipBotModule({ data: { id: module.id } }),
+                      `${module.label} recovery requested.`,
+                    );
+                  }}
                 >
                   <RotateCcw className="h-4 w-4" />
-                  {busyModule === module.id
-                    ? "Restarting…"
-                    : module.restartable
-                      ? "Restart"
-                      : "Restart via Full Bot"}
+                  {module.restartable ? "Restart" : module.restartScope || "Full restart only"}
                 </Button>
               </div>
             ))}
@@ -360,32 +342,8 @@ function LeadershipBotControlPage() {
 
         <div className="grid gap-6 xl:grid-cols-2">
           <ControllerPanel
-            kicker="Discord automation"
-            title="Quick Controls"
-            icon={<Wrench className="h-5 w-5" />}
-          >
-            <div className="rounded-md border border-border bg-black/20 p-4">
-              <h3 className="font-display text-lg font-semibold uppercase tracking-wide text-fg">
-                Automatic Role Sync
-              </h3>
-              <p className="mt-2 text-sm text-muted">
-                Re-run all saved automatic Add/Remove role rules against existing members.
-              </p>
-              <Button
-                type="button"
-                className="mt-4"
-                disabled={roleSyncing}
-                onClick={() => void syncRoles()}
-              >
-                <RefreshCw className={`h-4 w-4 ${roleSyncing ? "animate-spin" : ""}`} />
-                {roleSyncing ? "Syncing…" : "Sync Existing Members"}
-              </Button>
-            </div>
-          </ControllerPanel>
-
-          <ControllerPanel
-            kicker="Member administration"
-            title="Member Lookup"
+            kicker="Member management"
+            title="Member Profile"
             icon={<Search className="h-5 w-5" />}
           >
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -396,147 +354,286 @@ function LeadershipBotControlPage() {
                 placeholder="Discord user ID"
                 inputMode="numeric"
               />
-              <Button
-                type="button"
-                disabled={memberLoading}
-                onClick={() => void lookupMember()}
-              >
+              <Button type="button" disabled={busy === "member"} onClick={() => void lookupMember()}>
                 <Search className="h-4 w-4" />
-                {memberLoading ? "Looking…" : "Lookup"}
+                Lookup
               </Button>
             </div>
-
             {member ? (
               <div className="mt-4 rounded-md border border-primary/25 bg-primary/5 p-4">
-                <div className="flex items-center gap-3">
-                  <img
-                    src={member.avatarUrl}
-                    alt=""
-                    className="h-12 w-12 rounded-full border border-primary/30 object-cover"
-                  />
-                  <div>
-                    <h3 className="font-display text-lg font-semibold uppercase tracking-wide text-fg">
-                      {member.displayName}
-                    </h3>
-                    <p className="font-mono text-xs text-muted">{member.id}</p>
+                <div className="flex gap-4">
+                  {member.avatarUrl ? (
+                    <img src={member.avatarUrl} alt="" className="h-16 w-16 rounded-md object-cover" />
+                  ) : null}
+                  <div className="min-w-0">
+                    <h3 className="font-display text-xl uppercase text-fg">{member.displayName}</h3>
+                    <p className="font-mono text-xs text-muted">{member.tag} · {member.id}</p>
                   </div>
                 </div>
-                <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                <dl className="mt-4 grid gap-3 sm:grid-cols-2">
                   <Info label="Nickname" value={member.nickname || "None"} />
                   <Info label="Highest role" value={member.highestRole || "None"} />
                   <Info label="Voice" value={member.voiceChannel?.name || "Not connected"} />
                   <Info
                     label="Key permissions"
-                    value={member.importantPermissions.join(", ") || "None"}
+                    value={member.importantPermissions.length ? member.importantPermissions.join(", ") : "None"}
                   />
                 </dl>
-                <div className="mt-4">
-                  <p className="stencil text-[10px] tracking-[0.12em] text-primary">
-                    Roles ({member.roles.length})
-                  </p>
-                  <p className="mt-2 text-xs leading-relaxed text-muted">
-                    {member.roles.map((role) => role.name).join(" · ") || "No roles"}
-                  </p>
+                <div className="mt-4 flex flex-wrap gap-1.5">
+                  {member.roles.slice(0, 30).map((role) => (
+                    <span key={role.id} className="rounded border border-border bg-black/30 px-2 py-1 text-xs text-muted">
+                      {role.name}
+                    </span>
+                  ))}
                 </div>
               </div>
             ) : null}
           </ControllerPanel>
-        </div>
-
-        <div className="grid gap-6 xl:grid-cols-2">
-          <ControllerPanel
-            kicker="Upcoming activity"
-            title="Operations"
-            icon={<Clock3 className="h-5 w-5" />}
-          >
-            <div className="space-y-3">
-              {operations.length ? (
-                operations
-                  .slice()
-                  .sort((a, b) => b.targetUnix - a.targetUnix)
-                  .slice(0, 10)
-                  .map((operation) => (
-                    <div
-                      key={operation.id}
-                      className="rounded-md border border-border bg-black/20 p-4"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <h3 className="font-display font-semibold uppercase tracking-wide text-fg">
-                          {operation.title}
-                        </h3>
-                        <span
-                          className={`font-mono text-[10px] uppercase ${operation.status === "active" ? "text-primary" : "text-red-300"}`}
-                        >
-                          {operation.status}
-                        </span>
-                      </div>
-                      <p className="mt-2 text-sm text-muted">
-                        {new Date(operation.targetUnix * 1000).toLocaleString()}
-                        {operation.game ? ` · ${operation.game}` : ""}
-                      </p>
-                      <p className="mt-2 text-xs text-subtle">
-                        RSVP: {operation.rsvp?.attending?.length || 0} attending ·{" "}
-                        {operation.rsvp?.maybe?.length || 0} maybe ·{" "}
-                        {operation.rsvp?.unable?.length || 0} unable
-                      </p>
-                    </div>
-                  ))
-              ) : (
-                <p className="text-sm text-muted">
-                  No operations have been created through the new event manager yet.
-                </p>
-              )}
-            </div>
-          </ControllerPanel>
 
           <ControllerPanel
-            kicker="Accountability"
-            title="Leadership Audit"
-            icon={<Activity className="h-5 w-5" />}
+            kicker="Support workflow"
+            title="Tech Support Tickets"
+            icon={<Ticket className="h-5 w-5" />}
           >
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-black/20 p-3">
-              <p className="text-xs text-muted">
-                Undo is limited to actions with an explicit safe reversal, such as closing a newly-created ticket or cancelling a newly-created operation.
-              </p>
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={undoing || !audit.some((entry) => entry.undo && !entry.undoneAt)}
-                onClick={() => void undoLastAuditAction()}
-              >
-                <RotateCcw className="h-4 w-4" />
-                {undoing ? "Undoing…" : "Undo Last Reversible"}
-              </Button>
-            </div>
             <div className="space-y-3">
-              {audit.length ? (
-                audit.slice(0, 20).map((entry) => (
-                  <div
-                    key={entry.id}
-                    className="rounded-md border border-border bg-black/20 px-4 py-3"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="font-display text-sm font-semibold uppercase tracking-wide text-fg">
-                        {entry.action}
-                      </p>
-                      <time className="font-mono text-[10px] text-subtle">
-                        {new Date(entry.at).toLocaleString()}
-                      </time>
-                    </div>
+              {tickets.slice(0, 20).map((ticket) => (
+                <div key={ticket.id} className="flex flex-col gap-3 rounded-md border border-border bg-black/20 p-4 sm:flex-row sm:items-center">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-mono text-xs text-primary">{ticket.id}</div>
+                    <p className="mt-1 text-sm text-fg">Member {ticket.userId} · {ticket.status.toUpperCase()}</p>
                     <p className="mt-1 text-xs text-muted">
-                      Actor: {entry.actorId || "System"}
-                      {entry.undoneAt ? " · Undone" : ""}
+                      Created {new Date(ticket.createdAt).toLocaleString()}
+                      {ticket.claimedBy ? ` · Claimed by ${ticket.claimedBy}` : ""}
                     </p>
                   </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted">No leadership audit entries yet.</p>
-              )}
+                  {ticket.status === "open" ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={Boolean(busy)}
+                      onClick={() => {
+                        if (!window.confirm("Close this Tech Support ticket?")) return;
+                        void runAction(
+                          `ticket-${ticket.id}`,
+                          () => closeLeadershipBotTicket({ data: { ticketId: ticket.id } }),
+                          "Tech Support ticket closed.",
+                        );
+                      }}
+                    >
+                      Close Ticket
+                    </Button>
+                  ) : null}
+                </div>
+              ))}
+              {!tickets.length ? <p className="text-sm text-muted">No ticket records yet.</p> : null}
             </div>
           </ControllerPanel>
+        </div>
+
+        <ControllerPanel
+          kicker="Operations"
+          title="Operation / Event Manager"
+          icon={<CalendarDays className="h-5 w-5" />}
+        >
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="rounded-md border border-border bg-black/20 p-4">
+              <h3 className="font-display text-lg font-semibold uppercase text-fg">Publish Event</h3>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <label className="text-xs text-muted sm:col-span-2">
+                  Discord channel
+                  <select
+                    className={inputClass}
+                    value={operationDraft.channelId}
+                    onChange={(event) =>
+                      setOperationDraft((current) => ({ ...current, channelId: event.target.value }))
+                    }
+                  >
+                    {channels.map((channel) => (
+                      <option key={channel.id} value={channel.id}>
+                        {channel.parentName ? `${channel.parentName} / ` : ""}#{channel.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-xs text-muted sm:col-span-2">
+                  Title
+                  <input
+                    className={inputClass}
+                    value={operationDraft.title}
+                    onChange={(event) =>
+                      setOperationDraft((current) => ({ ...current, title: event.target.value }))
+                    }
+                    placeholder="Operation Valaka"
+                  />
+                </label>
+                <label className="text-xs text-muted">
+                  Date
+                  <input
+                    className={inputClass}
+                    type="date"
+                    value={operationDraft.date}
+                    onChange={(event) =>
+                      setOperationDraft((current) => ({ ...current, date: event.target.value }))
+                    }
+                  />
+                </label>
+                <label className="text-xs text-muted">
+                  Queensland time
+                  <input
+                    className={inputClass}
+                    type="time"
+                    value={operationDraft.time}
+                    onChange={(event) =>
+                      setOperationDraft((current) => ({ ...current, time: event.target.value }))
+                    }
+                  />
+                </label>
+                <label className="text-xs text-muted sm:col-span-2">
+                  Game / activity
+                  <input
+                    className={inputClass}
+                    value={operationDraft.game}
+                    onChange={(event) =>
+                      setOperationDraft((current) => ({ ...current, game: event.target.value }))
+                    }
+                    placeholder="Hell Let Loose: Vietnam"
+                  />
+                </label>
+                <label className="text-xs text-muted sm:col-span-2">
+                  Briefing / details
+                  <textarea
+                    className={textareaClass}
+                    value={operationDraft.details}
+                    onChange={(event) =>
+                      setOperationDraft((current) => ({ ...current, details: event.target.value }))
+                    }
+                  />
+                </label>
+              </div>
+              <Button
+                className="mt-4"
+                disabled={
+                  Boolean(busy) ||
+                  !operationDraft.channelId ||
+                  !operationDraft.title ||
+                  !operationDraft.date ||
+                  !operationDraft.time
+                }
+                onClick={() =>
+                  void runAction(
+                    "operation-create",
+                    () => createLeadershipBotOperation({ data: operationDraft }),
+                    "Operation/Event published to Discord.",
+                  )
+                }
+              >
+                Publish Operation
+              </Button>
+            </div>
+
+            <div className="space-y-3">
+              {operations
+                .sort((a, b) => b.targetUnix - a.targetUnix)
+                .slice(0, 12)
+                .map((operation) => (
+                  <div key={operation.id} className="rounded-md border border-border bg-black/20 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h3 className="font-display font-semibold uppercase text-fg">{operation.title}</h3>
+                      <span className={`font-mono text-[10px] uppercase ${operation.status === "active" ? "text-primary" : "text-red-300"}`}>
+                        {operation.status}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm text-muted">
+                      {new Date(operation.targetUnix * 1000).toLocaleString()}
+                      {operation.game ? ` · ${operation.game}` : ""}
+                    </p>
+                    <p className="mt-2 text-xs text-subtle">
+                      RSVP: {operation.rsvp?.attending?.length || 0} attending · {operation.rsvp?.maybe?.length || 0} maybe · {operation.rsvp?.unable?.length || 0} unable
+                    </p>
+                    {operation.status === "active" ? (
+                      <Button
+                        className="mt-3"
+                        size="sm"
+                        variant="secondary"
+                        disabled={Boolean(busy)}
+                        onClick={() => {
+                          if (!window.confirm(`Cancel ${operation.title}?`)) return;
+                          void runAction(
+                            `operation-${operation.id}`,
+                            () => cancelLeadershipBotOperation({ data: { operationId: operation.id } }),
+                            "Operation/Event cancelled.",
+                          );
+                        }}
+                      >
+                        Cancel Event
+                      </Button>
+                    ) : null}
+                  </div>
+                ))}
+              {!operations.length ? <p className="text-sm text-muted">No operations recorded yet.</p> : null}
+            </div>
+          </div>
+        </ControllerPanel>
+
+        <ControllerPanel
+          kicker="Accountability"
+          title="Leadership Audit + Undo"
+          icon={<History className="h-5 w-5" />}
+        >
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-black/20 p-3">
+            <p className="text-xs text-muted">
+              Undo is limited to actions with an explicit safe reversal, such as closing a newly-created ticket or cancelling a newly-created operation.
+            </p>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={Boolean(busy) || !audit.some((entry) => entry.undo && !entry.undoneAt)}
+              onClick={() => {
+                const reversible = audit.find((entry) => entry.undo && !entry.undoneAt);
+                if (!reversible || !window.confirm(`Undo ${reversible.action}?`)) return;
+                void runAction(
+                  "audit-undo",
+                  () => undoLeadershipBotAudit(),
+                  "Newest reversible leadership action undone.",
+                );
+              }}
+            >
+              <RotateCcw className="h-4 w-4" />
+              Undo Last Reversible
+            </Button>
+          </div>
+          <div className="space-y-3">
+            {audit.slice(0, 30).map((entry) => (
+              <div key={entry.id} className="rounded-md border border-border bg-black/20 px-4 py-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="font-display text-sm font-semibold uppercase tracking-wide text-fg">{entry.action}</p>
+                  <time className="font-mono text-[10px] text-subtle">{new Date(entry.at).toLocaleString()}</time>
+                </div>
+                <p className="mt-1 text-xs text-muted">
+                  Actor: {entry.actorId || "System"}{entry.undoneAt ? " · Undone" : ""}
+                </p>
+              </div>
+            ))}
+          </div>
+        </ControllerPanel>
+
+        <div className="mt-6 rounded-md border border-primary/25 bg-primary/5 p-4 text-xs text-muted">
+          <strong className="text-primary">Security:</strong> browser clients never receive the bot token or website-to-bot shared secret. Leadership authentication is checked server-side before every controller request.
         </div>
       </section>
     </AppShell>
+  );
+}
+
+function Notice({ tone, children }: { tone: "error" | "success"; children: ReactNode }) {
+  return (
+    <div className={`mb-6 rounded-md border px-4 py-3 text-sm ${
+      tone === "error"
+        ? "border-red-400/30 bg-red-500/10 text-red-200"
+        : "border-primary/30 bg-primary/10 text-primary"
+    }`}>
+      {children}
+    </div>
   );
 }
 
@@ -547,23 +644,19 @@ function StatusCard({
   detail,
   good,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   value: string;
   detail: string;
   good: boolean;
 }) {
   return (
-    <div
-      className={`panel panel-static p-4 ${good ? "border-primary/25" : "border-red-400/25"}`}
-    >
+    <div className={`panel panel-static p-4 ${good ? "border-primary/25" : "border-red-400/25"}`}>
       <div className={`mb-3 inline-flex rounded-md border p-2 ${good ? "border-primary/30 bg-primary/10 text-primary" : "border-red-400/30 bg-red-500/10 text-red-300"}`}>
         {icon}
       </div>
       <p className="stencil text-[10px] tracking-[0.14em] text-muted">{label}</p>
-      <p className="mt-1 font-display text-2xl font-semibold uppercase tracking-wide text-fg">
-        {value}
-      </p>
+      <p className="mt-1 font-display text-2xl font-semibold uppercase tracking-wide text-fg">{value}</p>
       <p className="mt-1 text-xs text-muted">{detail}</p>
     </div>
   );
@@ -577,8 +670,8 @@ function ControllerPanel({
 }: {
   kicker: string;
   title: string;
-  icon: React.ReactNode;
-  children: React.ReactNode;
+  icon: ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div className="mt-6 panel panel-feature overflow-hidden">
@@ -586,12 +679,8 @@ function ControllerPanel({
         <div className="flex items-center gap-3">
           <span className="text-primary">{icon}</span>
           <div>
-            <p className="stencil text-[10px] tracking-[0.14em] text-primary">
-              {kicker}
-            </p>
-            <h2 className="font-display text-2xl font-semibold uppercase tracking-wide text-fg">
-              {title}
-            </h2>
+            <p className="stencil text-[10px] tracking-[0.14em] text-primary">{kicker}</p>
+            <h2 className="font-display text-2xl font-semibold uppercase tracking-wide text-fg">{title}</h2>
           </div>
         </div>
       </div>
