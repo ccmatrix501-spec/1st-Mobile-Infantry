@@ -28,6 +28,7 @@ import {
   fetchLeadershipBotStatus,
   restartLeadershipBotModule,
   syncLeadershipAutomaticRoles,
+  undoLeadershipBotAudit,
   type BotControlModule,
   type BotControlStatus,
   type BotMemberProfile,
@@ -59,6 +60,7 @@ function LeadershipBotControlPage() {
   const [memberLoading, setMemberLoading] = useState(false);
   const [busyModule, setBusyModule] = useState<string | null>(null);
   const [roleSyncing, setRoleSyncing] = useState(false);
+  const [undoing, setUndoing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -148,6 +150,29 @@ function LeadershipBotControlPage() {
       setError(err instanceof Error ? err.message : "Automatic role sync failed.");
     } finally {
       setRoleSyncing(false);
+    }
+  }
+
+  async function undoLastAuditAction() {
+    const reversible = audit.find((entry) => entry.undo && !entry.undoneAt);
+    if (!reversible) {
+      setError("There is no reversible leadership action available.");
+      return;
+    }
+    if (!window.confirm(`Undo the newest reversible action: ${reversible.action}?`)) {
+      return;
+    }
+    setUndoing(true);
+    setMessage(null);
+    setError(null);
+    try {
+      const result = await undoLeadershipBotAudit();
+      setMessage(`Undid ${result.undone.action}.`);
+      await loadController(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not undo the leadership action.");
+    } finally {
+      setUndoing(false);
     }
   }
 
@@ -469,6 +494,20 @@ function LeadershipBotControlPage() {
             title="Leadership Audit"
             icon={<Activity className="h-5 w-5" />}
           >
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-black/20 p-3">
+              <p className="text-xs text-muted">
+                Undo is limited to actions with an explicit safe reversal, such as closing a newly-created ticket or cancelling a newly-created operation.
+              </p>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={undoing || !audit.some((entry) => entry.undo && !entry.undoneAt)}
+                onClick={() => void undoLastAuditAction()}
+              >
+                <RotateCcw className="h-4 w-4" />
+                {undoing ? "Undoing…" : "Undo Last Reversible"}
+              </Button>
+            </div>
             <div className="space-y-3">
               {audit.length ? (
                 audit.slice(0, 20).map((entry) => (
