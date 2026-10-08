@@ -21,6 +21,7 @@ const publicNavLinks = [
 
 const commandLinks = [
   { to: "/leadership-control", label: "Control" },
+  { to: "/leadership-bot-control", label: "Tech Support" },
   { to: "/leadership-store", label: "Store" },
   { to: "/leadership-media", label: "Media" },
 ] as const;
@@ -214,7 +215,7 @@ export function SiteHeader() {
             {leadershipSignedIn ? (
               <li className="mt-2 border-t border-primary/20 pt-3">
                 <p className="px-3 pb-2 stencil text-[9px] tracking-[0.14em] text-primary">Command</p>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {commandLinks.map((link) => (
                     <Link
                       key={link.to}

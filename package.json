@@ -8,13 +8,14 @@
   },
   "scripts": {
     "dev": "vite dev --host 0.0.0.0 --port 8080",
-    "build": "vite build && npm run db:migrate",
+    "build": "npm run check:leadership-bot-control && vite build && npm run db:migrate",
     "db:migrate": "node scripts/migrate.mjs",
     "build:dev": "vite build --mode development",
     "preview": "vite preview --host 0.0.0.0 --port 8080",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "check:leadership-bot-control": "node scripts/leadership-bot-control-smoke.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.3",
