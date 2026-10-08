@@ -86,6 +86,28 @@ export type LeadershipOperation = {
   };
 };
 
+export type LeadershipTicket = {
+  id: string;
+  guildId: string;
+  channelId: string;
+  categoryId: string;
+  userId: string;
+  status: string;
+  claimedBy?: string | null;
+  claimedAt?: string | null;
+  createdAt: string;
+  closedAt?: string | null;
+  closedBy?: string | null;
+};
+
+export type LeadershipDiscordChannel = {
+  id: string;
+  name: string;
+  parentId?: string | null;
+  parentName?: string | null;
+  type?: number;
+};
+
 async function requireLeadership() {
   const access = await import("@/lib/local-leadership-access.server");
   return access.requireLocalLeadership();
@@ -263,6 +285,75 @@ export const fetchLeadershipBotOperations = createServerFn({ method: "GET" }).ha
     return Array.isArray(result.operations) ? result.operations : [];
   },
 );
+
+export const fetchLeadershipBotTickets = createServerFn({ method: "GET" }).handler(
+  async (): Promise<LeadershipTicket[]> => {
+    const leadership = await requireLeadership();
+    const result = await requestBot<{ ok: boolean; tickets: LeadershipTicket[] }>(
+      "/website-control/tickets",
+      {},
+      leadership.id,
+    );
+    return Array.isArray(result.tickets) ? result.tickets : [];
+  },
+);
+
+export const closeLeadershipBotTicket = createServerFn({ method: "POST" })
+  .inputValidator((input: { ticketId: string }) => input)
+  .handler(async ({ data }) => {
+    const leadership = await requireLeadership();
+    const ticketId = String(data.ticketId || "").trim();
+    if (!ticketId) throw new Error("Ticket id is required.");
+    return requestBot<{ ok: boolean; ticket: LeadershipTicket }>(
+      `/website-control/tickets/${encodeURIComponent(ticketId)}/close`,
+      { method: "POST", body: "{}" },
+      leadership.id,
+    );
+  });
+
+export const fetchLeadershipBotChannels = createServerFn({ method: "GET" }).handler(
+  async (): Promise<LeadershipDiscordChannel[]> => {
+    const leadership = await requireLeadership();
+    const result = await requestBot<{ ok: boolean; channels: LeadershipDiscordChannel[] }>(
+      "/website-control/channels",
+      {},
+      leadership.id,
+    );
+    return Array.isArray(result.channels) ? result.channels : [];
+  },
+);
+
+export const createLeadershipBotOperation = createServerFn({ method: "POST" })
+  .inputValidator((input: {
+    channelId: string;
+    title: string;
+    date: string;
+    time: string;
+    game?: string;
+    details?: string;
+  }) => input)
+  .handler(async ({ data }) => {
+    const leadership = await requireLeadership();
+    return requestBot<{ ok: boolean; operation: LeadershipOperation }>(
+      "/website-control/operations",
+      { method: "POST", body: JSON.stringify(data) },
+      leadership.id,
+    );
+  });
+
+export const cancelLeadershipBotOperation = createServerFn({ method: "POST" })
+  .inputValidator((input: { operationId: string }) => input)
+  .handler(async ({ data }) => {
+    const leadership = await requireLeadership();
+    const operationId = String(data.operationId || "").trim();
+    if (!operationId) throw new Error("Operation id is required.");
+    return requestBot<{ ok: boolean; operation: LeadershipOperation }>(
+      `/website-control/operations/${encodeURIComponent(operationId)}/cancel`,
+      { method: "POST", body: "{}" },
+      leadership.id,
+    );
+  });
+
 
 export const undoLeadershipBotAudit = createServerFn({ method: "POST" }).handler(
   async () => {
