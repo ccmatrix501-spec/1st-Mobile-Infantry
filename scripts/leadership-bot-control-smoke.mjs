@@ -25,6 +25,9 @@ for (const token of [
   "/website-control/member/",
   "/website-control/audit",
   "/website-control/audit/undo",
+  "/website-control/channels",
+  "/website-control/tickets",
+  "/website-control/operations",
 ]) {
   requireToken(api, token, token);
 }
@@ -35,11 +38,18 @@ for (const token of [
   "restartLeadershipBotModule",
   "syncLeadershipAutomaticRoles",
   "fetchLeadershipBotMember",
+  "fetchLeadershipBotTickets",
+  "closeLeadershipBotTicket",
+  "fetchLeadershipBotChannels",
+  "createLeadershipBotOperation",
+  "cancelLeadershipBotOperation",
   "undoLeadershipBotAudit",
-  "Server Safety",
+  "Server Safety Dashboard",
   "Bot Modules",
-  "Member Lookup",
-  "Leadership Audit",
+  "Member Profile",
+  "Tech Support Tickets",
+  "Operation / Event Manager",
+  "Leadership Audit + Undo",
 ]) {
   requireToken(route, token, token);
 }
@@ -55,5 +65,5 @@ if (api.includes("TOKEN") || api.includes("DISCORD_TOKEN")) {
 }
 
 console.log(
-  "Leadership Tech Support Bot Controller smoke test passed: leadership auth, server-side secret bridge, status/safety/modules/member/audit controls.",
+  "Leadership Tech Support Bot Controller smoke test passed: leadership auth, server-side secret bridge, status/safety/modules/member/tickets/operations/audit controls.",
 );
