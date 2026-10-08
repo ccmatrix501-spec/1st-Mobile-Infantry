@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+  Bot,
   CheckCircle2,
   Eye,
   KeyRound,
@@ -243,6 +244,7 @@ function LeadershipControlPage() {
             </div>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
+            <Button asChild variant="secondary" size="lg"><Link to="/leadership-bot-control"><Bot className="h-4 w-4" />Tech Support Bot</Link></Button>
             <Button asChild variant="secondary" size="lg"><Link to="/"><Eye className="h-4 w-4" />View Public Site</Link></Button>
             <Button type="button" variant="secondary" size="lg" onClick={() => void handleSignOut()}><LogOut className="h-4 w-4" />Sign Out</Button>
           </div>
