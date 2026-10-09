@@ -70,6 +70,10 @@ for (const token of [
   "roleAutomation",
   "transfer",
   "onboarding",
+  "GIF & Media Stats",
+  "AI Voice AAR Interviewer",
+  "/mediastatsrebuild",
+  "OPENAI_API_KEY required",
 ]) {
   requireToken(settingsControl, token, token);
 }

@@ -115,6 +115,7 @@ export function BotControlSettings() {
   const [roles, setRoles] = useState<BotGuildRoleOption[]>([]);
   const [channels, setChannels] = useState<BotGuildChannelOption[]>([]);
   const [completionCount, setCompletionCount] = useState(0);
+  const [capabilities, setCapabilities] = useState({ aiVoiceConfigured: false, mediaStatsEnabled: true });
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -133,6 +134,7 @@ export function BotControlSettings() {
       setRoles(guildResult.roles);
       setChannels(guildResult.channels);
       setCompletionCount(settingsResult.onboardingCompletionCount);
+      setCapabilities(settingsResult.capabilities);
       const nextDrafts: Record<string, string> = {};
       for (const section of ADVANCED_SECTIONS) {
         nextDrafts[section] = JSON.stringify(
@@ -183,6 +185,7 @@ export function BotControlSettings() {
   const steCompanyMerge = record(settingsObj.steCompanyMerge);
   const roleAutomation = record(settingsObj.roleAutomation);
   const transfer = record(settingsObj.transfer);
+  const mediaStats = record(settingsObj.mediaStats);
 
   const textChannels = useMemo(() => channels.filter((channel) => channel.textBased), [channels]);
   const voiceChannels = useMemo(() => channels.filter((channel) => channel.voiceBased), [channels]);
@@ -413,10 +416,23 @@ export function BotControlSettings() {
         </Button>
       </ConfigPanel>
 
+      <MediaStatsEditor
+        value={mediaStats}
+        channels={textChannels}
+        busy={Boolean(busy)}
+        onChange={(value) =>
+          setSettings((current) => ({ ...record(current), mediaStats: value }))
+        }
+        onSave={() =>
+          void saveSection("mediaStats", mediaStats, "GIF and media tracking settings saved.")
+        }
+      />
+
       <AarEditor
         aar={aar}
         textChannels={textChannels}
         voiceChannels={voiceChannels}
+        aiVoiceConfigured={capabilities.aiVoiceConfigured}
         busy={Boolean(busy)}
         onChange={(value) => setSettings((current) => ({ ...record(current), aar: value }))}
         onSave={() => void saveSection("aar", aar, "AAR settings saved. New panels and reminders now use this configuration.")}
@@ -840,10 +856,76 @@ function TransferAccessEditor({
   );
 }
 
+function MediaStatsEditor({
+  value,
+  channels,
+  busy,
+  onChange,
+  onSave,
+}: {
+  value: Obj;
+  channels: BotGuildChannelOption[];
+  busy: boolean;
+  onChange: (value: Obj) => void;
+  onSave: () => void;
+}) {
+  return (
+    <ConfigPanel
+      title="GIF & Media Stats"
+      description="Track GIFs plus images, videos, attachments, links and stickers per member. Historical backfill is available with /mediastatsrebuild."
+    >
+      <div className="grid gap-4 md:grid-cols-2">
+        <ToggleField
+          label="Media/GIF tracking enabled"
+          checked={value.enabled !== false}
+          onChange={(checked) => onChange({ ...value, enabled: checked })}
+        />
+        <ToggleField
+          label="Count bot messages too"
+          checked={value.trackBots === true}
+          onChange={(checked) => onChange({ ...value, trackBots: checked })}
+        />
+      </div>
+      <div className="mt-4">
+        <p className="mb-1 text-xs text-muted">Excluded text channels</p>
+        <select
+          multiple
+          className="min-h-40 w-full rounded-md border border-border-strong bg-black/45 px-3 py-2 text-sm text-fg outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+          value={Array.isArray(value.excludedChannelIds) ? value.excludedChannelIds.map(String) : []}
+          onChange={(event) =>
+            onChange({
+              ...value,
+              excludedChannelIds: Array.from(event.currentTarget.selectedOptions).map((option) => option.value),
+            })
+          }
+        >
+          {channels.map((channel) => (
+            <option key={channel.id} value={channel.id}>
+              {channel.parentName ? channel.parentName + " / " : ""}{channel.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="mt-4 rounded-md border border-border bg-black/20 p-3 text-xs text-muted">
+        Commands: <span className="font-mono text-fg">/gifstats</span>,{" "}
+        <span className="font-mono text-fg">/mediastats</span>,{" "}
+        <span className="font-mono text-fg">/gifleaderboard</span>,{" "}
+        <span className="font-mono text-fg">/medialeaderboard</span>, and Leadership-only{" "}
+        <span className="font-mono text-fg">/mediastatsrebuild</span>.
+      </div>
+      <Button className="mt-5" type="button" disabled={busy} onClick={onSave}>
+        <Save className="h-4 w-4" />
+        Save Media Tracking
+      </Button>
+    </ConfigPanel>
+  );
+}
+
 function AarEditor({
   aar,
   textChannels,
   voiceChannels,
+  aiVoiceConfigured,
   busy,
   onChange,
   onSave,
@@ -851,6 +933,7 @@ function AarEditor({
   aar: Obj;
   textChannels: BotGuildChannelOption[];
   voiceChannels: BotGuildChannelOption[];
+  aiVoiceConfigured: boolean;
   busy: boolean;
   onChange: (value: Obj) => void;
   onSave: () => void;
@@ -858,6 +941,7 @@ function AarEditor({
   const modes = Array.isArray(aar.gameModes) ? aar.gameModes : [];
   const maps = Array.isArray(aar.maps) ? aar.maps : [];
   const reminders = Array.isArray(aar.reminderVoiceChannels) ? aar.reminderVoiceChannels : [];
+  const aiVoice = record(aar.aiVoice);
 
   const updateList = (key: string, rows: any[]) => onChange({ ...aar, [key]: rows });
 
@@ -917,6 +1001,77 @@ function AarEditor({
         max={5}
         onChange={(rows) => updateList("maps", rows)}
       />
+
+      <div className="mt-6 rounded-md border border-primary/25 bg-primary/5 p-4">
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h4 className="font-display text-lg font-semibold uppercase text-fg">AI Voice AAR Interviewer</h4>
+            <p className="text-xs text-muted">
+              The PL starts the interview from the Briefing Room reminder. The bot asks each AAR question aloud and transcribes only the starter&apos;s answers.
+            </p>
+          </div>
+          <span className={`rounded border px-2 py-1 text-[10px] uppercase tracking-wide ${
+            aiVoiceConfigured
+              ? "border-primary/30 bg-primary/10 text-primary"
+              : "border-amber-300/30 bg-amber-400/10 text-amber-200"
+          }`}>
+            {aiVoiceConfigured ? "AI key configured" : "OPENAI_API_KEY required"}
+          </span>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <ToggleField
+            label="AI Voice AAR enabled"
+            checked={aiVoice.enabled === true}
+            onChange={(checked) => onChange({ ...aar, aiVoice: { ...aiVoice, enabled: checked } })}
+          />
+          <ToggleField
+            label="Offer button in AAR reminder"
+            checked={aiVoice.offerInReminder !== false}
+            onChange={(checked) => onChange({ ...aar, aiVoice: { ...aiVoice, offerInReminder: checked } })}
+          />
+          <ToggleField
+            label="Briefing/audio reminder rooms only"
+            checked={aiVoice.onlyAudioReminderRooms !== false}
+            onChange={(checked) => onChange({ ...aar, aiVoice: { ...aiVoice, onlyAudioReminderRooms: checked } })}
+          />
+          <label className="text-xs text-muted">
+            AI speaking voice
+            <select
+              className={inputClass}
+              value={String(aiVoice.voice || "cedar")}
+              onChange={(event) => onChange({ ...aar, aiVoice: { ...aiVoice, voice: event.target.value } })}
+            >
+              {["cedar","marin","alloy","ash","ballad","coral","echo","fable","nova","onyx","sage","shimmer","verse"].map((voice) => (
+                <option key={voice} value={voice}>{titleCase(voice)}</option>
+              ))}
+            </select>
+          </label>
+          <NumberField
+            label="Maximum answer time (seconds)"
+            value={Number(aiVoice.maxAnswerSeconds || 25)}
+            min={5}
+            max={60}
+            onChange={(value) => onChange({ ...aar, aiVoice: { ...aiVoice, maxAnswerSeconds: value } })}
+          />
+          <NumberField
+            label="Silence ends answer (ms)"
+            value={Number(aiVoice.silenceMs || 1300)}
+            min={500}
+            max={5000}
+            onChange={(value) => onChange({ ...aar, aiVoice: { ...aiVoice, silenceMs: value } })}
+          />
+          <NumberField
+            label="Retries per question"
+            value={Number(aiVoice.maxRetries ?? 2)}
+            min={0}
+            max={4}
+            onChange={(value) => onChange({ ...aar, aiVoice: { ...aiVoice, maxRetries: value } })}
+          />
+        </div>
+        <p className="mt-3 text-[11px] text-subtle">
+          Voice audio is captured only while the PL&apos;s answer is being listened to. The bot does not save the raw audio file; the transcript is used to complete the AAR.
+        </p>
+      </div>
 
       <div className="mt-6">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
