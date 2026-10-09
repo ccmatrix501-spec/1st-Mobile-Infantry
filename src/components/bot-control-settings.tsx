@@ -115,6 +115,7 @@ export function BotControlSettings() {
   const [roles, setRoles] = useState<BotGuildRoleOption[]>([]);
   const [channels, setChannels] = useState<BotGuildChannelOption[]>([]);
   const [completionCount, setCompletionCount] = useState(0);
+  const [capabilities, setCapabilities] = useState({ aiVoiceConfigured: false, mediaStatsEnabled: true });
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -133,6 +134,7 @@ export function BotControlSettings() {
       setRoles(guildResult.roles);
       setChannels(guildResult.channels);
       setCompletionCount(settingsResult.onboardingCompletionCount);
+      setCapabilities(settingsResult.capabilities);
       const nextDrafts: Record<string, string> = {};
       for (const section of ADVANCED_SECTIONS) {
         nextDrafts[section] = JSON.stringify(
@@ -183,6 +185,7 @@ export function BotControlSettings() {
   const steCompanyMerge = record(settingsObj.steCompanyMerge);
   const roleAutomation = record(settingsObj.roleAutomation);
   const transfer = record(settingsObj.transfer);
+  const mediaStats = record(settingsObj.mediaStats);
 
   const textChannels = useMemo(() => channels.filter((channel) => channel.textBased), [channels]);
   const voiceChannels = useMemo(() => channels.filter((channel) => channel.voiceBased), [channels]);
@@ -413,10 +416,23 @@ export function BotControlSettings() {
         </Button>
       </ConfigPanel>
 
+      <MediaStatsEditor
+        value={mediaStats}
+        channels={textChannels}
+        busy={Boolean(busy)}
+        onChange={(value) =>
+          setSettings((current) => ({ ...record(current), mediaStats: value }))
+        }
+        onSave={() =>
+          void saveSection("mediaStats", mediaStats, "GIF and media tracking settings saved.")
+        }
+      />
+
       <AarEditor
         aar={aar}
         textChannels={textChannels}
         voiceChannels={voiceChannels}
+        aiVoiceConfigured={capabilities.aiVoiceConfigured}
         busy={Boolean(busy)}
         onChange={(value) => setSettings((current) => ({ ...record(current), aar: value }))}
         onSave={() => void saveSection("aar", aar, "AAR settings saved. New panels and reminders now use this configuration.")}
