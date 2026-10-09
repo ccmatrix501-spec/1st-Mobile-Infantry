@@ -487,6 +487,359 @@ export function BotControlSettings() {
   );
 }
 
+
+function NicknameSuffixEditor({
+  nickname,
+  steCompanyMerge,
+  roles,
+  busy,
+  onNicknameChange,
+  onMergeChange,
+  onSave,
+}: {
+  nickname: Obj;
+  steCompanyMerge: Obj;
+  roles: BotGuildRoleOption[];
+  busy: boolean;
+  onNicknameChange: (value: Obj) => void;
+  onMergeChange: (value: Obj) => void;
+  onSave: () => void;
+}) {
+  const companyTags = record(nickname.companyTags);
+  const prefix = cleanTag(nickname.recruitPrefix, "RCT") || "RCT";
+  const hllvTag = cleanTag(nickname.hllvTag, "H") || "H";
+  const separator = String(nickname.combinedSeparator || "/").trim() || "/";
+  const demon = cleanTag(companyTags.demon, "D") || "D";
+  const mergedSuffix = cleanTag(steCompanyMerge.suffix, "VD") || "VD";
+
+  const setNicknameField = (key: string, value: unknown) =>
+    onNicknameChange({ ...nickname, [key]: value });
+  const setCompanyTag = (key: string, value: string) =>
+    onNicknameChange({
+      ...nickname,
+      companyTags: { ...companyTags, [key]: cleanTag(value) },
+    });
+
+  return (
+    <ConfigPanel
+      title="Nickname Prefix & Suffix Builder"
+      description="Set the tags visually instead of editing JSON. Square brackets are added automatically."
+    >
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <ToggleField
+          label="Automatic onboarding nicknames"
+          checked={nickname.enabled !== false}
+          onChange={(checked) => setNicknameField("enabled", checked)}
+        />
+        <ToggleField
+          label="Use merged STE company"
+          checked={steCompanyMerge.enabled !== false}
+          onChange={(checked) => onMergeChange({ ...steCompanyMerge, enabled: checked })}
+        />
+        <div />
+        <TagField
+          label="Recruit prefix"
+          value={String(nickname.recruitPrefix || "RCT")}
+          placeholder="RCT"
+          onChange={(value) => setNicknameField("recruitPrefix", cleanTag(value))}
+        />
+        <TagField
+          label="HLL:V suffix"
+          value={String(nickname.hllvTag || "H")}
+          placeholder="H"
+          onChange={(value) => setNicknameField("hllvTag", cleanTag(value))}
+        />
+        <TagField
+          label="Combined separator"
+          value={String(nickname.combinedSeparator || "/")}
+          placeholder="/"
+          onChange={(value) => setNicknameField("combinedSeparator", value.slice(0, 12))}
+        />
+        <TagField
+          label="Demon suffix"
+          value={String(companyTags.demon || "D")}
+          placeholder="D"
+          onChange={(value) => setCompanyTag("demon", value)}
+        />
+        <TagField
+          label="Nightmare suffix"
+          value={String(companyTags.nightmare || "N")}
+          placeholder="N"
+          onChange={(value) => setCompanyTag("nightmare", value)}
+        />
+        <TagField
+          label="Cerberus suffix"
+          value={String(companyTags.cerberus || "C")}
+          placeholder="C"
+          onChange={(value) => setCompanyTag("cerberus", value)}
+        />
+        <TagField
+          label="Hellfire suffix"
+          value={String(companyTags.hellfire || "H")}
+          placeholder="H"
+          onChange={(value) => setCompanyTag("hellfire", value)}
+        />
+        <TagField
+          label="Merged STE suffix"
+          value={String(steCompanyMerge.suffix || "VD")}
+          placeholder="VD"
+          onChange={(value) => onMergeChange({ ...steCompanyMerge, suffix: cleanTag(value) })}
+        />
+        <label className="text-xs text-muted">
+          Merged STE role
+          <RoleSelect
+            roles={roles}
+            value={String(steCompanyMerge.roleId || "")}
+            onChange={(value) => onMergeChange({ ...steCompanyMerge, roleId: value })}
+          />
+        </label>
+      </div>
+
+      <div className="mt-5 grid gap-3 md:grid-cols-3">
+        <NicknamePreview
+          label="Starship Troopers"
+          value={`[${prefix}] TrooperName [${steCompanyMerge.enabled !== false ? mergedSuffix : demon}]`}
+        />
+        <NicknamePreview
+          label="HLL:V"
+          value={`[${prefix}] TrooperName [${hllvTag}]`}
+        />
+        <NicknamePreview
+          label="Combined"
+          value={`[${prefix}] TrooperName [${demon}${separator}${hllvTag}]`}
+        />
+      </div>
+
+      <Button className="mt-5" type="button" disabled={busy} onClick={onSave}>
+        <Save className="h-4 w-4" />
+        Save Prefixes & Suffixes
+      </Button>
+    </ConfigPanel>
+  );
+}
+
+function NicknamePreview({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-primary/20 bg-primary/5 p-3">
+      <p className="stencil text-[9px] tracking-[0.12em] text-primary">{label}</p>
+      <p className="mt-2 break-all font-mono text-sm text-fg">{value.slice(0, 32)}</p>
+    </div>
+  );
+}
+
+function TagField({
+  label,
+  value,
+  placeholder,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  placeholder: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="text-xs text-muted">
+      {label}
+      <div className="mt-1 flex h-10 items-center rounded-md border border-border-strong bg-black/45 px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+        <span className="font-mono text-sm text-subtle">[</span>
+        <input
+          className="min-w-0 flex-1 bg-transparent px-1 text-sm text-fg outline-none"
+          value={value}
+          maxLength={12}
+          placeholder={placeholder}
+          onChange={(event) => onChange(event.target.value)}
+        />
+        <span className="font-mono text-sm text-subtle">]</span>
+      </div>
+    </label>
+  );
+}
+
+function RoleAutomationEditor({
+  value,
+  roles,
+  busy,
+  onChange,
+  onSave,
+}: {
+  value: Obj;
+  roles: BotGuildRoleOption[];
+  busy: boolean;
+  onChange: (value: Obj) => void;
+  onSave: () => void;
+}) {
+  const rules = Array.isArray(value.rules) ? value.rules : [];
+  return (
+    <ConfigPanel
+      title="Automatic Role Rules"
+      description="Choose multiple trigger roles and multiple roles to add/remove. No role IDs or JSON required."
+    >
+      <ToggleField
+        label="Automatic role assignment enabled"
+        checked={value.enabled !== false}
+        onChange={(checked) => onChange({ ...value, enabled: checked })}
+      />
+
+      <div className="mt-5 space-y-4">
+        {rules.map((rawRule: Obj, index: number) => {
+          const rule = record(rawRule);
+          const updateRule = (patch: Obj) =>
+            onChange({
+              ...value,
+              rules: rules.map((item: Obj, i: number) =>
+                i === index ? { ...record(item), ...patch } : item,
+              ),
+            });
+          return (
+            <div key={index} className="rounded-md border border-border bg-black/20 p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h4 className="font-display text-base font-semibold uppercase text-fg">
+                  Rule {index + 1}
+                </h4>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() =>
+                    onChange({ ...value, rules: rules.filter((_: unknown, i: number) => i !== index) })
+                  }
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Remove
+                </Button>
+              </div>
+              <div className="grid gap-4 lg:grid-cols-3">
+                <div>
+                  <p className="mb-1 text-xs text-muted">If member has any of these roles</p>
+                  <MultiRoleSelect
+                    roles={roles}
+                    value={roleArray(rule.triggerRoleIds || rule.sourceRoleIds || rule.sourceRoleId)}
+                    onChange={(selected) => updateRule({ triggerRoleIds: selected })}
+                  />
+                </div>
+                <div>
+                  <p className="mb-1 text-xs text-muted">Add these roles</p>
+                  <MultiRoleSelect
+                    roles={roles}
+                    value={roleArray(rule.grantRoleIds || rule.targetRoleIds || rule.grantRoleId || rule.targetRoleId)}
+                    onChange={(selected) => updateRule({ grantRoleIds: selected })}
+                  />
+                </div>
+                <div>
+                  <p className="mb-1 text-xs text-muted">Remove these roles</p>
+                  <MultiRoleSelect
+                    roles={roles}
+                    value={roleArray(rule.removeRoleIds || rule.removalRoleIds || rule.removeRoleId)}
+                    onChange={(selected) => updateRule({ removeRoleIds: selected })}
+                  />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-3">
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={rules.length >= 250}
+          onClick={() =>
+            onChange({
+              ...value,
+              rules: [...rules, { triggerRoleIds: [], grantRoleIds: [], removeRoleIds: [] }],
+            })
+          }
+        >
+          <Plus className="h-4 w-4" />
+          Add Role Rule
+        </Button>
+        <Button type="button" disabled={busy} onClick={onSave}>
+          <Save className="h-4 w-4" />
+          Save Automatic Roles
+        </Button>
+      </div>
+    </ConfigPanel>
+  );
+}
+
+function TransferAccessEditor({
+  value,
+  roles,
+  busy,
+  onChange,
+  onSave,
+}: {
+  value: Obj;
+  roles: BotGuildRoleOption[];
+  busy: boolean;
+  onChange: (value: Obj) => void;
+  onSave: () => void;
+}) {
+  const names = Array.isArray(value.allowedRoleNames) ? value.allowedRoleNames : [];
+  return (
+    <ConfigPanel
+      title="Transfer Access"
+      description="Choose every staff role allowed to use channel/thread/forum transfers."
+    >
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div>
+          <p className="mb-1 text-xs text-muted">Allowed Discord roles</p>
+          <MultiRoleSelect
+            roles={roles}
+            value={roleArray(value.allowedRoleIds)}
+            onChange={(selected) => onChange({ ...value, allowedRoleIds: selected })}
+          />
+        </div>
+        <label className="text-xs text-muted">
+          Fallback role names
+          <textarea
+            className="min-h-32 w-full rounded-md border border-border-strong bg-black/45 px-3 py-2 text-sm text-fg outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            value={names.join("\n")}
+            onChange={(event) =>
+              onChange({
+                ...value,
+                allowedRoleNames: event.target.value
+                  .split("\n")
+                  .map((item) => item.trim())
+                  .filter(Boolean),
+              })
+            }
+          />
+        </label>
+      </div>
+      <div className="mt-4 grid gap-4 md:grid-cols-3">
+        <NumberField
+          label="Maximum messages"
+          value={Number(value.maxMessages || 2000)}
+          min={1}
+          max={10000}
+          onChange={(next) => onChange({ ...value, maxMessages: next })}
+        />
+        <NumberField
+          label="Maximum forum posts"
+          value={Number(value.maxForumPosts || 5000)}
+          min={1}
+          max={10000}
+          onChange={(next) => onChange({ ...value, maxForumPosts: next })}
+        />
+        <NumberField
+          label="Attachment limit (MB)"
+          value={Number(value.maxAttachmentMb || 24)}
+          min={1}
+          max={100}
+          onChange={(next) => onChange({ ...value, maxAttachmentMb: next })}
+        />
+      </div>
+      <Button className="mt-5" type="button" disabled={busy} onClick={onSave}>
+        <Save className="h-4 w-4" />
+        Save Transfer Access
+      </Button>
+    </ConfigPanel>
+  );
+}
+
 function AarEditor({
   aar,
   textChannels,
