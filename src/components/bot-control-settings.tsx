@@ -1007,7 +1007,7 @@ function AarEditor({
           <div>
             <h4 className="font-display text-lg font-semibold uppercase text-fg">AI Voice AAR Interviewer</h4>
             <p className="text-xs text-muted">
-              The PL starts the interview from the Briefing Room reminder. Gemini asks each AAR question aloud and transcribes only the starter&apos;s answers using free-tier-capable models.
+              Groq listens to the PL&apos;s answers and ElevenLabs speaks the fixed AAR questions using the same configured Kellan voice.
             </p>
           </div>
           <span className={`rounded border px-2 py-1 text-[10px] uppercase tracking-wide ${
@@ -1015,9 +1015,21 @@ function AarEditor({
               ? "border-primary/30 bg-primary/10 text-primary"
               : "border-amber-300/30 bg-amber-400/10 text-amber-200"
           }`}>
-            {aiVoiceConfigured ? "Gemini key configured" : "GEMINI_API_KEY required"}
+            {aiVoiceConfigured ? "Groq + ElevenLabs ready" : "Groq / ElevenLabs credentials required"}
           </span>
         </div>
+
+        <div className="mb-4 grid gap-3 md:grid-cols-2">
+          <div className="rounded-md border border-border bg-black/20 p-3">
+            <p className="stencil text-[9px] tracking-[0.12em] text-primary">Speech recognition</p>
+            <p className="mt-1 text-sm text-fg">Groq · whisper-large-v3-turbo</p>
+          </div>
+          <div className="rounded-md border border-border bg-black/20 p-3">
+            <p className="stencil text-[9px] tracking-[0.12em] text-primary">Speaking voice</p>
+            <p className="mt-1 text-sm text-fg">Kellan · ElevenLabs Railway voice</p>
+          </div>
+        </div>
+
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <ToggleField
             label="AI Voice AAR enabled"
@@ -1034,18 +1046,6 @@ function AarEditor({
             checked={aiVoice.onlyAudioReminderRooms !== false}
             onChange={(checked) => onChange({ ...aar, aiVoice: { ...aiVoice, onlyAudioReminderRooms: checked } })}
           />
-          <label className="text-xs text-muted">
-            AI speaking voice
-            <select
-              className={inputClass}
-              value={String(aiVoice.voice || "Gacrux")}
-              onChange={(event) => onChange({ ...aar, aiVoice: { ...aiVoice, voice: event.target.value } })}
-            >
-              {["Gacrux","Algenib","Charon","Kore","Orus","Iapetus","Schedar","Alnilam","Achird","Sulafat","Puck","Fenrir","Aoede"].map((voice) => (
-                <option key={voice} value={voice}>{titleCase(voice)}</option>
-              ))}
-            </select>
-          </label>
           <NumberField
             label="Maximum answer time (seconds)"
             value={Number(aiVoice.maxAnswerSeconds || 25)}
@@ -1069,7 +1069,7 @@ function AarEditor({
           />
         </div>
         <p className="mt-3 text-[11px] text-subtle">
-          Voice audio is captured only while the PL&apos;s answer is being listened to. The bot does not save the raw audio file; the transcript is used to complete the AAR.
+          Fixed spoken questions are cached on Railway after first generation. Raw answer audio is not stored by the bot.
         </p>
       </div>
 

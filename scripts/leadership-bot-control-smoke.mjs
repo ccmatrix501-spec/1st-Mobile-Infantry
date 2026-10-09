@@ -73,7 +73,7 @@ for (const token of [
   "GIF & Media Stats",
   "AI Voice AAR Interviewer",
   "/mediastatsrebuild",
-  "GEMINI_API_KEY required",
+  "Groq + ElevenLabs ready",
 ]) {
   requireToken(settingsControl, token, token);
 }
