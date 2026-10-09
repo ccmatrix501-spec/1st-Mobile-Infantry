@@ -50,55 +50,60 @@ function titleCase(value: string) {
     .replace(/\b\w/g, (match) => match.toUpperCase());
 }
 
-const ROLE_FIELDS: Array<[string, string]> = [
-  ["recruit", "Recruit"],
-  ["member", "Member"],
-  ["alpha", "Alpha / STE member"],
-  ["meritsAwards", "Merits & Awards"],
-  ["paths.starship", "Path · Starship Troopers"],
-  ["paths.hllv", "Path · HLL:V"],
-  ["paths.combined", "Path · Combined"],
-  ["paths.ambassador", "Path · Ambassador"],
-  ["paths.returning", "Path · Returning"],
-  ["regions.america", "Region · America"],
-  ["regions.europe", "Region · Europe"],
-  ["regions.asia", "Region · Asia"],
-  ["regions.africa", "Region · Africa"],
-  ["regions.oceania", "Region · Oceania"],
-  ["platforms.pc", "Platform · PC"],
-  ["platforms.xbox", "Platform · Xbox"],
-  ["platforms.playstation", "Platform · PlayStation"],
-  ["experience.starship.new", "STE Experience · New"],
-  ["experience.starship.some", "STE Experience · Some"],
-  ["experience.starship.veteran", "STE Experience · Veteran"],
-  ["experience.starship.expert", "STE Experience · Expert"],
-  ["experience.hllv.new", "HLL:V Experience · New"],
-  ["experience.hllv.some", "HLL:V Experience · Some"],
-  ["experience.hllv.veteran", "HLL:V Experience · Veteran"],
-  ["experience.hllv.expert", "HLL:V Experience · Expert"],
-  ["companies.demon", "Company · Demon"],
-  ["companies.nightmare", "Company · Nightmare"],
-  ["companies.cerberus", "Company · Cerberus"],
-  ["companies.hellfire", "Company · Hellfire"],
-  ["hllRoles.infantry", "HLL:V Role · Infantry"],
-  ["hllRoles.support", "HLL:V Role · Support"],
-  ["hllRoles.leadership", "HLL:V Role · Leadership"],
-  ["hllRoles.armor", "HLL:V Role · Armor"],
-  ["hllRoles.recon", "HLL:V Role · Recon"],
-  ["ranks.squad_member", "Returning · Squad Member"],
-  ["ranks.squad_lead", "Returning · Squad Lead"],
-  ["ranks.platoon_lead", "Returning · Platoon Lead"],
-  ["ranks.nco", "Returning · NCO"],
-  ["ranks.officer", "Returning · Officer / Staff"],
+function roleArray(value: unknown): string[] {
+  const input = Array.isArray(value) ? value : value ? [value] : [];
+  return [...new Set(input.map((item) => String(item || "").trim()).filter(Boolean))];
+}
+
+function cleanTag(value: unknown, fallback = "") {
+  return String(value ?? fallback).replace(/[\[\]]/g, "").trim();
+}
+
+const ROLE_FIELDS: Array<{ path: string; label: string; multi?: boolean }> = [
+  { path: "recruit", label: "Recruit (primary role)" },
+  { path: "member", label: "Member", multi: true },
+  { path: "alpha", label: "Alpha / STE member", multi: true },
+  { path: "meritsAwards", label: "Merits & Awards", multi: true },
+  { path: "paths.starship", label: "Path · Starship Troopers", multi: true },
+  { path: "paths.hllv", label: "Path · HLL:V", multi: true },
+  { path: "paths.combined", label: "Path · Combined", multi: true },
+  { path: "paths.ambassador", label: "Path · Ambassador", multi: true },
+  { path: "paths.returning", label: "Path · Returning", multi: true },
+  { path: "regions.america", label: "Region · America", multi: true },
+  { path: "regions.europe", label: "Region · Europe", multi: true },
+  { path: "regions.asia", label: "Region · Asia", multi: true },
+  { path: "regions.africa", label: "Region · Africa", multi: true },
+  { path: "regions.oceania", label: "Region · Oceania", multi: true },
+  { path: "platforms.pc", label: "Platform · PC", multi: true },
+  { path: "platforms.xbox", label: "Platform · Xbox", multi: true },
+  { path: "platforms.playstation", label: "Platform · PlayStation", multi: true },
+  { path: "experience.starship.new", label: "STE Experience · New", multi: true },
+  { path: "experience.starship.some", label: "STE Experience · Some", multi: true },
+  { path: "experience.starship.veteran", label: "STE Experience · Veteran", multi: true },
+  { path: "experience.starship.expert", label: "STE Experience · Expert", multi: true },
+  { path: "experience.hllv.new", label: "HLL:V Experience · New", multi: true },
+  { path: "experience.hllv.some", label: "HLL:V Experience · Some", multi: true },
+  { path: "experience.hllv.veteran", label: "HLL:V Experience · Veteran", multi: true },
+  { path: "experience.hllv.expert", label: "HLL:V Experience · Expert", multi: true },
+  { path: "companies.demon", label: "Company · Demon", multi: true },
+  { path: "companies.nightmare", label: "Company · Nightmare", multi: true },
+  { path: "companies.cerberus", label: "Company · Cerberus", multi: true },
+  { path: "companies.hellfire", label: "Company · Hellfire", multi: true },
+  { path: "hllRoles.infantry", label: "HLL:V Role · Infantry", multi: true },
+  { path: "hllRoles.support", label: "HLL:V Role · Support", multi: true },
+  { path: "hllRoles.leadership", label: "HLL:V Role · Leadership", multi: true },
+  { path: "hllRoles.armor", label: "HLL:V Role · Armor", multi: true },
+  { path: "hllRoles.recon", label: "HLL:V Role · Recon", multi: true },
+  { path: "ranks.squad_member", label: "Returning · Squad Member", multi: true },
+  { path: "ranks.squad_lead", label: "Returning · Squad Lead", multi: true },
+  { path: "ranks.platoon_lead", label: "Returning · Platoon Lead", multi: true },
+  { path: "ranks.nco", label: "Returning · NCO", multi: true },
+  { path: "ranks.officer", label: "Returning · Officer / Staff", multi: true },
 ];
 
 const ADVANCED_SECTIONS = [
   "onboarding",
-  "roleAutomation",
-  "transfer",
-  "nickname",
   "emojis",
-  "steCompanyMerge",
   "companies",
   "branding",
   "stats",
@@ -174,6 +179,10 @@ export function BotControlSettings() {
   const roleSettings = record(settingsObj.roles);
   const lft = record(settingsObj.lft);
   const aar = record(settingsObj.aar);
+  const nickname = record(settingsObj.nickname);
+  const steCompanyMerge = record(settingsObj.steCompanyMerge);
+  const roleAutomation = record(settingsObj.roleAutomation);
+  const transfer = record(settingsObj.transfer);
 
   const textChannels = useMemo(() => channels.filter((channel) => channel.textBased), [channels]);
   const voiceChannels = useMemo(() => channels.filter((channel) => channel.voiceBased), [channels]);
@@ -217,18 +226,29 @@ export function BotControlSettings() {
 
       <ConfigPanel title="Role Mapping" description="Select the real Discord roles used across onboarding and other bot features.">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {ROLE_FIELDS.map(([path, label]) => (
-            <label key={path} className="text-xs text-muted">
-              {label}
-              <RoleSelect
-                roles={roles}
-                value={String(getPath(roleSettings, path) || "")}
-                onChange={(value) => {
-                  const nextRoles = setPath(roleSettings, path, value);
-                  setSettings((current) => ({ ...record(current), roles: nextRoles }));
-                }}
-              />
-            </label>
+          {ROLE_FIELDS.map(({ path, label, multi }) => (
+            <div key={path} className="text-xs text-muted">
+              <span>{label}</span>
+              {multi ? (
+                <MultiRoleSelect
+                  roles={roles}
+                  value={roleArray(getPath(roleSettings, path))}
+                  onChange={(value) => {
+                    const nextRoles = setPath(roleSettings, path, value);
+                    setSettings((current) => ({ ...record(current), roles: nextRoles }));
+                  }}
+                />
+              ) : (
+                <RoleSelect
+                  roles={roles}
+                  value={String(getPath(roleSettings, path) || "")}
+                  onChange={(value) => {
+                    const nextRoles = setPath(roleSettings, path, value);
+                    setSettings((current) => ({ ...record(current), roles: nextRoles }));
+                  }}
+                />
+              )}
+            </div>
           ))}
         </div>
         <Button
@@ -241,6 +261,62 @@ export function BotControlSettings() {
           Save Role Mapping
         </Button>
       </ConfigPanel>
+
+      <NicknameSuffixEditor
+        nickname={nickname}
+        steCompanyMerge={steCompanyMerge}
+        roles={roles}
+        busy={Boolean(busy)}
+        onNicknameChange={(value) =>
+          setSettings((current) => ({ ...record(current), nickname: value }))
+        }
+        onMergeChange={(value) =>
+          setSettings((current) => ({ ...record(current), steCompanyMerge: value }))
+        }
+        onSave={async () => {
+          setBusy("nickname");
+          setError(null);
+          setNotice(null);
+          try {
+            const first = await saveLeadershipBotSettingsSection({
+              data: { section: "nickname", value: nickname },
+            });
+            const second = await saveLeadershipBotSettingsSection({
+              data: { section: "steCompanyMerge", value: steCompanyMerge },
+            });
+            setSettings(second.settings || first.settings);
+            setNotice("Nickname prefixes and suffixes saved.");
+          } catch (err) {
+            setError(err instanceof Error ? err.message : "Could not save nickname settings.");
+          } finally {
+            setBusy(null);
+          }
+        }}
+      />
+
+      <RoleAutomationEditor
+        value={roleAutomation}
+        roles={roles}
+        busy={Boolean(busy)}
+        onChange={(value) =>
+          setSettings((current) => ({ ...record(current), roleAutomation: value }))
+        }
+        onSave={() =>
+          void saveSection("roleAutomation", roleAutomation, "Automatic role rules saved.")
+        }
+      />
+
+      <TransferAccessEditor
+        value={transfer}
+        roles={roles}
+        busy={Boolean(busy)}
+        onChange={(value) =>
+          setSettings((current) => ({ ...record(current), transfer: value }))
+        }
+        onSave={() =>
+          void saveSection("transfer", transfer, "Transfer access roles and limits saved.")
+        }
+      />
 
       <ConfigPanel title="LFT & Recruit Alerts" description="Live scheduler, role and channel controls used by Looking For Troopers and recruit alerts.">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
