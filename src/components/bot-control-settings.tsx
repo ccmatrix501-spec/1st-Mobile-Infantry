@@ -1007,7 +1007,7 @@ function AarEditor({
           <div>
             <h4 className="font-display text-lg font-semibold uppercase text-fg">AI Voice AAR Interviewer</h4>
             <p className="text-xs text-muted">
-              The PL starts the interview from the Briefing Room reminder. The bot asks each AAR question aloud and transcribes only the starter&apos;s answers.
+              The PL starts the interview from the Briefing Room reminder. Gemini asks each AAR question aloud and transcribes only the starter&apos;s answers using free-tier-capable models.
             </p>
           </div>
           <span className={`rounded border px-2 py-1 text-[10px] uppercase tracking-wide ${
@@ -1015,7 +1015,7 @@ function AarEditor({
               ? "border-primary/30 bg-primary/10 text-primary"
               : "border-amber-300/30 bg-amber-400/10 text-amber-200"
           }`}>
-            {aiVoiceConfigured ? "AI key configured" : "OPENAI_API_KEY required"}
+            {aiVoiceConfigured ? "Gemini key configured" : "GEMINI_API_KEY required"}
           </span>
         </div>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -1038,10 +1038,10 @@ function AarEditor({
             AI speaking voice
             <select
               className={inputClass}
-              value={String(aiVoice.voice || "cedar")}
+              value={String(aiVoice.voice || "Gacrux")}
               onChange={(event) => onChange({ ...aar, aiVoice: { ...aiVoice, voice: event.target.value } })}
             >
-              {["cedar","marin","alloy","ash","ballad","coral","echo","fable","nova","onyx","sage","shimmer","verse"].map((voice) => (
+              {["Gacrux","Algenib","Charon","Kore","Orus","Iapetus","Schedar","Alnilam","Achird","Sulafat","Puck","Fenrir","Aoede"].map((voice) => (
                 <option key={voice} value={voice}>{titleCase(voice)}</option>
               ))}
             </select>
