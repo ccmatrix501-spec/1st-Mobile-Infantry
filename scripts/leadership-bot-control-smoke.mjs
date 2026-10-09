@@ -73,7 +73,7 @@ for (const token of [
   "GIF & Media Stats",
   "AI Voice AAR Interviewer",
   "/mediastatsrebuild",
-  "OPENAI_API_KEY required",
+  "GEMINI_API_KEY required",
 ]) {
   requireToken(settingsControl, token, token);
 }
