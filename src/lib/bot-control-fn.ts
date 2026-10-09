@@ -398,6 +398,10 @@ export type LeadershipBotSettingsResponse = {
   settings: LeadershipBotSettings;
   editableSections: string[];
   onboardingCompletionCount: number;
+  capabilities: {
+    aiVoiceConfigured: boolean;
+    mediaStatsEnabled: boolean;
+  };
 };
 
 export const fetchLeadershipBotGuildOptions = createServerFn({ method: "GET" }).handler(
@@ -428,6 +432,10 @@ export const fetchLeadershipBotSettings = createServerFn({ method: "GET" }).hand
       settings: result.settings || {},
       editableSections: Array.isArray(result.editableSections) ? result.editableSections : [],
       onboardingCompletionCount: Number(result.onboardingCompletionCount || 0),
+      capabilities: {
+        aiVoiceConfigured: Boolean(result.capabilities?.aiVoiceConfigured),
+        mediaStatsEnabled: result.capabilities?.mediaStatsEnabled !== false,
+      },
     };
   },
 );
