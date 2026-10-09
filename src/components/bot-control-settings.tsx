@@ -50,55 +50,60 @@ function titleCase(value: string) {
     .replace(/\b\w/g, (match) => match.toUpperCase());
 }
 
-const ROLE_FIELDS: Array<[string, string]> = [
-  ["recruit", "Recruit"],
-  ["member", "Member"],
-  ["alpha", "Alpha / STE member"],
-  ["meritsAwards", "Merits & Awards"],
-  ["paths.starship", "Path · Starship Troopers"],
-  ["paths.hllv", "Path · HLL:V"],
-  ["paths.combined", "Path · Combined"],
-  ["paths.ambassador", "Path · Ambassador"],
-  ["paths.returning", "Path · Returning"],
-  ["regions.america", "Region · America"],
-  ["regions.europe", "Region · Europe"],
-  ["regions.asia", "Region · Asia"],
-  ["regions.africa", "Region · Africa"],
-  ["regions.oceania", "Region · Oceania"],
-  ["platforms.pc", "Platform · PC"],
-  ["platforms.xbox", "Platform · Xbox"],
-  ["platforms.playstation", "Platform · PlayStation"],
-  ["experience.starship.new", "STE Experience · New"],
-  ["experience.starship.some", "STE Experience · Some"],
-  ["experience.starship.veteran", "STE Experience · Veteran"],
-  ["experience.starship.expert", "STE Experience · Expert"],
-  ["experience.hllv.new", "HLL:V Experience · New"],
-  ["experience.hllv.some", "HLL:V Experience · Some"],
-  ["experience.hllv.veteran", "HLL:V Experience · Veteran"],
-  ["experience.hllv.expert", "HLL:V Experience · Expert"],
-  ["companies.demon", "Company · Demon"],
-  ["companies.nightmare", "Company · Nightmare"],
-  ["companies.cerberus", "Company · Cerberus"],
-  ["companies.hellfire", "Company · Hellfire"],
-  ["hllRoles.infantry", "HLL:V Role · Infantry"],
-  ["hllRoles.support", "HLL:V Role · Support"],
-  ["hllRoles.leadership", "HLL:V Role · Leadership"],
-  ["hllRoles.armor", "HLL:V Role · Armor"],
-  ["hllRoles.recon", "HLL:V Role · Recon"],
-  ["ranks.squad_member", "Returning · Squad Member"],
-  ["ranks.squad_lead", "Returning · Squad Lead"],
-  ["ranks.platoon_lead", "Returning · Platoon Lead"],
-  ["ranks.nco", "Returning · NCO"],
-  ["ranks.officer", "Returning · Officer / Staff"],
+function roleArray(value: unknown): string[] {
+  const input = Array.isArray(value) ? value : value ? [value] : [];
+  return [...new Set(input.map((item) => String(item || "").trim()).filter(Boolean))];
+}
+
+function cleanTag(value: unknown, fallback = "") {
+  return String(value ?? fallback).replace(/[\[\]]/g, "").trim();
+}
+
+const ROLE_FIELDS: Array<{ path: string; label: string; multi?: boolean }> = [
+  { path: "recruit", label: "Recruit (primary role)" },
+  { path: "member", label: "Member", multi: true },
+  { path: "alpha", label: "Alpha / STE member", multi: true },
+  { path: "meritsAwards", label: "Merits & Awards", multi: true },
+  { path: "paths.starship", label: "Path · Starship Troopers", multi: true },
+  { path: "paths.hllv", label: "Path · HLL:V", multi: true },
+  { path: "paths.combined", label: "Path · Combined", multi: true },
+  { path: "paths.ambassador", label: "Path · Ambassador", multi: true },
+  { path: "paths.returning", label: "Path · Returning", multi: true },
+  { path: "regions.america", label: "Region · America", multi: true },
+  { path: "regions.europe", label: "Region · Europe", multi: true },
+  { path: "regions.asia", label: "Region · Asia", multi: true },
+  { path: "regions.africa", label: "Region · Africa", multi: true },
+  { path: "regions.oceania", label: "Region · Oceania", multi: true },
+  { path: "platforms.pc", label: "Platform · PC", multi: true },
+  { path: "platforms.xbox", label: "Platform · Xbox", multi: true },
+  { path: "platforms.playstation", label: "Platform · PlayStation", multi: true },
+  { path: "experience.starship.new", label: "STE Experience · New", multi: true },
+  { path: "experience.starship.some", label: "STE Experience · Some", multi: true },
+  { path: "experience.starship.veteran", label: "STE Experience · Veteran", multi: true },
+  { path: "experience.starship.expert", label: "STE Experience · Expert", multi: true },
+  { path: "experience.hllv.new", label: "HLL:V Experience · New", multi: true },
+  { path: "experience.hllv.some", label: "HLL:V Experience · Some", multi: true },
+  { path: "experience.hllv.veteran", label: "HLL:V Experience · Veteran", multi: true },
+  { path: "experience.hllv.expert", label: "HLL:V Experience · Expert", multi: true },
+  { path: "companies.demon", label: "Company · Demon", multi: true },
+  { path: "companies.nightmare", label: "Company · Nightmare", multi: true },
+  { path: "companies.cerberus", label: "Company · Cerberus", multi: true },
+  { path: "companies.hellfire", label: "Company · Hellfire", multi: true },
+  { path: "hllRoles.infantry", label: "HLL:V Role · Infantry", multi: true },
+  { path: "hllRoles.support", label: "HLL:V Role · Support", multi: true },
+  { path: "hllRoles.leadership", label: "HLL:V Role · Leadership", multi: true },
+  { path: "hllRoles.armor", label: "HLL:V Role · Armor", multi: true },
+  { path: "hllRoles.recon", label: "HLL:V Role · Recon", multi: true },
+  { path: "ranks.squad_member", label: "Returning · Squad Member", multi: true },
+  { path: "ranks.squad_lead", label: "Returning · Squad Lead", multi: true },
+  { path: "ranks.platoon_lead", label: "Returning · Platoon Lead", multi: true },
+  { path: "ranks.nco", label: "Returning · NCO", multi: true },
+  { path: "ranks.officer", label: "Returning · Officer / Staff", multi: true },
 ];
 
 const ADVANCED_SECTIONS = [
   "onboarding",
-  "roleAutomation",
-  "transfer",
-  "nickname",
   "emojis",
-  "steCompanyMerge",
   "companies",
   "branding",
   "stats",
@@ -174,6 +179,10 @@ export function BotControlSettings() {
   const roleSettings = record(settingsObj.roles);
   const lft = record(settingsObj.lft);
   const aar = record(settingsObj.aar);
+  const nickname = record(settingsObj.nickname);
+  const steCompanyMerge = record(settingsObj.steCompanyMerge);
+  const roleAutomation = record(settingsObj.roleAutomation);
+  const transfer = record(settingsObj.transfer);
 
   const textChannels = useMemo(() => channels.filter((channel) => channel.textBased), [channels]);
   const voiceChannels = useMemo(() => channels.filter((channel) => channel.voiceBased), [channels]);
@@ -217,18 +226,29 @@ export function BotControlSettings() {
 
       <ConfigPanel title="Role Mapping" description="Select the real Discord roles used across onboarding and other bot features.">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {ROLE_FIELDS.map(([path, label]) => (
-            <label key={path} className="text-xs text-muted">
-              {label}
-              <RoleSelect
-                roles={roles}
-                value={String(getPath(roleSettings, path) || "")}
-                onChange={(value) => {
-                  const nextRoles = setPath(roleSettings, path, value);
-                  setSettings((current) => ({ ...record(current), roles: nextRoles }));
-                }}
-              />
-            </label>
+          {ROLE_FIELDS.map(({ path, label, multi }) => (
+            <div key={path} className="text-xs text-muted">
+              <span>{label}</span>
+              {multi ? (
+                <MultiRoleSelect
+                  roles={roles}
+                  value={roleArray(getPath(roleSettings, path))}
+                  onChange={(value) => {
+                    const nextRoles = setPath(roleSettings, path, value);
+                    setSettings((current) => ({ ...record(current), roles: nextRoles }));
+                  }}
+                />
+              ) : (
+                <RoleSelect
+                  roles={roles}
+                  value={String(getPath(roleSettings, path) || "")}
+                  onChange={(value) => {
+                    const nextRoles = setPath(roleSettings, path, value);
+                    setSettings((current) => ({ ...record(current), roles: nextRoles }));
+                  }}
+                />
+              )}
+            </div>
           ))}
         </div>
         <Button
@@ -241,6 +261,62 @@ export function BotControlSettings() {
           Save Role Mapping
         </Button>
       </ConfigPanel>
+
+      <NicknameSuffixEditor
+        nickname={nickname}
+        steCompanyMerge={steCompanyMerge}
+        roles={roles}
+        busy={Boolean(busy)}
+        onNicknameChange={(value) =>
+          setSettings((current) => ({ ...record(current), nickname: value }))
+        }
+        onMergeChange={(value) =>
+          setSettings((current) => ({ ...record(current), steCompanyMerge: value }))
+        }
+        onSave={async () => {
+          setBusy("nickname");
+          setError(null);
+          setNotice(null);
+          try {
+            const first = await saveLeadershipBotSettingsSection({
+              data: { section: "nickname", value: nickname },
+            });
+            const second = await saveLeadershipBotSettingsSection({
+              data: { section: "steCompanyMerge", value: steCompanyMerge },
+            });
+            setSettings(second.settings || first.settings);
+            setNotice("Nickname prefixes and suffixes saved.");
+          } catch (err) {
+            setError(err instanceof Error ? err.message : "Could not save nickname settings.");
+          } finally {
+            setBusy(null);
+          }
+        }}
+      />
+
+      <RoleAutomationEditor
+        value={roleAutomation}
+        roles={roles}
+        busy={Boolean(busy)}
+        onChange={(value) =>
+          setSettings((current) => ({ ...record(current), roleAutomation: value }))
+        }
+        onSave={() =>
+          void saveSection("roleAutomation", roleAutomation, "Automatic role rules saved.")
+        }
+      />
+
+      <TransferAccessEditor
+        value={transfer}
+        roles={roles}
+        busy={Boolean(busy)}
+        onChange={(value) =>
+          setSettings((current) => ({ ...record(current), transfer: value }))
+        }
+        onSave={() =>
+          void saveSection("transfer", transfer, "Transfer access roles and limits saved.")
+        }
+      />
 
       <ConfigPanel title="LFT & Recruit Alerts" description="Live scheduler, role and channel controls used by Looking For Troopers and recruit alerts.">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -408,6 +484,359 @@ export function BotControlSettings() {
         </div>
       </ConfigPanel>
     </section>
+  );
+}
+
+
+function NicknameSuffixEditor({
+  nickname,
+  steCompanyMerge,
+  roles,
+  busy,
+  onNicknameChange,
+  onMergeChange,
+  onSave,
+}: {
+  nickname: Obj;
+  steCompanyMerge: Obj;
+  roles: BotGuildRoleOption[];
+  busy: boolean;
+  onNicknameChange: (value: Obj) => void;
+  onMergeChange: (value: Obj) => void;
+  onSave: () => void;
+}) {
+  const companyTags = record(nickname.companyTags);
+  const prefix = cleanTag(nickname.recruitPrefix, "RCT") || "RCT";
+  const hllvTag = cleanTag(nickname.hllvTag, "H") || "H";
+  const separator = String(nickname.combinedSeparator || "/").trim() || "/";
+  const demon = cleanTag(companyTags.demon, "D") || "D";
+  const mergedSuffix = cleanTag(steCompanyMerge.suffix, "VD") || "VD";
+
+  const setNicknameField = (key: string, value: unknown) =>
+    onNicknameChange({ ...nickname, [key]: value });
+  const setCompanyTag = (key: string, value: string) =>
+    onNicknameChange({
+      ...nickname,
+      companyTags: { ...companyTags, [key]: cleanTag(value) },
+    });
+
+  return (
+    <ConfigPanel
+      title="Nickname Prefix & Suffix Builder"
+      description="Set the tags visually instead of editing JSON. Square brackets are added automatically."
+    >
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <ToggleField
+          label="Automatic onboarding nicknames"
+          checked={nickname.enabled !== false}
+          onChange={(checked) => setNicknameField("enabled", checked)}
+        />
+        <ToggleField
+          label="Use merged STE company"
+          checked={steCompanyMerge.enabled !== false}
+          onChange={(checked) => onMergeChange({ ...steCompanyMerge, enabled: checked })}
+        />
+        <div />
+        <TagField
+          label="Recruit prefix"
+          value={String(nickname.recruitPrefix || "RCT")}
+          placeholder="RCT"
+          onChange={(value) => setNicknameField("recruitPrefix", cleanTag(value))}
+        />
+        <TagField
+          label="HLL:V suffix"
+          value={String(nickname.hllvTag || "H")}
+          placeholder="H"
+          onChange={(value) => setNicknameField("hllvTag", cleanTag(value))}
+        />
+        <TagField
+          label="Combined separator"
+          value={String(nickname.combinedSeparator || "/")}
+          placeholder="/"
+          onChange={(value) => setNicknameField("combinedSeparator", value.slice(0, 12))}
+        />
+        <TagField
+          label="Demon suffix"
+          value={String(companyTags.demon || "D")}
+          placeholder="D"
+          onChange={(value) => setCompanyTag("demon", value)}
+        />
+        <TagField
+          label="Nightmare suffix"
+          value={String(companyTags.nightmare || "N")}
+          placeholder="N"
+          onChange={(value) => setCompanyTag("nightmare", value)}
+        />
+        <TagField
+          label="Cerberus suffix"
+          value={String(companyTags.cerberus || "C")}
+          placeholder="C"
+          onChange={(value) => setCompanyTag("cerberus", value)}
+        />
+        <TagField
+          label="Hellfire suffix"
+          value={String(companyTags.hellfire || "H")}
+          placeholder="H"
+          onChange={(value) => setCompanyTag("hellfire", value)}
+        />
+        <TagField
+          label="Merged STE suffix"
+          value={String(steCompanyMerge.suffix || "VD")}
+          placeholder="VD"
+          onChange={(value) => onMergeChange({ ...steCompanyMerge, suffix: cleanTag(value) })}
+        />
+        <label className="text-xs text-muted">
+          Merged STE role
+          <RoleSelect
+            roles={roles}
+            value={String(steCompanyMerge.roleId || "")}
+            onChange={(value) => onMergeChange({ ...steCompanyMerge, roleId: value })}
+          />
+        </label>
+      </div>
+
+      <div className="mt-5 grid gap-3 md:grid-cols-3">
+        <NicknamePreview
+          label="Starship Troopers"
+          value={`[${prefix}] TrooperName [${steCompanyMerge.enabled !== false ? mergedSuffix : demon}]`}
+        />
+        <NicknamePreview
+          label="HLL:V"
+          value={`[${prefix}] TrooperName [${hllvTag}]`}
+        />
+        <NicknamePreview
+          label="Combined"
+          value={`[${prefix}] TrooperName [${demon}${separator}${hllvTag}]`}
+        />
+      </div>
+
+      <Button className="mt-5" type="button" disabled={busy} onClick={onSave}>
+        <Save className="h-4 w-4" />
+        Save Prefixes & Suffixes
+      </Button>
+    </ConfigPanel>
+  );
+}
+
+function NicknamePreview({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-primary/20 bg-primary/5 p-3">
+      <p className="stencil text-[9px] tracking-[0.12em] text-primary">{label}</p>
+      <p className="mt-2 break-all font-mono text-sm text-fg">{value.slice(0, 32)}</p>
+    </div>
+  );
+}
+
+function TagField({
+  label,
+  value,
+  placeholder,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  placeholder: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="text-xs text-muted">
+      {label}
+      <div className="mt-1 flex h-10 items-center rounded-md border border-border-strong bg-black/45 px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+        <span className="font-mono text-sm text-subtle">[</span>
+        <input
+          className="min-w-0 flex-1 bg-transparent px-1 text-sm text-fg outline-none"
+          value={value}
+          maxLength={12}
+          placeholder={placeholder}
+          onChange={(event) => onChange(event.target.value)}
+        />
+        <span className="font-mono text-sm text-subtle">]</span>
+      </div>
+    </label>
+  );
+}
+
+function RoleAutomationEditor({
+  value,
+  roles,
+  busy,
+  onChange,
+  onSave,
+}: {
+  value: Obj;
+  roles: BotGuildRoleOption[];
+  busy: boolean;
+  onChange: (value: Obj) => void;
+  onSave: () => void;
+}) {
+  const rules = Array.isArray(value.rules) ? value.rules : [];
+  return (
+    <ConfigPanel
+      title="Automatic Role Rules"
+      description="Choose multiple trigger roles and multiple roles to add/remove. No role IDs or JSON required."
+    >
+      <ToggleField
+        label="Automatic role assignment enabled"
+        checked={value.enabled !== false}
+        onChange={(checked) => onChange({ ...value, enabled: checked })}
+      />
+
+      <div className="mt-5 space-y-4">
+        {rules.map((rawRule: Obj, index: number) => {
+          const rule = record(rawRule);
+          const updateRule = (patch: Obj) =>
+            onChange({
+              ...value,
+              rules: rules.map((item: Obj, i: number) =>
+                i === index ? { ...record(item), ...patch } : item,
+              ),
+            });
+          return (
+            <div key={index} className="rounded-md border border-border bg-black/20 p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h4 className="font-display text-base font-semibold uppercase text-fg">
+                  Rule {index + 1}
+                </h4>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() =>
+                    onChange({ ...value, rules: rules.filter((_: unknown, i: number) => i !== index) })
+                  }
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Remove
+                </Button>
+              </div>
+              <div className="grid gap-4 lg:grid-cols-3">
+                <div>
+                  <p className="mb-1 text-xs text-muted">If member has any of these roles</p>
+                  <MultiRoleSelect
+                    roles={roles}
+                    value={roleArray(rule.triggerRoleIds || rule.sourceRoleIds || rule.sourceRoleId)}
+                    onChange={(selected) => updateRule({ triggerRoleIds: selected })}
+                  />
+                </div>
+                <div>
+                  <p className="mb-1 text-xs text-muted">Add these roles</p>
+                  <MultiRoleSelect
+                    roles={roles}
+                    value={roleArray(rule.grantRoleIds || rule.targetRoleIds || rule.grantRoleId || rule.targetRoleId)}
+                    onChange={(selected) => updateRule({ grantRoleIds: selected })}
+                  />
+                </div>
+                <div>
+                  <p className="mb-1 text-xs text-muted">Remove these roles</p>
+                  <MultiRoleSelect
+                    roles={roles}
+                    value={roleArray(rule.removeRoleIds || rule.removalRoleIds || rule.removeRoleId)}
+                    onChange={(selected) => updateRule({ removeRoleIds: selected })}
+                  />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-3">
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={rules.length >= 250}
+          onClick={() =>
+            onChange({
+              ...value,
+              rules: [...rules, { triggerRoleIds: [], grantRoleIds: [], removeRoleIds: [] }],
+            })
+          }
+        >
+          <Plus className="h-4 w-4" />
+          Add Role Rule
+        </Button>
+        <Button type="button" disabled={busy} onClick={onSave}>
+          <Save className="h-4 w-4" />
+          Save Automatic Roles
+        </Button>
+      </div>
+    </ConfigPanel>
+  );
+}
+
+function TransferAccessEditor({
+  value,
+  roles,
+  busy,
+  onChange,
+  onSave,
+}: {
+  value: Obj;
+  roles: BotGuildRoleOption[];
+  busy: boolean;
+  onChange: (value: Obj) => void;
+  onSave: () => void;
+}) {
+  const names = Array.isArray(value.allowedRoleNames) ? value.allowedRoleNames : [];
+  return (
+    <ConfigPanel
+      title="Transfer Access"
+      description="Choose every staff role allowed to use channel/thread/forum transfers."
+    >
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div>
+          <p className="mb-1 text-xs text-muted">Allowed Discord roles</p>
+          <MultiRoleSelect
+            roles={roles}
+            value={roleArray(value.allowedRoleIds)}
+            onChange={(selected) => onChange({ ...value, allowedRoleIds: selected })}
+          />
+        </div>
+        <label className="text-xs text-muted">
+          Fallback role names
+          <textarea
+            className="min-h-32 w-full rounded-md border border-border-strong bg-black/45 px-3 py-2 text-sm text-fg outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            value={names.join("\n")}
+            onChange={(event) =>
+              onChange({
+                ...value,
+                allowedRoleNames: event.target.value
+                  .split("\n")
+                  .map((item) => item.trim())
+                  .filter(Boolean),
+              })
+            }
+          />
+        </label>
+      </div>
+      <div className="mt-4 grid gap-4 md:grid-cols-3">
+        <NumberField
+          label="Maximum messages"
+          value={Number(value.maxMessages || 2000)}
+          min={1}
+          max={10000}
+          onChange={(next) => onChange({ ...value, maxMessages: next })}
+        />
+        <NumberField
+          label="Maximum forum posts"
+          value={Number(value.maxForumPosts || 5000)}
+          min={1}
+          max={10000}
+          onChange={(next) => onChange({ ...value, maxForumPosts: next })}
+        />
+        <NumberField
+          label="Attachment limit (MB)"
+          value={Number(value.maxAttachmentMb || 24)}
+          min={1}
+          max={100}
+          onChange={(next) => onChange({ ...value, maxAttachmentMb: next })}
+        />
+      </div>
+      <Button className="mt-5" type="button" disabled={busy} onClick={onSave}>
+        <Save className="h-4 w-4" />
+        Save Transfer Access
+      </Button>
+    </ConfigPanel>
   );
 }
 
@@ -716,6 +1145,93 @@ function ConfigPanel({
         <p className="mt-1 text-xs text-muted">{description}</p>
       </div>
       <div className="p-5 sm:p-6">{children}</div>
+    </div>
+  );
+}
+
+
+function MultiRoleSelect({
+  roles,
+  value,
+  onChange,
+}: {
+  roles: BotGuildRoleOption[];
+  value: string[];
+  onChange: (value: string[]) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const selected = new Set(value);
+  const filtered = roles.filter((role) =>
+    role.name.toLowerCase().includes(query.trim().toLowerCase()),
+  );
+
+  const toggle = (roleId: string) => {
+    const next = new Set(value);
+    if (next.has(roleId)) next.delete(roleId);
+    else next.add(roleId);
+    onChange([...next]);
+  };
+
+  return (
+    <div className="mt-1 rounded-md border border-border-strong bg-black/35 p-2">
+      <div className="mb-2 flex min-h-8 flex-wrap gap-1.5">
+        {value.length ? (
+          value.map((id) => {
+            const role = roles.find((item) => item.id === id);
+            return (
+              <button
+                key={id}
+                type="button"
+                className="rounded border border-primary/25 bg-primary/10 px-2 py-1 text-[11px] text-primary hover:bg-primary/20"
+                title="Click to remove"
+                onClick={() => toggle(id)}
+              >
+                {role?.name || id} ×
+              </button>
+            );
+          })
+        ) : (
+          <span className="px-1 py-1 text-[11px] text-subtle">No roles selected</span>
+        )}
+      </div>
+      <input
+        className="h-8 w-full rounded border border-border bg-black/40 px-2 text-xs text-fg outline-none focus:border-primary"
+        value={query}
+        placeholder="Search roles…"
+        onChange={(event) => setQuery(event.target.value)}
+      />
+      <div className="mt-2 max-h-44 overflow-y-auto rounded border border-border bg-black/20">
+        {filtered.map((role) => (
+          <label
+            key={role.id}
+            className="flex cursor-pointer items-center gap-2 border-b border-border/60 px-2 py-2 text-xs text-fg last:border-b-0 hover:bg-white/5"
+          >
+            <input
+              type="checkbox"
+              checked={selected.has(role.id)}
+              onChange={() => toggle(role.id)}
+            />
+            <span className="min-w-0 flex-1 truncate">{role.name}</span>
+            {!role.botCanManage ? (
+              <span className="shrink-0 text-[9px] text-amber-300">
+                {role.managed ? "managed" : "above bot"}
+              </span>
+            ) : null}
+          </label>
+        ))}
+        {!filtered.length ? (
+          <p className="px-3 py-3 text-xs text-subtle">No matching roles.</p>
+        ) : null}
+      </div>
+      {value.length ? (
+        <button
+          type="button"
+          className="mt-2 text-[10px] uppercase tracking-wide text-subtle hover:text-fg"
+          onClick={() => onChange([])}
+        >
+          Clear all selected roles
+        </button>
+      ) : null}
     </div>
   );
 }
