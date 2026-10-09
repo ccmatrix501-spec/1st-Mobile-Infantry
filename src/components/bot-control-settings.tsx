@@ -888,11 +888,23 @@ function MediaStatsEditor({
       </div>
       <div className="mt-4">
         <p className="mb-1 text-xs text-muted">Excluded text channels</p>
-        <MultiChannelSelect
-          channels={channels}
+        <select
+          multiple
+          className="min-h-40 w-full rounded-md border border-border-strong bg-black/45 px-3 py-2 text-sm text-fg outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
           value={Array.isArray(value.excludedChannelIds) ? value.excludedChannelIds.map(String) : []}
-          onChange={(selected) => onChange({ ...value, excludedChannelIds: selected })}
-        />
+          onChange={(event) =>
+            onChange({
+              ...value,
+              excludedChannelIds: Array.from(event.currentTarget.selectedOptions).map((option) => option.value),
+            })
+          }
+        >
+          {channels.map((channel) => (
+            <option key={channel.id} value={channel.id}>
+              {channel.parentName ? channel.parentName + " / " : ""}{channel.name}
+            </option>
+          ))}
+        </select>
       </div>
       <div className="mt-4 rounded-md border border-border bg-black/20 p-3 text-xs text-muted">
         Commands: <span className="font-mono text-fg">/gifstats</span>,{" "}
