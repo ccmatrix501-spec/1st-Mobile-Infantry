@@ -1149,6 +1149,93 @@ function ConfigPanel({
   );
 }
 
+
+function MultiRoleSelect({
+  roles,
+  value,
+  onChange,
+}: {
+  roles: BotGuildRoleOption[];
+  value: string[];
+  onChange: (value: string[]) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const selected = new Set(value);
+  const filtered = roles.filter((role) =>
+    role.name.toLowerCase().includes(query.trim().toLowerCase()),
+  );
+
+  const toggle = (roleId: string) => {
+    const next = new Set(value);
+    if (next.has(roleId)) next.delete(roleId);
+    else next.add(roleId);
+    onChange([...next]);
+  };
+
+  return (
+    <div className="mt-1 rounded-md border border-border-strong bg-black/35 p-2">
+      <div className="mb-2 flex min-h-8 flex-wrap gap-1.5">
+        {value.length ? (
+          value.map((id) => {
+            const role = roles.find((item) => item.id === id);
+            return (
+              <button
+                key={id}
+                type="button"
+                className="rounded border border-primary/25 bg-primary/10 px-2 py-1 text-[11px] text-primary hover:bg-primary/20"
+                title="Click to remove"
+                onClick={() => toggle(id)}
+              >
+                {role?.name || id} ×
+              </button>
+            );
+          })
+        ) : (
+          <span className="px-1 py-1 text-[11px] text-subtle">No roles selected</span>
+        )}
+      </div>
+      <input
+        className="h-8 w-full rounded border border-border bg-black/40 px-2 text-xs text-fg outline-none focus:border-primary"
+        value={query}
+        placeholder="Search roles…"
+        onChange={(event) => setQuery(event.target.value)}
+      />
+      <div className="mt-2 max-h-44 overflow-y-auto rounded border border-border bg-black/20">
+        {filtered.map((role) => (
+          <label
+            key={role.id}
+            className="flex cursor-pointer items-center gap-2 border-b border-border/60 px-2 py-2 text-xs text-fg last:border-b-0 hover:bg-white/5"
+          >
+            <input
+              type="checkbox"
+              checked={selected.has(role.id)}
+              onChange={() => toggle(role.id)}
+            />
+            <span className="min-w-0 flex-1 truncate">{role.name}</span>
+            {!role.botCanManage ? (
+              <span className="shrink-0 text-[9px] text-amber-300">
+                {role.managed ? "managed" : "above bot"}
+              </span>
+            ) : null}
+          </label>
+        ))}
+        {!filtered.length ? (
+          <p className="px-3 py-3 text-xs text-subtle">No matching roles.</p>
+        ) : null}
+      </div>
+      {value.length ? (
+        <button
+          type="button"
+          className="mt-2 text-[10px] uppercase tracking-wide text-subtle hover:text-fg"
+          onClick={() => onChange([])}
+        >
+          Clear all selected roles
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function RoleSelect({
   roles,
   value,
