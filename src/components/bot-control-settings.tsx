@@ -1007,7 +1007,7 @@ function AarEditor({
           <div>
             <h4 className="font-display text-lg font-semibold uppercase text-fg">AI Voice AAR Interviewer</h4>
             <p className="text-xs text-muted">
-              Groq listens to the PL&apos;s answers and ElevenLabs speaks the fixed AAR questions using the same configured Kellan voice.
+              Groq listens to the PL&apos;s answers and can also speak the fixed AAR questions. ElevenLabs/Kellan is preferred when its secret key is valid; Groq Orpheus is the automatic free fallback.
             </p>
           </div>
           <span className={`rounded border px-2 py-1 text-[10px] uppercase tracking-wide ${
@@ -1015,7 +1015,7 @@ function AarEditor({
               ? "border-primary/30 bg-primary/10 text-primary"
               : "border-amber-300/30 bg-amber-400/10 text-amber-200"
           }`}>
-            {aiVoiceConfigured ? "Groq + ElevenLabs ready" : "Groq / ElevenLabs credentials required"}
+            {aiVoiceConfigured ? "Groq ready · ElevenLabs optional" : "GROQ_API_KEY required"}
           </span>
         </div>
 
@@ -1026,7 +1026,7 @@ function AarEditor({
           </div>
           <div className="rounded-md border border-border bg-black/20 p-3">
             <p className="stencil text-[9px] tracking-[0.12em] text-primary">Speaking voice</p>
-            <p className="mt-1 text-sm text-fg">Kellan · ElevenLabs Railway voice</p>
+            <p className="mt-1 text-sm text-fg">Kellan/ElevenLabs preferred · Groq Orpheus fallback</p>
           </div>
         </div>
 
