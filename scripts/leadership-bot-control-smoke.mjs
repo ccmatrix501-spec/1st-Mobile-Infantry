@@ -73,7 +73,7 @@ for (const token of [
   "GIF & Media Stats",
   "AI Voice AAR Interviewer",
   "/mediastatsrebuild",
-  "Groq + ElevenLabs ready",
+  "Groq ready · ElevenLabs optional",
 ]) {
   requireToken(settingsControl, token, token);
 }
