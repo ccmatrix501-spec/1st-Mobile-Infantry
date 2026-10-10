@@ -71,9 +71,7 @@ for (const token of [
   "transfer",
   "onboarding",
   "GIF & Media Stats",
-  "AI Voice AAR Interviewer",
   "/mediastatsrebuild",
-  "Groq ready · ElevenLabs optional",
 ]) {
   requireToken(settingsControl, token, token);
 }
@@ -91,3 +89,7 @@ if (api.includes("TOKEN") || api.includes("DISCORD_TOKEN")) {
 console.log(
   "Leadership Tech Support Bot Controller smoke test passed: leadership auth, server-side secret bridge, status/safety/modules/member/tickets/operations/audit plus whole-bot roles/onboarding/AAR/LFT/automation/transfer controls.",
 );
+
+if (/AI Voice AAR|aiVoiceConfigured|Groq ready|ElevenLabs optional/.test(settingsControl + "\n" + api)) {
+  throw new Error("Removed AI Voice AAR controls must not be present.");
+}
