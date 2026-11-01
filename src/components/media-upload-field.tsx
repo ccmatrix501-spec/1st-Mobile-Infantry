@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { ImagePlus, Loader2, Upload } from "lucide-react";
+import { ImagePlus, Loader2, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { uploadLeadershipImage } from "@/lib/media-fn";
 
@@ -107,6 +107,12 @@ export function MediaUploadField({
     }
   }
 
+  function removeImage() {
+    setError(null);
+    onChange("");
+    if (inputRef.current) inputRef.current.value = "";
+  }
+
   return (
     <div className="rounded-md border border-border bg-black/20 p-4">
       <div className="flex items-start gap-3">
@@ -119,7 +125,7 @@ export function MediaUploadField({
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
+      <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
         <input
           value={value}
           onChange={(event) => onChange(event.target.value)}
@@ -133,34 +139,57 @@ export function MediaUploadField({
           className="hidden"
           onChange={(event) => void handleFile(event.target.files?.[0])}
         />
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={uploading}
-          onClick={() => inputRef.current?.click()}
-        >
-          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-          {uploading ? "Uploading…" : "Upload Image"}
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={uploading}
+            onClick={() => inputRef.current?.click()}
+          >
+            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+            {uploading ? "Uploading…" : value ? "Replace Image" : "Upload Image"}
+          </Button>
+          {value ? (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={uploading}
+              onClick={removeImage}
+              className="border-red-400/30 text-red-200 hover:bg-red-500/10"
+            >
+              <Trash2 className="h-4 w-4" /> Remove Image
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       {error ? <p className="mt-3 text-xs text-red-300">{error}</p> : null}
 
       {value ? (
-        <div className="mt-4 overflow-hidden rounded-md border border-border bg-black/50">
-          <img
-            src={value}
-            alt={`${label} preview`}
-            className={
-              square
-                ? "h-36 w-36 object-cover"
-                : compact
-                  ? "h-36 w-full object-cover"
-                  : "max-h-72 w-full object-cover"
-            }
-          />
+        <div className="mt-4">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span className="font-semibold text-primary">Image attached</span>
+            <span className="text-muted">Saved when you save this page or poll.</span>
+          </div>
+          <div className="overflow-hidden rounded-md border border-border bg-black/50">
+            <img
+              src={value}
+              alt={`${label} preview`}
+              className={
+                square
+                  ? "h-36 w-36 object-cover"
+                  : compact
+                    ? "h-36 w-full object-cover"
+                    : "max-h-72 w-full object-cover"
+              }
+            />
+          </div>
         </div>
-      ) : null}
+      ) : (
+        <div className="mt-4 rounded-md border border-dashed border-border px-4 py-5 text-center text-xs text-muted">
+          No image selected. Upload one from this answer or paste an existing Media Library URL.
+        </div>
+      )}
     </div>
   );
 }
