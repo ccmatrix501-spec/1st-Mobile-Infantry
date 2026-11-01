@@ -25,6 +25,7 @@ type PollRow = {
   description: string;
   allow_additions: boolean;
   is_open: boolean;
+  max_selections: number;
   created_at: string;
   updated_at: string;
 };
@@ -84,6 +85,33 @@ function normaliseOption(input: PollOptionInput, index: number) {
   };
 }
 
+function normaliseMaxSelections(value: unknown, optionCount: number): number {
+  const count = Math.max(1, optionCount);
+  const requested = Math.floor(Number(value) || 1);
+  return Math.max(1, Math.min(count, requested, MAX_OPTIONS));
+}
+
+function normaliseSelectedOptionIds(input: PollVoteInput): string[] {
+  const supplied = Array.isArray(input.optionIds)
+    ? input.optionIds
+    : input.optionId
+      ? [input.optionId]
+      : [];
+  const unique: string[] = [];
+  const seen = new Set<string>();
+  for (const value of supplied) {
+    const id = cleanText(value, 80);
+    if (!UUID_PATTERN.test(id)) throw new Error("Choose valid poll answers.");
+    if (!seen.has(id)) {
+      seen.add(id);
+      unique.push(id);
+    }
+  }
+  if (!unique.length) throw new Error("Choose at least one poll answer.");
+  if (unique.length > MAX_OPTIONS) throw new Error("Too many poll answers were selected.");
+  return unique;
+}
+
 async function getSql() {
   const { getSql: loadSql } = await import("@/lib/db");
   return loadSql();
@@ -118,24 +146,29 @@ async function readOptions(pollId: string): Promise<PollOption[]> {
   }));
 }
 
-async function selectedOptionId(pollId: string, hash?: string): Promise<string | null> {
-  if (!hash) return null;
+async function selectedOptionIds(pollId: string, hash?: string): Promise<string[]> {
+  if (!hash) return [];
   const sql = await getSql();
   const rows = await sql.query<{ option_id: string }>(
-    `select option_id
-       from poll_votes
-      where poll_id = $1 and voter_hash = $2
-      limit 1`,
+    `select v.option_id
+       from poll_votes v
+       join poll_options o on o.id = v.option_id
+      where v.poll_id = $1
+        and v.voter_hash = $2
+        and o.active = true
+      order by v.created_at asc, v.option_id asc`,
     [pollId, hash],
   );
-  return rows[0]?.option_id || null;
+  return rows.map((row) => row.option_id);
 }
 
 async function hydratePoll(row: PollRow, hash?: string): Promise<LeadershipPoll> {
   const [options, selected] = await Promise.all([
     readOptions(row.id),
-    selectedOptionId(row.id, hash),
+    selectedOptionIds(row.id, hash),
   ]);
+  const maxSelections = normaliseMaxSelections(row.max_selections, options.length);
+  const safeSelected = selected.slice(0, maxSelections);
   return {
     id: row.id,
     shareCode: row.share_code,
@@ -143,10 +176,12 @@ async function hydratePoll(row: PollRow, hash?: string): Promise<LeadershipPoll>
     description: row.description || "",
     allowAdditions: row.allow_additions === true,
     isOpen: row.is_open === true,
+    maxSelections,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     totalVotes: options.reduce((sum, option) => sum + option.votes, 0),
-    selectedOptionId: selected,
+    selectedOptionId: safeSelected[0] || null,
+    selectedOptionIds: safeSelected,
     options,
   };
 }
@@ -155,6 +190,7 @@ async function publicPollByShareCode(shareCode: string, hash?: string): Promise<
   const sql = await getSql();
   const rows = await sql.query<PollRow>(
     `select id, share_code, title, description, allow_additions, is_open,
+            max_selections,
             created_at::text as created_at, updated_at::text as updated_at
        from polls
       where share_code = $1
@@ -162,8 +198,7 @@ async function publicPollByShareCode(shareCode: string, hash?: string): Promise<
     [shareCode],
   );
   if (!rows[0]) return null;
-  const poll = await hydratePoll(rows[0], hash);
-  return poll;
+  return hydratePoll(rows[0], hash);
 }
 
 export const fetchPublicPoll = createServerFn({ method: "GET" })
@@ -178,33 +213,54 @@ export const votePublicPoll = createServerFn({ method: "POST" })
   .inputValidator((input: PollVoteInput) => input)
   .handler(async ({ data }): Promise<PublicPoll> => {
     const shareCode = cleanShareCode(data.shareCode);
-    const optionId = cleanText(data.optionId, 80);
-    if (!UUID_PATTERN.test(optionId)) throw new Error("Choose a valid poll answer.");
+    const optionIds = normaliseSelectedOptionIds(data);
     const hash = await voterHash(data.voterKey);
     const sql = await getSql();
 
-    const rows = await sql.query<{ poll_id: string }>(
-      `select p.id as poll_id
-         from polls p
-         join poll_options o on o.poll_id = p.id
-        where p.share_code = $1
-          and p.is_open = true
-          and o.id = $2
-          and o.active = true
+    const pollRows = await sql.query<{ id: string; max_selections: number }>(
+      `select id, max_selections
+         from polls
+        where share_code = $1
+          and is_open = true
         limit 1`,
-      [shareCode, optionId],
+      [shareCode],
     );
-    const pollId = rows[0]?.poll_id;
-    if (!pollId) throw new Error("This poll is closed or that answer is no longer available.");
+    const pollId = pollRows[0]?.id;
+    if (!pollId) throw new Error("This poll is closed or no longer available.");
+
+    const maxSelections = Math.max(1, Math.min(MAX_OPTIONS, Number(pollRows[0].max_selections) || 1));
+    if (optionIds.length > maxSelections) {
+      throw new Error(`Choose up to ${maxSelections} answer${maxSelections === 1 ? "" : "s"}.`);
+    }
+
+    const placeholders = optionIds.map((_, index) => `$${index + 2}`).join(", ");
+    const validRows = await sql.query<{ id: string }>(
+      `select id
+         from poll_options
+        where poll_id = $1
+          and active = true
+          and id in (${placeholders})`,
+      [pollId, ...optionIds],
+    );
+    if (validRows.length !== optionIds.length) {
+      throw new Error("One or more selected answers are no longer available.");
+    }
 
     const { randomUUID } = await import("node:crypto");
+    const values: unknown[] = [pollId, hash];
+    const valueRows = optionIds.map((optionId, index) => {
+      const idPosition = index * 2 + 3;
+      values.push(randomUUID(), optionId);
+      return `($${idPosition}, $1, $${idPosition + 1}, $2, now(), now())`;
+    });
     await sql.query(
-      `insert into poll_votes (id, poll_id, option_id, voter_hash, created_at, updated_at)
-       values ($1, $2, $3, $4, now(), now())
-       on conflict (poll_id, voter_hash) do update
-       set option_id = excluded.option_id,
-           updated_at = now()`,
-      [randomUUID(), pollId, optionId, hash],
+      `with cleared as (
+         delete from poll_votes
+          where poll_id = $1 and voter_hash = $2
+       )
+       insert into poll_votes (id, poll_id, option_id, voter_hash, created_at, updated_at)
+       values ${valueRows.join(", ")}`,
+      values,
     );
 
     const poll = await publicPollByShareCode(shareCode, hash);
@@ -222,8 +278,8 @@ export const addPublicPollOption = createServerFn({ method: "POST" })
     const hash = await voterHash(data.voterKey);
     const sql = await getSql();
 
-    const pollRows = await sql.query<{ id: string }>(
-      `select id
+    const pollRows = await sql.query<{ id: string; max_selections: number }>(
+      `select id, max_selections
          from polls
         where share_code = $1
           and is_open = true
@@ -245,6 +301,15 @@ export const addPublicPollOption = createServerFn({ method: "POST" })
     );
 
     let optionId = existing[0]?.id || "";
+    const currentSelections = await selectedOptionIds(pollId, hash);
+    const alreadySelected = Boolean(optionId && currentSelections.includes(optionId));
+    const maxSelections = Math.max(1, Math.min(MAX_OPTIONS, Number(pollRows[0].max_selections) || 1));
+    if (!alreadySelected && currentSelections.length >= maxSelections) {
+      throw new Error(
+        `You already selected the maximum of ${maxSelections} answer${maxSelections === 1 ? "" : "s"}. Deselect one and update your vote first.`,
+      );
+    }
+
     if (!optionId) {
       const [additionCount, optionCount] = await Promise.all([
         sql.query<{ count: number }>(
@@ -305,9 +370,8 @@ export const addPublicPollOption = createServerFn({ method: "POST" })
     await sql.query(
       `insert into poll_votes (id, poll_id, option_id, voter_hash, created_at, updated_at)
        values ($1, $2, $3, $4, now(), now())
-       on conflict (poll_id, voter_hash) do update
-       set option_id = excluded.option_id,
-           updated_at = now()`,
+       on conflict (poll_id, voter_hash, option_id) do update
+       set updated_at = now()`,
       [randomUUID(), pollId, optionId, hash],
     );
 
@@ -323,6 +387,7 @@ export const fetchLeadershipPolls = createServerFn({ method: "GET" }).handler(
     const sql = await getSql();
     const rows = await sql.query<PollRow>(
       `select id, share_code, title, description, allow_additions, is_open,
+              max_selections,
               created_at::text as created_at, updated_at::text as updated_at
          from polls
         order by updated_at desc
@@ -348,6 +413,7 @@ export const saveLeadershipPoll = createServerFn({ method: "POST" })
     if (supplied.length < 2) throw new Error("Add at least two poll answers.");
     if (supplied.length > MAX_OPTIONS) throw new Error(`A poll can contain up to ${MAX_OPTIONS} answers.`);
     const options = supplied.map(normaliseOption);
+    const maxSelections = normaliseMaxSelections(data.maxSelections, options.length);
     const labels = new Set<string>();
     for (const option of options) {
       const key = option.label.toLocaleLowerCase();
@@ -375,9 +441,10 @@ export const saveLeadershipPoll = createServerFn({ method: "POST" })
                 description = $3,
                 allow_additions = $4,
                 is_open = $5,
+                max_selections = $6,
                 updated_at = now()
           where id = $1`,
-        [pollId, title, description, data.allowAdditions === true, data.isOpen !== false],
+        [pollId, title, description, data.allowAdditions === true, data.isOpen !== false, maxSelections],
       );
     } else {
       pollId = randomUUID();
@@ -385,9 +452,9 @@ export const saveLeadershipPoll = createServerFn({ method: "POST" })
       await sql.query(
         `insert into polls
            (id, share_code, title, description, allow_additions, is_open,
-            created_at, updated_at, created_by)
-         values ($1, $2, $3, $4, $5, $6, now(), now(), $7)`,
-        [pollId, shareCode, title, description, data.allowAdditions === true, data.isOpen !== false, profile.id],
+            max_selections, created_at, updated_at, created_by)
+         values ($1, $2, $3, $4, $5, $6, $7, now(), now(), $8)`,
+        [pollId, shareCode, title, description, data.allowAdditions === true, data.isOpen !== false, maxSelections, profile.id],
       );
     }
 
@@ -430,9 +497,38 @@ export const saveLeadershipPoll = createServerFn({ method: "POST" })
       }
     }
 
+    await sql.query(
+      `delete from poll_votes v
+        where v.poll_id = $1
+          and not exists (
+            select 1 from poll_options o
+             where o.id = v.option_id and o.active = true
+          )`,
+      [pollId],
+    );
+
+    await sql.query(
+      `delete from poll_votes v
+        where v.id in (
+          select id
+            from (
+              select id,
+                     row_number() over (
+                       partition by poll_id, voter_hash
+                       order by updated_at desc, created_at desc, id desc
+                     ) as selection_number
+                from poll_votes
+               where poll_id = $1
+            ) ranked
+           where ranked.selection_number > $2
+        )`,
+      [pollId, maxSelections],
+    );
+
     await sql.query(`update polls set updated_at = now() where id = $1`, [pollId]);
     const rows = await sql.query<PollRow>(
       `select id, share_code, title, description, allow_additions, is_open,
+              max_selections,
               created_at::text as created_at, updated_at::text as updated_at
          from polls
         where id = $1
