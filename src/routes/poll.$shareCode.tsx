@@ -44,7 +44,7 @@ function HiddenPollPage() {
   const { shareCode } = Route.useParams();
   const [poll, setPoll] = useState<PublicPoll | null>(null);
   const [voterKey, setVoterKey] = useState("");
-  const [selectedOptionId, setSelectedOptionId] = useState("");
+  const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
   const [otherLabel, setOtherLabel] = useState("");
   const [otherEmoji, setOtherEmoji] = useState("");
   const [loading, setLoading] = useState(true);
@@ -62,7 +62,7 @@ function HiddenPollPage() {
       .then((value) => {
         if (cancelled) return;
         setPoll(value);
-        setSelectedOptionId(value?.selectedOptionId || "");
+        setSelectedOptionIds(value?.selectedOptionIds || (value?.selectedOptionId ? [value.selectedOptionId] : []));
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : "Could not load this poll.");
@@ -80,9 +80,24 @@ function HiddenPollPage() {
     [poll],
   );
 
+  function toggleOption(optionId: string) {
+    if (!poll || !poll.isOpen || working) return;
+    setMessage(null);
+    setError(null);
+    setSelectedOptionIds((current) => {
+      if (current.includes(optionId)) return current.filter((id) => id !== optionId);
+      if (poll.maxSelections === 1) return [optionId];
+      if (current.length >= poll.maxSelections) {
+        setError(`You can select up to ${poll.maxSelections} answers in this poll.`);
+        return current;
+      }
+      return [...current, optionId];
+    });
+  }
+
   async function submitVote() {
-    if (!poll || !voterKey || !selectedOptionId) {
-      setError("Choose an answer before submitting your vote.");
+    if (!poll || !voterKey || !selectedOptionIds.length) {
+      setError("Choose at least one answer before submitting your vote.");
       return;
     }
     setWorking(true);
@@ -90,11 +105,15 @@ function HiddenPollPage() {
     setMessage(null);
     try {
       const updated = await votePublicPoll({
-        data: { shareCode: poll.shareCode, optionId: selectedOptionId, voterKey },
+        data: { shareCode: poll.shareCode, optionIds: selectedOptionIds, voterKey },
       });
       setPoll(updated);
-      setSelectedOptionId(updated.selectedOptionId || selectedOptionId);
-      setMessage("Your vote has been recorded. You can change it while the poll is open.");
+      setSelectedOptionIds(updated.selectedOptionIds || []);
+      setMessage(
+        updated.selectedOptionIds.length === 1
+          ? "Your vote has been recorded. You can change it while the poll is open."
+          : `Your ${updated.selectedOptionIds.length} selections have been recorded. You can change them while the poll is open.`,
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not record your vote.");
     } finally {
@@ -117,10 +136,10 @@ function HiddenPollPage() {
         },
       });
       setPoll(updated);
-      setSelectedOptionId(updated.selectedOptionId || "");
+      setSelectedOptionIds(updated.selectedOptionIds || []);
       setOtherLabel("");
       setOtherEmoji("");
-      setMessage("Your answer was added and your vote was recorded.");
+      setMessage("Your answer was added and included in your vote.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not add that answer.");
     } finally {
@@ -162,6 +181,10 @@ function HiddenPollPage() {
     );
   }
 
+  const selectionInstruction = poll.maxSelections === 1
+    ? "Select one answer. Choosing another replaces your current selection."
+    : `Select up to ${poll.maxSelections} answers, then submit them together.`;
+
   return (
     <AppShell>
       <PageHero
@@ -172,14 +195,11 @@ function HiddenPollPage() {
       />
 
       <section className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
-        <div className="mb-6 grid gap-4 sm:grid-cols-3">
+        <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatusCard icon={<Users className="h-5 w-5" />} label="Votes" value={String(poll.totalVotes)} />
           <StatusCard icon={<Vote className="h-5 w-5" />} label="Answers" value={String(poll.options.length)} />
-          <StatusCard
-            icon={<LockKeyhole className="h-5 w-5" />}
-            label="Access"
-            value="Link only"
-          />
+          <StatusCard icon={<CheckCircle2 className="h-5 w-5" />} label="Choices" value={`Up to ${poll.maxSelections}`} />
+          <StatusCard icon={<LockKeyhole className="h-5 w-5" />} label="Access" value="Link only" />
         </div>
 
         {error ? (
@@ -198,9 +218,15 @@ function HiddenPollPage() {
           </div>
         ) : null}
 
+        {poll.isOpen ? (
+          <div className="mb-5 rounded-lg border border-primary/25 bg-primary/10 px-4 py-3 text-sm text-fg">
+            {selectionInstruction} You currently have <strong>{selectedOptionIds.length}</strong> selected.
+          </div>
+        ) : null}
+
         <div className="grid gap-4 sm:grid-cols-2">
           {poll.options.map((option) => {
-            const selected = selectedOptionId === option.id;
+            const selected = selectedOptionIds.includes(option.id);
             const percentage = poll.totalVotes > 0 ? Math.round((option.votes / poll.totalVotes) * 100) : 0;
             const leading = poll.totalVotes > 0 && option.votes === winningVotes;
             return (
@@ -208,7 +234,8 @@ function HiddenPollPage() {
                 key={option.id}
                 type="button"
                 disabled={!poll.isOpen || working}
-                onClick={() => setSelectedOptionId(option.id)}
+                aria-pressed={selected}
+                onClick={() => toggleOption(option.id)}
                 className={`group overflow-hidden rounded-xl border text-left transition-all ${
                   selected
                     ? "border-primary bg-primary/10 shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-primary)_35%,transparent)]"
@@ -227,7 +254,7 @@ function HiddenPollPage() {
                 ) : null}
                 <div className="p-4 sm:p-5">
                   <div className="flex items-start gap-3">
-                    <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${selected ? "border-primary bg-primary text-black" : "border-border-strong"}`}>
+                    <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center border ${poll.maxSelections > 1 ? "rounded-md" : "rounded-full"} ${selected ? "border-primary bg-primary text-black" : "border-border-strong"}`}>
                       {selected ? <CheckCircle2 className="h-4 w-4" /> : null}
                     </span>
                     {option.emoji ? <span className="text-2xl leading-none" aria-hidden>{option.emoji}</span> : null}
@@ -265,10 +292,10 @@ function HiddenPollPage() {
         {poll.isOpen ? (
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted">
-              One vote per browser. Selecting a different answer updates your vote.
+              One saved response per browser. Your response may contain up to {poll.maxSelections} selected answer{poll.maxSelections === 1 ? "" : "s"}.
             </p>
-            <Button type="button" size="lg" disabled={working || !selectedOptionId} onClick={() => void submitVote()}>
-              <Send className="h-4 w-4" /> {working ? "Submitting…" : poll.selectedOptionId ? "Update Vote" : "Submit Vote"}
+            <Button type="button" size="lg" disabled={working || !selectedOptionIds.length} onClick={() => void submitVote()}>
+              <Send className="h-4 w-4" /> {working ? "Submitting…" : poll.selectedOptionIds.length ? "Update Vote" : "Submit Vote"}
             </Button>
           </div>
         ) : null}
@@ -285,7 +312,7 @@ function HiddenPollPage() {
                   Add Another Answer
                 </h2>
                 <p className="mt-2 text-sm leading-relaxed text-muted">
-                  Add a concise answer that is not already listed. It will be added to the poll and receive your vote.
+                  Add a concise answer that is not already listed. It will be added to the poll and included in your saved selections, provided you have not reached the selection limit.
                 </p>
               </div>
             </div>

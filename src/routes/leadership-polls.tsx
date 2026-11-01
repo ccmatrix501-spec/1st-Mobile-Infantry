@@ -60,6 +60,7 @@ type DraftPoll = {
   description: string;
   allowAdditions: boolean;
   isOpen: boolean;
+  maxSelections: number;
   totalVotes: number;
   options: DraftOption[];
 };
@@ -87,6 +88,7 @@ function blankPoll(): DraftPoll {
     description: "",
     allowAdditions: false,
     isOpen: true,
+    maxSelections: 2,
     totalVotes: 0,
     options: [blankOption(0), blankOption(1)],
   };
@@ -100,6 +102,7 @@ function pollToDraft(poll: LeadershipPoll): DraftPoll {
     description: poll.description,
     allowAdditions: poll.allowAdditions,
     isOpen: poll.isOpen,
+    maxSelections: poll.maxSelections,
     totalVotes: poll.totalVotes,
     options: poll.options.map((option) => ({
       id: option.id,
@@ -196,10 +199,14 @@ function LeadershipPollsPage() {
     if (option.votes > 0 && !window.confirm(`Hide “${option.label}” and its ${option.votes} vote${option.votes === 1 ? "" : "s"} from the poll?`)) {
       return;
     }
-    setDraft((current) => ({
-      ...current,
-      options: current.options.filter((_, optionIndex) => optionIndex !== index),
-    }));
+    setDraft((current) => {
+      const options = current.options.filter((_, optionIndex) => optionIndex !== index);
+      return {
+        ...current,
+        options,
+        maxSelections: Math.min(current.maxSelections, options.length),
+      };
+    });
   }
 
   async function savePoll() {
@@ -220,6 +227,7 @@ function LeadershipPollsPage() {
           description: draft.description,
           allowAdditions: draft.allowAdditions,
           isOpen: draft.isOpen,
+          maxSelections: draft.maxSelections,
           options,
         },
       });
@@ -286,8 +294,8 @@ function LeadershipPollsPage() {
       <PageHero
         kicker="Leadership community tools"
         title="Poll Command"
-        body="Create unlisted link-only polls, give answers images or icons, and optionally let voters add answers you missed."
-        meta="1ST MI DIV · POLL SYSTEM v1.0"
+        body="Create unlisted link-only polls, set how many answers each person may choose, attach images or icons, and optionally let voters add answers you missed."
+        meta="1ST MI DIV · POLL SYSTEM v1.1"
       />
 
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
@@ -336,7 +344,9 @@ function LeadershipPollsPage() {
                         {poll.isOpen ? "Open" : "Closed"}
                       </span>
                     </div>
-                    <p className="mt-2 text-xs text-muted">{poll.totalVotes} votes · {poll.options.length} answers</p>
+                    <p className="mt-2 text-xs text-muted">
+                      {poll.totalVotes} votes · {poll.options.length} answers · up to {poll.maxSelections} choice{poll.maxSelections === 1 ? "" : "s"}
+                    </p>
                   </button>
                 )) : (
                   <p className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted">No saved polls yet.</p>
@@ -388,6 +398,30 @@ function LeadershipPollsPage() {
                     <span className="mt-1 block text-xs leading-relaxed text-muted">Voters can add a missing text/emoji answer and immediately vote for it.</span>
                   </span>
                 </label>
+                <Field
+                  label="Answers allowed per person"
+                  help="Set 1 for a normal single-choice poll, or a higher number to let each person select several answers."
+                  className="sm:col-span-2"
+                >
+                  <div className="grid gap-3 rounded-lg border border-primary/25 bg-primary/10 p-4 sm:grid-cols-[10rem_1fr] sm:items-center">
+                    <input
+                      type="number"
+                      min={1}
+                      max={Math.max(1, draft.options.length)}
+                      value={draft.maxSelections}
+                      onChange={(event) => {
+                        const value = Math.max(1, Math.min(draft.options.length, Math.floor(Number(event.target.value) || 1)));
+                        setDraft((current) => ({ ...current, maxSelections: value }));
+                      }}
+                      className={inputClass}
+                    />
+                    <p className="text-sm leading-relaxed text-muted">
+                      {draft.maxSelections === 1
+                        ? "Members can select one answer. Choosing another replaces the first selection."
+                        : `Members can select up to ${draft.maxSelections} answers before submitting or updating their vote.`}
+                    </p>
+                  </div>
+                </Field>
               </div>
 
               {draft.id && shareUrl ? (
@@ -419,7 +453,14 @@ function LeadershipPollsPage() {
                   <p className="stencil text-[9px] tracking-[0.14em] text-primary">Answer builder</p>
                   <h2 className="mt-1 font-display text-2xl font-semibold uppercase tracking-wide text-fg">Poll Answers</h2>
                 </div>
-                <Button type="button" variant="secondary" onClick={() => setDraft((current) => ({ ...current, options: [...current.options, blankOption(current.options.length)] }))}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setDraft((current) => ({
+                    ...current,
+                    options: [...current.options, blankOption(current.options.length)],
+                  }))}
+                >
                   <Plus className="h-4 w-4" /> Add Answer
                 </Button>
               </div>
