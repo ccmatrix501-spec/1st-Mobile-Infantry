@@ -15,8 +15,10 @@ export type PublicPoll = {
   description: string;
   allowAdditions: boolean;
   isOpen: boolean;
+  maxSelections: number;
   totalVotes: number;
   selectedOptionId: string | null;
+  selectedOptionIds: string[];
   options: PollOption[];
 };
 
@@ -38,6 +40,7 @@ export type SaveLeadershipPollInput = {
   description: string;
   allowAdditions: boolean;
   isOpen: boolean;
+  maxSelections?: number;
   options: PollOptionInput[];
 };
 
@@ -48,7 +51,8 @@ export type PublicPollRequest = {
 
 export type PollVoteInput = {
   shareCode: string;
-  optionId: string;
+  optionIds?: string[];
+  optionId?: string;
   voterKey: string;
 };
 
