@@ -1,9 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import type {
   LeadershipPoll,
+  PollAccessSettingsInput,
   PollAdditionInput,
   PollOption,
   PollOptionInput,
+  PollVoter,
   PollVoteInput,
   PublicPoll,
   PublicPollRequest,
@@ -26,6 +28,8 @@ type PollRow = {
   allow_additions: boolean;
   is_open: boolean;
   max_selections: number;
+  require_discord_name: boolean;
+  closes_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -38,6 +42,15 @@ type PollOptionRow = {
   sort_order: number;
   is_user_added: boolean;
   votes: number;
+};
+
+type PollVoterRow = {
+  voter_hash: string;
+  discord_name: string;
+  updated_at: string;
+  option_id: string;
+  label: string;
+  sort_order: number;
 };
 
 function cleanText(value: unknown, max: number): string {
@@ -55,7 +68,9 @@ function cleanShareCode(value: unknown): string {
 
 function voterKey(value: unknown): string {
   const key = cleanText(value, 180);
-  if (!VOTER_KEY_PATTERN.test(key)) throw new Error("Your browser vote key is invalid. Refresh and try again.");
+  if (!VOTER_KEY_PATTERN.test(key)) {
+    throw new Error("Your browser vote key is invalid. Refresh and try again.");
+  }
   return key;
 }
 
@@ -63,6 +78,31 @@ async function voterHash(value: unknown): Promise<string> {
   const key = voterKey(value);
   const { createHash } = await import("node:crypto");
   return createHash("sha256").update(`1stmi-poll:${key}`).digest("hex");
+}
+
+function normaliseDiscordName(value: unknown, required: boolean): string {
+  const name = cleanText(value, 80).replace(/\s+/g, " ");
+  if (required && name.length < 2) {
+    throw new Error("Enter your Discord username or server display name before voting.");
+  }
+  return name;
+}
+
+function normaliseClosesAt(value: unknown): string | null {
+  const text = cleanText(value, 100);
+  if (!text) return null;
+  const parsed = new Date(text);
+  if (!Number.isFinite(parsed.getTime())) {
+    throw new Error("Choose a valid poll closing date and time.");
+  }
+  return parsed.toISOString();
+}
+
+function effectiveOpen(row: Pick<PollRow, "is_open" | "closes_at">): boolean {
+  if (!row.is_open) return false;
+  if (!row.closes_at) return true;
+  const closes = Date.parse(row.closes_at);
+  return !Number.isFinite(closes) || closes > Date.now();
 }
 
 function validImageUrl(value: string): boolean {
@@ -162,10 +202,95 @@ async function selectedOptionIds(pollId: string, hash?: string): Promise<string[
   return rows.map((row) => row.option_id);
 }
 
-async function hydratePoll(row: PollRow, hash?: string): Promise<LeadershipPoll> {
-  const [options, selected] = await Promise.all([
+async function voterDiscordName(pollId: string, hash?: string): Promise<string> {
+  if (!hash) return "";
+  const sql = await getSql();
+  const rows = await sql.query<{ discord_name: string }>(
+    `select discord_name
+       from poll_voters
+      where poll_id = $1 and voter_hash = $2
+      limit 1`,
+    [pollId, hash],
+  );
+  return rows[0]?.discord_name || "";
+}
+
+async function totalVoters(pollId: string): Promise<number> {
+  const sql = await getSql();
+  const rows = await sql.query<{ count: number }>(
+    `select count(distinct voter_hash)::int as count
+       from poll_votes
+      where poll_id = $1`,
+    [pollId],
+  );
+  return Number(rows[0]?.count || 0);
+}
+
+async function readVoters(pollId: string): Promise<PollVoter[]> {
+  const sql = await getSql();
+  const rows = await sql.query<PollVoterRow>(
+    `select v.voter_hash,
+            coalesce(pv.discord_name, '') as discord_name,
+            v.updated_at::text as updated_at,
+            v.option_id,
+            o.label,
+            o.sort_order
+       from poll_votes v
+       join poll_options o on o.id = v.option_id and o.active = true
+       left join poll_voters pv
+         on pv.poll_id = v.poll_id and pv.voter_hash = v.voter_hash
+      where v.poll_id = $1
+      order by v.voter_hash asc, o.sort_order asc, o.created_at asc`,
+    [pollId],
+  );
+
+  const grouped = new Map<string, PollVoter>();
+  for (const row of rows) {
+    const current = grouped.get(row.voter_hash) || {
+      discordName: row.discord_name || "",
+      selectedOptionIds: [],
+      selectedLabels: [],
+      updatedAt: row.updated_at,
+    };
+    current.discordName = row.discord_name || current.discordName;
+    current.selectedOptionIds.push(row.option_id);
+    current.selectedLabels.push(row.label);
+    if (row.updated_at > current.updatedAt) current.updatedAt = row.updated_at;
+    grouped.set(row.voter_hash, current);
+  }
+
+  return [...grouped.values()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+async function upsertVoterIdentity(
+  pollId: string,
+  hash: string,
+  discordName: string,
+): Promise<void> {
+  if (!discordName) return;
+  const sql = await getSql();
+  await sql.query(
+    `insert into poll_voters
+       (poll_id, voter_hash, discord_name, created_at, updated_at)
+     values ($1, $2, $3, now(), now())
+     on conflict (poll_id, voter_hash) do update
+       set discord_name = excluded.discord_name,
+           updated_at = now()`,
+    [pollId, hash, discordName],
+  );
+}
+
+async function hydratePoll(
+  row: PollRow,
+  hash?: string,
+  includeVoters = false,
+): Promise<LeadershipPoll> {
+  const [options, selected, voterCount, name, voters] = await Promise.all([
     readOptions(row.id),
     selectedOptionIds(row.id, hash),
+    totalVoters(row.id),
+    voterDiscordName(row.id, hash),
+    includeVoters ? readVoters(row.id) : Promise.resolve([]),
   ]);
   const maxSelections = normaliseMaxSelections(row.max_selections, options.length);
   const safeSelected = selected.slice(0, maxSelections);
@@ -175,14 +300,19 @@ async function hydratePoll(row: PollRow, hash?: string): Promise<LeadershipPoll>
     title: row.title,
     description: row.description || "",
     allowAdditions: row.allow_additions === true,
-    isOpen: row.is_open === true,
+    isOpen: effectiveOpen(row),
     maxSelections,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    requireDiscordName: row.require_discord_name === true,
+    closesAt: row.closes_at || null,
     totalVotes: options.reduce((sum, option) => sum + option.votes, 0),
+    totalVoters: voterCount,
+    voterDiscordName: name,
     selectedOptionId: safeSelected[0] || null,
     selectedOptionIds: safeSelected,
     options,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    voters,
   };
 }
 
@@ -190,7 +320,8 @@ async function publicPollByShareCode(shareCode: string, hash?: string): Promise<
   const sql = await getSql();
   const rows = await sql.query<PollRow>(
     `select id, share_code, title, description, allow_additions, is_open,
-            max_selections,
+            max_selections, require_discord_name,
+            closes_at::text as closes_at,
             created_at::text as created_at, updated_at::text as updated_at
        from polls
       where share_code = $1
@@ -198,7 +329,9 @@ async function publicPollByShareCode(shareCode: string, hash?: string): Promise<
     [shareCode],
   );
   if (!rows[0]) return null;
-  return hydratePoll(rows[0], hash);
+  const full = await hydratePoll(rows[0], hash, false);
+  const { createdAt: _createdAt, updatedAt: _updatedAt, voters: _voters, ...publicPoll } = full;
+  return publicPoll;
 }
 
 export const fetchPublicPoll = createServerFn({ method: "GET" })
@@ -217,18 +350,30 @@ export const votePublicPoll = createServerFn({ method: "POST" })
     const hash = await voterHash(data.voterKey);
     const sql = await getSql();
 
-    const pollRows = await sql.query<{ id: string; max_selections: number }>(
-      `select id, max_selections
+    const pollRows = await sql.query<{
+      id: string;
+      max_selections: number;
+      require_discord_name: boolean;
+    }>(
+      `select id, max_selections, require_discord_name
          from polls
         where share_code = $1
           and is_open = true
+          and (closes_at is null or closes_at > now())
         limit 1`,
       [shareCode],
     );
     const pollId = pollRows[0]?.id;
     if (!pollId) throw new Error("This poll is closed or no longer available.");
 
-    const maxSelections = Math.max(1, Math.min(MAX_OPTIONS, Number(pollRows[0].max_selections) || 1));
+    const discordName = normaliseDiscordName(
+      data.discordName,
+      pollRows[0].require_discord_name === true,
+    );
+    const maxSelections = Math.max(
+      1,
+      Math.min(MAX_OPTIONS, Number(pollRows[0].max_selections) || 1),
+    );
     if (optionIds.length > maxSelections) {
       throw new Error(`Choose up to ${maxSelections} answer${maxSelections === 1 ? "" : "s"}.`);
     }
@@ -246,6 +391,13 @@ export const votePublicPoll = createServerFn({ method: "POST" })
       throw new Error("One or more selected answers are no longer available.");
     }
 
+    await upsertVoterIdentity(pollId, hash, discordName);
+    await sql.query(
+      `delete from poll_votes
+        where poll_id = $1 and voter_hash = $2`,
+      [pollId, hash],
+    );
+
     const { randomUUID } = await import("node:crypto");
     const values: unknown[] = [pollId, hash];
     const valueRows = optionIds.map((optionId, index) => {
@@ -254,11 +406,7 @@ export const votePublicPoll = createServerFn({ method: "POST" })
       return `($${idPosition}, $1, $${idPosition + 1}, $2, now(), now())`;
     });
     await sql.query(
-      `with cleared as (
-         delete from poll_votes
-          where poll_id = $1 and voter_hash = $2
-       )
-       insert into poll_votes (id, poll_id, option_id, voter_hash, created_at, updated_at)
+      `insert into poll_votes (id, poll_id, option_id, voter_hash, created_at, updated_at)
        values ${valueRows.join(", ")}`,
       values,
     );
@@ -278,18 +426,27 @@ export const addPublicPollOption = createServerFn({ method: "POST" })
     const hash = await voterHash(data.voterKey);
     const sql = await getSql();
 
-    const pollRows = await sql.query<{ id: string; max_selections: number }>(
-      `select id, max_selections
+    const pollRows = await sql.query<{
+      id: string;
+      max_selections: number;
+      require_discord_name: boolean;
+    }>(
+      `select id, max_selections, require_discord_name
          from polls
         where share_code = $1
           and is_open = true
           and allow_additions = true
+          and (closes_at is null or closes_at > now())
         limit 1`,
       [shareCode],
     );
     const pollId = pollRows[0]?.id;
     if (!pollId) throw new Error("This poll is closed or is not accepting new answers.");
 
+    const discordName = normaliseDiscordName(
+      data.discordName,
+      pollRows[0].require_discord_name === true,
+    );
     const existing = await sql.query<{ id: string }>(
       `select id
          from poll_options
@@ -303,7 +460,10 @@ export const addPublicPollOption = createServerFn({ method: "POST" })
     let optionId = existing[0]?.id || "";
     const currentSelections = await selectedOptionIds(pollId, hash);
     const alreadySelected = Boolean(optionId && currentSelections.includes(optionId));
-    const maxSelections = Math.max(1, Math.min(MAX_OPTIONS, Number(pollRows[0].max_selections) || 1));
+    const maxSelections = Math.max(
+      1,
+      Math.min(MAX_OPTIONS, Number(pollRows[0].max_selections) || 1),
+    );
     if (!alreadySelected && currentSelections.length >= maxSelections) {
       throw new Error(
         `You already selected the maximum of ${maxSelections} answer${maxSelections === 1 ? "" : "s"}. Deselect one and update your vote first.`,
@@ -366,6 +526,7 @@ export const addPublicPollOption = createServerFn({ method: "POST" })
       }
     }
 
+    await upsertVoterIdentity(pollId, hash, discordName);
     const { randomUUID } = await import("node:crypto");
     await sql.query(
       `insert into poll_votes (id, poll_id, option_id, voter_hash, created_at, updated_at)
@@ -387,7 +548,8 @@ export const fetchLeadershipPolls = createServerFn({ method: "GET" }).handler(
     const sql = await getSql();
     const rows = await sql.query<PollRow>(
       `select id, share_code, title, description, allow_additions, is_open,
-              max_selections,
+              max_selections, require_discord_name,
+              closes_at::text as closes_at,
               created_at::text as created_at, updated_at::text as updated_at
          from polls
         order by updated_at desc
@@ -395,10 +557,43 @@ export const fetchLeadershipPolls = createServerFn({ method: "GET" }).handler(
       [MAX_POLLS],
     );
     const polls: LeadershipPoll[] = [];
-    for (const row of rows) polls.push(await hydratePoll(row));
+    for (const row of rows) polls.push(await hydratePoll(row, undefined, true));
     return polls;
   },
 );
+
+export const updateLeadershipPollAccess = createServerFn({ method: "POST" })
+  .inputValidator((input: PollAccessSettingsInput) => input)
+  .handler(async ({ data }): Promise<LeadershipPoll> => {
+    const { requireLocalLeadership } = await import("@/lib/local-leadership-access.server");
+    await requireLocalLeadership();
+    const pollId = cleanText(data.pollId, 80);
+    if (!UUID_PATTERN.test(pollId)) throw new Error("Select a saved poll first.");
+    const closesAt = normaliseClosesAt(data.closesAt);
+    const sql = await getSql();
+    const updated = await sql.query<{ id: string }>(
+      `update polls
+          set require_discord_name = $2,
+              closes_at = $3,
+              updated_at = now()
+        where id = $1
+      returning id`,
+      [pollId, data.requireDiscordName === true, closesAt],
+    );
+    if (!updated[0]) throw new Error("Poll was not found.");
+    const rows = await sql.query<PollRow>(
+      `select id, share_code, title, description, allow_additions, is_open,
+              max_selections, require_discord_name,
+              closes_at::text as closes_at,
+              created_at::text as created_at, updated_at::text as updated_at
+         from polls
+        where id = $1
+        limit 1`,
+      [pollId],
+    );
+    if (!rows[0]) throw new Error("Poll could not be reloaded after saving.");
+    return hydratePoll(rows[0], undefined, true);
+  });
 
 export const saveLeadershipPoll = createServerFn({ method: "POST" })
   .inputValidator((input: SaveLeadershipPollInput) => input)
@@ -411,7 +606,9 @@ export const saveLeadershipPoll = createServerFn({ method: "POST" })
 
     const supplied = Array.isArray(data.options) ? data.options : [];
     if (supplied.length < 2) throw new Error("Add at least two poll answers.");
-    if (supplied.length > MAX_OPTIONS) throw new Error(`A poll can contain up to ${MAX_OPTIONS} answers.`);
+    if (supplied.length > MAX_OPTIONS) {
+      throw new Error(`A poll can contain up to ${MAX_OPTIONS} answers.`);
+    }
     const options = supplied.map(normaliseOption);
     const maxSelections = normaliseMaxSelections(data.maxSelections, options.length);
     const labels = new Set<string>();
@@ -425,16 +622,29 @@ export const saveLeadershipPoll = createServerFn({ method: "POST" })
     const { randomUUID } = await import("node:crypto");
     const requestedId = cleanText(data.id, 80);
     let pollId = "";
-    let shareCode = "";
 
     if (requestedId && UUID_PATTERN.test(requestedId)) {
-      const current = await sql.query<{ id: string; share_code: string }>(
-        `select id, share_code from polls where id = $1 limit 1`,
+      const current = await sql.query<{
+        id: string;
+        require_discord_name: boolean;
+        closes_at: string | null;
+      }>(
+        `select id, require_discord_name, closes_at::text as closes_at
+           from polls
+          where id = $1
+          limit 1`,
         [requestedId],
       );
       if (!current[0]) throw new Error("Poll was not found.");
       pollId = current[0].id;
-      shareCode = current[0].share_code;
+      const requireDiscordName =
+        data.requireDiscordName === undefined
+          ? current[0].require_discord_name === true
+          : data.requireDiscordName === true;
+      const closesAt =
+        data.closesAt === undefined
+          ? current[0].closes_at
+          : normaliseClosesAt(data.closesAt);
       await sql.query(
         `update polls
             set title = $2,
@@ -442,19 +652,43 @@ export const saveLeadershipPoll = createServerFn({ method: "POST" })
                 allow_additions = $4,
                 is_open = $5,
                 max_selections = $6,
+                require_discord_name = $7,
+                closes_at = $8,
                 updated_at = now()
           where id = $1`,
-        [pollId, title, description, data.allowAdditions === true, data.isOpen !== false, maxSelections],
+        [
+          pollId,
+          title,
+          description,
+          data.allowAdditions === true,
+          data.isOpen !== false,
+          maxSelections,
+          requireDiscordName,
+          closesAt,
+        ],
       );
     } else {
       pollId = randomUUID();
-      shareCode = randomUUID().replaceAll("-", "").slice(0, 18).toLowerCase();
+      const shareCode = randomUUID().replaceAll("-", "").slice(0, 18).toLowerCase();
+      const closesAt = data.closesAt === undefined ? null : normaliseClosesAt(data.closesAt);
       await sql.query(
         `insert into polls
            (id, share_code, title, description, allow_additions, is_open,
-            max_selections, created_at, updated_at, created_by)
-         values ($1, $2, $3, $4, $5, $6, $7, now(), now(), $8)`,
-        [pollId, shareCode, title, description, data.allowAdditions === true, data.isOpen !== false, maxSelections, profile.id],
+            max_selections, require_discord_name, closes_at,
+            created_at, updated_at, created_by)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, now(), now(), $10)`,
+        [
+          pollId,
+          shareCode,
+          title,
+          description,
+          data.allowAdditions === true,
+          data.isOpen !== false,
+          maxSelections,
+          data.requireDiscordName === true,
+          closesAt,
+          profile.id,
+        ],
       );
     }
 
@@ -528,7 +762,8 @@ export const saveLeadershipPoll = createServerFn({ method: "POST" })
     await sql.query(`update polls set updated_at = now() where id = $1`, [pollId]);
     const rows = await sql.query<PollRow>(
       `select id, share_code, title, description, allow_additions, is_open,
-              max_selections,
+              max_selections, require_discord_name,
+              closes_at::text as closes_at,
               created_at::text as created_at, updated_at::text as updated_at
          from polls
         where id = $1
@@ -536,7 +771,7 @@ export const saveLeadershipPoll = createServerFn({ method: "POST" })
       [pollId],
     );
     if (!rows[0]) throw new Error("Poll could not be reloaded after saving.");
-    return hydratePoll(rows[0]);
+    return hydratePoll(rows[0], undefined, true);
   });
 
 export const deleteLeadershipPoll = createServerFn({ method: "POST" })
