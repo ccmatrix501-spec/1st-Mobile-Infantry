@@ -8,6 +8,13 @@ export type PollOption = {
   votes: number;
 };
 
+export type PollVoter = {
+  discordName: string;
+  selectedOptionIds: string[];
+  selectedLabels: string[];
+  updatedAt: string;
+};
+
 export type PublicPoll = {
   id: string;
   shareCode: string;
@@ -16,7 +23,11 @@ export type PublicPoll = {
   allowAdditions: boolean;
   isOpen: boolean;
   maxSelections: number;
+  requireDiscordName: boolean;
+  closesAt: string | null;
   totalVotes: number;
+  totalVoters: number;
+  voterDiscordName: string;
   selectedOptionId: string | null;
   selectedOptionIds: string[];
   options: PollOption[];
@@ -25,6 +36,7 @@ export type PublicPoll = {
 export type LeadershipPoll = PublicPoll & {
   createdAt: string;
   updatedAt: string;
+  voters: PollVoter[];
 };
 
 export type PollOptionInput = {
@@ -41,7 +53,15 @@ export type SaveLeadershipPollInput = {
   allowAdditions: boolean;
   isOpen: boolean;
   maxSelections?: number;
+  requireDiscordName?: boolean;
+  closesAt?: string | null;
   options: PollOptionInput[];
+};
+
+export type PollAccessSettingsInput = {
+  pollId: string;
+  requireDiscordName: boolean;
+  closesAt?: string | null;
 };
 
 export type PublicPollRequest = {
@@ -54,6 +74,7 @@ export type PollVoteInput = {
   optionIds?: string[];
   optionId?: string;
   voterKey: string;
+  discordName?: string;
 };
 
 export type PollAdditionInput = {
@@ -61,4 +82,5 @@ export type PollAdditionInput = {
   label: string;
   emoji?: string;
   voterKey: string;
+  discordName?: string;
 };
