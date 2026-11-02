@@ -18,7 +18,10 @@ import {
   fetchLeadershipBotChannels,
   type LeadershipDiscordChannel,
 } from "@/lib/bot-control-fn";
-import { publishLeadershipPollToDiscord } from "@/lib/poll-discord-fn";
+import {
+  fetchPollDiscordHealth,
+  publishLeadershipPollToDiscord,
+} from "@/lib/poll-discord-fn";
 import {
   fetchLeadershipPolls,
   updateLeadershipPollAccess,
@@ -76,6 +79,7 @@ export function PollToolsDock() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [panelReady, setPanelReady] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [discordUrl, setDiscordUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -90,6 +94,40 @@ export function PollToolsDock() {
     [pollId, polls],
   );
 
+  async function loadDiscordTools(cancelled?: () => boolean) {
+    setPanelReady(false);
+    setBotError(null);
+    try {
+      const [loadedChannels, health] = await Promise.all([
+        fetchLeadershipBotChannels(),
+        fetchPollDiscordHealth(),
+      ]);
+      if (cancelled?.()) return;
+      setChannels(loadedChannels);
+      setChannelId((current) =>
+        loadedChannels.some((channel) => channel.id === current)
+          ? current
+          : loadedChannels.find(sendableChannel)?.id || "",
+      );
+      setPanelReady(
+        Boolean(
+          health.ok &&
+            health.botReady &&
+            health.configured &&
+            Number(health.panelVersion || 0) >= 2,
+        ),
+      );
+    } catch (err) {
+      if (cancelled?.()) return;
+      setPanelReady(false);
+      setBotError(
+        err instanceof Error
+          ? err.message
+          : "The Discord poll panel is not available on the Tech Support bot.",
+      );
+    }
+  }
+
   useEffect(() => {
     if (!active) {
       setOpen(false);
@@ -98,7 +136,6 @@ export function PollToolsDock() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    setBotError(null);
 
     void fetchLeadershipPolls()
       .then((loadedPolls) => {
@@ -119,25 +156,7 @@ export function PollToolsDock() {
         if (!cancelled) setLoading(false);
       });
 
-    void fetchLeadershipBotChannels()
-      .then((loadedChannels) => {
-        if (cancelled) return;
-        setChannels(loadedChannels);
-        setChannelId((current) =>
-          loadedChannels.some((channel) => channel.id === current)
-            ? current
-            : loadedChannels.find(sendableChannel)?.id || "",
-        );
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setBotError(
-            err instanceof Error
-              ? err.message
-              : "Could not load Discord channels from the Tech Support bot.",
-          );
-        }
-      });
+    void loadDiscordTools(() => cancelled);
 
     return () => {
       cancelled = true;
@@ -167,17 +186,7 @@ export function PollToolsDock() {
     }
 
     try {
-      const loadedChannels = await fetchLeadershipBotChannels();
-      setChannels(loadedChannels);
-      if (!loadedChannels.some((channel) => channel.id === channelId)) {
-        setChannelId(loadedChannels.find(sendableChannel)?.id || "");
-      }
-    } catch (err) {
-      setBotError(
-        err instanceof Error
-          ? err.message
-          : "Could not refresh Discord channels from the Tech Support bot.",
-      );
+      await loadDiscordTools();
     } finally {
       setLoading(false);
     }
@@ -209,6 +218,13 @@ export function PollToolsDock() {
   }
 
   async function publish() {
+    if (!panelReady) {
+      setError(
+        botError ||
+          "The Discord poll panel is not ready on the Tech Support bot. Deploy the latest bot build first.",
+      );
+      return;
+    }
     if (!pollId || !channelId) {
       setError("Select a saved poll and a Discord channel first.");
       return;
@@ -415,6 +431,10 @@ export function PollToolsDock() {
                 <div className="mt-3 rounded-md border border-amber-300/30 bg-amber-300/10 px-3 py-2 text-xs text-amber-100">
                   {botError}
                 </div>
+              ) : panelReady ? (
+                <div className="mt-3 rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-xs text-primary">
+                  Tech Support bot poll panel is online and ready.
+                </div>
               ) : null}
 
               <label className="mt-4 grid gap-2">
@@ -423,7 +443,7 @@ export function PollToolsDock() {
                   value={channelId}
                   onChange={(event) => setChannelId(event.target.value)}
                   className={selectClass}
-                  disabled={loading || !visibleChannels.length}
+                  disabled={loading || !panelReady || !visibleChannels.length}
                 >
                   {!visibleChannels.length ? <option value="">No sendable channels found</option> : null}
                   {visibleChannels.map((channel) => (
@@ -437,11 +457,11 @@ export function PollToolsDock() {
               <Button
                 type="button"
                 className="mt-3 w-full"
-                disabled={loading || publishing || !pollId || !channelId}
+                disabled={loading || publishing || !panelReady || !pollId || !channelId}
                 onClick={() => void publish()}
               >
                 {publishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquareShare className="h-4 w-4" />}
-                {publishing ? "Posting…" : "Post Discord Poll Panel"}
+                {publishing ? "Posting…" : panelReady ? "Post Discord Poll Panel" : "Discord Panel Unavailable"}
               </Button>
 
               {discordUrl ? (
