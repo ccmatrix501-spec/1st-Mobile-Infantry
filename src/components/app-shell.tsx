@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/react";
 import { LiveSiteContent } from "@/components/live-site-content";
 import { LiveSiteAdminAppearance } from "@/components/live-site-admin-appearance";
 import { LeadershipStoreControl } from "@/components/leadership-store-control";
+import { PollToolsDock } from "@/components/poll-tools-dock";
 import { StoreEmailBuilderDock } from "@/components/store-email-builder-dock";
 import { StoreOrderInvoiceShortcut } from "@/components/store-order-invoice-shortcut";
 import { StoreOrderLabelShortcut } from "@/components/store-order-label-shortcut";
@@ -73,6 +74,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="flex-1">{children}</main>
       <StoreEmailBuilderDock />
       <LeadershipStoreControl />
+      <PollToolsDock />
       <SiteFooter />
       <Analytics />
     </div>
