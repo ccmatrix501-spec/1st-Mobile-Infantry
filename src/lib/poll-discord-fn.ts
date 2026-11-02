@@ -39,6 +39,14 @@ export type PollDiscordPublishResult = {
   url: string;
 };
 
+export type PollDiscordHealth = {
+  ok: boolean;
+  botReady: boolean;
+  configured: boolean;
+  websiteVotingOnly?: boolean;
+  panelVersion?: number;
+};
+
 async function requireLeadership() {
   const access = await import("@/lib/local-leadership-access.server");
   return access.requireLocalLeadership();
@@ -90,6 +98,29 @@ function effectiveOpen(row: Pick<PollRow, "is_open" | "closes_at">): boolean {
   if (!row.closes_at) return true;
   const closes = Date.parse(row.closes_at);
   return !Number.isFinite(closes) || closes > Date.now();
+}
+
+function requestHeaders(secret: string, leadershipId: string): HeadersInit {
+  return {
+    Accept: "application/json",
+    "User-Agent": "1st-Mobile-Infantry-Website-Polls/2.0",
+    "X-Store-Order-Secret": secret,
+    "X-1stMI-Leadership-Id": leadershipId,
+  };
+}
+
+async function parseResponseBody(response: Response): Promise<unknown> {
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+function bodyError(body: unknown): string {
+  return body && typeof body === "object" && "error" in body
+    ? String((body as { error?: unknown }).error || "")
+    : "";
 }
 
 async function loadPoll(pollId: string): Promise<LeadershipPoll> {
@@ -185,11 +216,8 @@ async function publishToBot(
       method: "POST",
       cache: "no-store",
       headers: {
-        Accept: "application/json",
+        ...requestHeaders(secret, leadershipId),
         "Content-Type": "application/json",
-        "User-Agent": "1st-Mobile-Infantry-Website-Polls/2.0",
-        "X-Store-Order-Secret": secret,
-        "X-1stMI-Leadership-Id": leadershipId,
       },
       body: JSON.stringify({
         channelId,
@@ -219,19 +247,14 @@ async function publishToBot(
       signal: controller.signal,
     });
 
-    let body: unknown = null;
-    try {
-      body = await response.json();
-    } catch {
-      body = null;
-    }
-
+    const body = await parseResponseBody(response);
     if (!response.ok) {
-      const message =
-        body && typeof body === "object" && "error" in body
-          ? String((body as { error?: unknown }).error || "")
-          : "";
-      throw new Error(message || `Tech Support bot returned HTTP ${response.status}.`);
+      throw new Error(
+        bodyError(body) ||
+          (response.status === 404
+            ? "The Discord poll panel endpoint is not deployed on the Tech Support bot yet."
+            : `Tech Support bot returned HTTP ${response.status}.`),
+      );
     }
     return body as PollDiscordPublishResult;
   } catch (error) {
@@ -243,6 +266,51 @@ async function publishToBot(
     clearTimeout(timeout);
   }
 }
+
+export const fetchPollDiscordHealth = createServerFn({ method: "GET" }).handler(
+  async (): Promise<PollDiscordHealth> => {
+    const leadership = await requireLeadership();
+    const secret = botSecret();
+    if (!secret) {
+      throw new Error(
+        "The website-to-bot secret is not configured. Match LEADERSHIP_BOT_CONTROL_SECRET or STORE_ORDER_API_SECRET on Vercel and Railway.",
+      );
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8_000);
+    try {
+      const response = await fetch(`${botUrl()}/website-polls/health`, {
+        cache: "no-store",
+        headers: requestHeaders(secret, leadership.id),
+        signal: controller.signal,
+      });
+      const body = await parseResponseBody(response);
+      if (!response.ok) {
+        throw new Error(
+          bodyError(body) ||
+            (response.status === 404
+              ? "The Discord poll panel endpoint is not deployed on the Tech Support bot yet."
+              : `Tech Support bot returned HTTP ${response.status}.`),
+        );
+      }
+      const health = body as PollDiscordHealth;
+      if (Number(health.panelVersion || 0) < 2) {
+        throw new Error("The Tech Support bot is running an older poll panel version and needs to be redeployed.");
+      }
+      if (!health.botReady) throw new Error("The Tech Support bot is not connected to Discord.");
+      if (!health.configured) throw new Error("The Discord poll panel secret is not configured on the bot host.");
+      return health;
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new Error("The Tech Support bot did not respond to the poll panel health check.");
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
+  },
+);
 
 export const publishLeadershipPollToDiscord = createServerFn({ method: "POST" })
   .inputValidator((input: { pollId: string; channelId: string }) => input)
