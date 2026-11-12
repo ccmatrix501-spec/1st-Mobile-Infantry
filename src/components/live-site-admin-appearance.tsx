@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { fetchPublicSiteAdminConfig } from "@/lib/site-admin-config-fn";
 import type { SiteAdminConfig } from "@/lib/site-admin-config";
 
@@ -26,7 +26,7 @@ function safeImageUrl(value: string): string | null {
   }
 }
 
-function imageStyle(src: string): React.CSSProperties {
+function imageStyle(src: string): CSSProperties {
   return { backgroundImage: `url(${JSON.stringify(src)})` };
 }
 
