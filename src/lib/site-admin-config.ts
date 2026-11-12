@@ -43,6 +43,9 @@ export type SiteAdminConfig = {
   appearance: {
     backgroundImage: string;
     logoImage: string;
+    backgroundMode: "static" | "animated" | "slideshow";
+    backgroundSlides: string[];
+    backgroundIntervalSeconds: number;
   };
   companies: ManagedCompany[];
   leadership: ManagedLeader[];
@@ -107,6 +110,9 @@ export const DEFAULT_SITE_ADMIN_CONFIG: SiteAdminConfig = {
   appearance: {
     backgroundImage: "/site-bg.png",
     logoImage: unit.emblem || "/mi-emblem.jpg",
+    backgroundMode: "animated",
+    backgroundSlides: [],
+    backgroundIntervalSeconds: 12,
   },
   companies: [
     ...baseCompanies.map((company) => ({
@@ -221,6 +227,21 @@ export function mergeSiteAdminConfig(input?: Partial<SiteAdminConfig> | null): S
     appearance: {
       ...defaults.appearance,
       ...(input.appearance ?? {}),
+      backgroundMode:
+        input.appearance?.backgroundMode === "static" ||
+        input.appearance?.backgroundMode === "animated" ||
+        input.appearance?.backgroundMode === "slideshow"
+          ? input.appearance.backgroundMode
+          : defaults.appearance.backgroundMode,
+      backgroundSlides: Array.isArray(input.appearance?.backgroundSlides)
+        ? input.appearance.backgroundSlides
+            .filter((url): url is string => typeof url === "string" && !!url.trim())
+            .slice(0, 6)
+        : [],
+      backgroundIntervalSeconds: Math.max(
+        6,
+        Math.min(30, Math.floor(Number(input.appearance?.backgroundIntervalSeconds) || 12)),
+      ),
     },
     companies: inputCompanies,
     leadership: inputLeadership,

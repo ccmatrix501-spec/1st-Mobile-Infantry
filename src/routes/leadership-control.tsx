@@ -14,6 +14,7 @@ import {
   Vote,
 } from "lucide-react";
 import { AppShell, PageHero } from "@/components/app-shell";
+import { SiteBackgroundEditor } from "@/components/site-background-editor";
 import { Button } from "@/components/ui/button";
 import {
   changeLocalLeadershipPassword,
@@ -287,21 +288,20 @@ function LeadershipControlPage() {
           </div>
         </EditorPanel>
 
-        <EditorPanel kicker="Appearance" title="Background & Logo">
-          <div className="grid gap-6 lg:grid-cols-2">
-            <ImageEditor
-              label="Website background"
-              help="Use a public site path such as /site-bg.png or an HTTPS image URL."
-              value={adminConfig.appearance.backgroundImage}
-              onChange={(value) => { setAdminSaved(false); setAdminConfig((current) => ({ ...current, appearance: { ...current.appearance, backgroundImage: value } })); }}
-            />
-            <ImageEditor
-              label="Main logo / emblem"
-              help="Used in the header and managed emblem locations."
-              value={adminConfig.appearance.logoImage}
-              onChange={(value) => { setAdminSaved(false); setAdminConfig((current) => ({ ...current, appearance: { ...current.appearance, logoImage: value } })); }}
-              square
-            />
+        <EditorPanel kicker="Appearance" title="Background, Motion & Slideshow">
+          <SiteBackgroundEditor
+            value={adminConfig.appearance}
+            onChange={(appearance) => {
+              setAdminSaved(false);
+              setAdminConfig((current) => ({ ...current, appearance }));
+            }}
+          />
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-5">
+            <p className="text-xs text-muted">Changes to site imagery take effect when saved.</p>
+            <Button type="button" disabled={adminSaving} onClick={() => void handleAdminSave()}>
+              <Save className="h-4 w-4" />
+              {adminSaving ? "Saving…" : "Save Background & Appearance"}
+            </Button>
           </div>
         </EditorPanel>
 
@@ -513,16 +513,6 @@ function TextInput({ label, value, onChange }: { label: string; value: string; o
 
 function TextArea({ label, value, onChange, compact }: { label: string; value: string; onChange: (value: string) => void; compact?: boolean }) {
   return <Field label={label}><textarea value={value} onChange={(event) => onChange(event.target.value)} rows={compact ? 2 : 4} className={`${textareaClass} ${compact ? "min-h-16" : ""}`} /></Field>;
-}
-
-function ImageEditor({ label, help, value, onChange, square }: { label: string; help: string; value: string; onChange: (value: string) => void; square?: boolean }) {
-  return (
-    <div className="rounded-md border border-border bg-black/20 p-4">
-      <TextInput label={label} value={value} onChange={onChange} />
-      <p className="mt-2 text-xs text-muted">{help}</p>
-      {value ? <img src={value} alt={`${label} preview`} className={`mt-4 rounded-md border border-border bg-black object-cover ${square ? "h-36 w-36" : "h-44 w-full"}`} /> : null}
-    </div>
-  );
 }
 
 function RemoveButton({ onClick, label = "Remove" }: { onClick: () => void; label?: string }) {

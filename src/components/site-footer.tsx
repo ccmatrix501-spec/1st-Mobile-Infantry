@@ -59,6 +59,9 @@ export function SiteFooter() {
           </div>
         </div>
       </div>
+      <div className="border-t border-border/60 px-4 py-2 text-right font-mono text-[10px] tracking-wide text-subtle sm:px-6">
+        1ST M.I. WEB · BUILD 2026.11.12.1
+      </div>
     </footer>
   );
 }
