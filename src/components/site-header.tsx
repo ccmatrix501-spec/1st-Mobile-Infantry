@@ -87,8 +87,8 @@ export function SiteHeader() {
           : "border-b border-white/10 bg-black/20 backdrop-blur-[6px]",
       )}
     >
-      <div className="relative mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:h-[4.25rem] sm:px-6">
-        <Link to="/" className="notranslate group flex min-w-0 items-center gap-3" translate="no">
+      <div className="relative mx-auto flex min-h-16 w-full max-w-[1600px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 sm:px-6 xl:gap-x-5">
+        <Link to="/" className="notranslate group flex min-w-0 shrink-0 items-center gap-3" translate="no">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-black shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-primary)_35%,transparent),0_0_18px_color-mix(in_oklab,var(--color-primary)_22%,transparent)] transition-transform duration-200 group-hover:scale-[1.03]">
             <img
               src={logoImage}
@@ -108,7 +108,7 @@ export function SiteHeader() {
         </Link>
 
         <nav
-          className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-0.5 lg:flex"
+          className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 xl:flex 2xl:gap-1"
           aria-label="Primary"
         >
           {visibleNavLinks.map((link) => {
@@ -131,7 +131,7 @@ export function SiteHeader() {
           </Button>
         </nav>
 
-        <div className="ml-auto hidden items-center gap-1 lg:flex">
+        <div className="hidden w-full items-center justify-end gap-2 border-t border-white/10 pt-2 xl:order-3 xl:flex 2xl:order-none 2xl:w-auto 2xl:shrink-0 2xl:border-0 2xl:pt-0">
           {showLanguageSelector ? <LanguageSelector /> : null}
           {leadershipSignedIn ? (
             <div className="flex items-center gap-1 rounded-lg border border-primary/20 bg-black/35 p-1 backdrop-blur-md">
@@ -167,7 +167,7 @@ export function SiteHeader() {
             to="/login"
             aria-label="Leadership Sign In"
             title=""
-            className="absolute right-[4.25rem] top-1/2 h-11 w-11 -translate-y-1/2 cursor-default rounded-md opacity-0 lg:hidden"
+            className="absolute right-[4.25rem] top-1/2 h-11 w-11 -translate-y-1/2 cursor-default rounded-md opacity-0 xl:hidden"
           >
             <span className="sr-only">Leadership Sign In</span>
           </Link>
@@ -176,7 +176,7 @@ export function SiteHeader() {
         <Button
           variant="secondary"
           size="icon"
-          className="ml-auto lg:hidden"
+          className="ml-auto xl:hidden"
           aria-label={open ? "Close menu" : "Open menu"}
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
@@ -186,7 +186,7 @@ export function SiteHeader() {
       </div>
 
       {open ? (
-        <nav className="border-t border-border glass px-4 py-3 lg:hidden" aria-label="Mobile">
+        <nav className="border-t border-border glass px-4 py-3 xl:hidden" aria-label="Mobile">
           <ul className="flex flex-col gap-1">
             {visibleNavLinks.map((link) => {
               const active = isActive(link.to, "exact" in link ? link.exact : false);
