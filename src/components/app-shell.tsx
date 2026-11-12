@@ -17,7 +17,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const orderView = pathname === "/leadership-order";
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="relative isolate flex min-h-dvh flex-col">
       <style>{`
         /* Let the site make proper use of large desktop and ultrawide displays.
            Existing mobile/tablet spacing remains unchanged. */
