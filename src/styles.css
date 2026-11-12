@@ -355,3 +355,87 @@
     linear-gradient(145deg, #122015, #050705) !important;
   background-position: center top !important;
 }
+
+
+/* Site-wide animated/rotating tactical backdrop. Content stays above this
+   isolated fixed layer; no canvas/video or JavaScript animation library. */
+.site-backdrop {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: #040605;
+  isolation: isolate;
+}
+
+.site-backdrop-image {
+  position: absolute;
+  inset: -2.5%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transform: scale(1.04);
+  will-change: opacity, transform;
+}
+
+.site-backdrop-drift {
+  animation: mi-background-drift 38s ease-in-out infinite alternate;
+}
+
+.site-backdrop-crossfade {
+  animation:
+    mi-background-crossfade 1.6s ease-out both,
+    mi-background-drift 38s ease-in-out infinite alternate;
+}
+
+.site-backdrop-scrim {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 100% 72% at 50% 42%, transparent 9%, rgba(0, 0, 0, 0.38) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.50), rgba(0, 0, 0, 0.43) 45%, rgba(0, 0, 0, 0.64));
+}
+
+.site-backdrop-grid {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  opacity: 0.10;
+  background-image:
+    linear-gradient(rgba(146, 181, 131, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(146, 181, 131, 0.16) 1px, transparent 1px);
+  background-size: 88px 88px;
+}
+
+@keyframes mi-background-crossfade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes mi-background-drift {
+  from { transform: scale(1.04) translate3d(-0.6%, -0.3%, 0); }
+  to { transform: scale(1.10) translate3d(0.6%, 0.4%, 0); }
+}
+
+/* Avoid expensive image movement and fixed-layer repaint on mobile. */
+@media (max-width: 767px) {
+  .site-backdrop-drift,
+  .site-backdrop-crossfade {
+    animation-name: mi-background-crossfade;
+    animation-duration: 1.6s;
+    animation-timing-function: ease-out;
+    animation-iteration-count: 1;
+    animation-fill-mode: both;
+  }
+  .site-backdrop-image { inset: -1%; transform: scale(1.02); }
+  .site-backdrop-grid { opacity: 0.06; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-backdrop-drift,
+  .site-backdrop-crossfade {
+    animation: none !important;
+  }
+}
