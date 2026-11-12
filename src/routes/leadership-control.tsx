@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Trash2,
   UserRound,
+  Vote,
 } from "lucide-react";
 import { AppShell, PageHero } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -252,6 +253,24 @@ function LeadershipControlPage() {
 
         {error ? <div className="mb-6 rounded-md border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</div> : null}
         {accountMessage ? <div className="mb-6 rounded-md border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary">{accountMessage}</div> : null}
+
+        <div className="mb-6 flex flex-col gap-4 rounded-xl border border-primary/25 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-primary/35 bg-primary/10 text-primary">
+              <Vote className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="stencil text-[10px] tracking-[0.14em] text-primary">Community voting</p>
+              <h2 className="mt-1 font-display text-xl font-semibold uppercase tracking-wide text-fg">Poll Setup &amp; Control</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+                Create polls, edit answers and artwork, review votes, end or reopen voting, and access Discord sharing tools.
+              </p>
+            </div>
+          </div>
+          <Button asChild variant="secondary" size="lg" className="shrink-0">
+            <Link to="/leadership-polls"><Vote className="h-4 w-4" />Manage Polls</Link>
+          </Button>
+        </div>
 
         <EditorPanel kicker="Homepage editor" title="Homepage Text">
           <div className="grid gap-5">

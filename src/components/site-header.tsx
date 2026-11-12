@@ -22,6 +22,7 @@ const publicNavLinks = [
 const commandLinks = [
   { to: "/leadership-control", label: "Control" },
   { to: "/leadership-bot-control", label: "Tech Support" },
+  { to: "/leadership-polls", label: "Polls" },
   { to: "/leadership-store", label: "Store" },
   { to: "/leadership-media", label: "Media" },
 ] as const;
@@ -140,7 +141,7 @@ export function SiteHeader() {
                   key={link.to}
                   to={link.to}
                   className={cn(
-                    "stencil rounded-md px-2.5 py-2 text-[9px] tracking-[0.12em] text-primary/90 transition-colors hover:bg-primary/10 hover:text-primary",
+                    "stencil rounded-md px-2 py-2 text-[9px] tracking-[0.1em] text-primary/90 transition-colors hover:bg-primary/10 hover:text-primary",
                     isActive(link.to) && "bg-primary/10 text-primary",
                   )}
                 >
@@ -215,7 +216,7 @@ export function SiteHeader() {
             {leadershipSignedIn ? (
               <li className="mt-2 border-t border-primary/20 pt-3">
                 <p className="px-3 pb-2 stencil text-[9px] tracking-[0.14em] text-primary">Command</p>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
                   {commandLinks.map((link) => (
                     <Link
                       key={link.to}

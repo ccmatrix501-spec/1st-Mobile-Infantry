@@ -774,6 +774,37 @@ export const saveLeadershipPoll = createServerFn({ method: "POST" })
     return hydratePoll(rows[0], undefined, true);
   });
 
+/** Close or reopen a saved poll without rewriting answers or vote records.
+ * The same server-side leadership session check protects every poll mutation. */
+export const setLeadershipPollOpen = createServerFn({ method: "POST" })
+  .inputValidator((input: { pollId: string; isOpen: boolean }) => input)
+  .handler(async ({ data }): Promise<LeadershipPoll> => {
+    const { requireLocalLeadership } = await import("@/lib/local-leadership-access.server");
+    await requireLocalLeadership();
+    const pollId = cleanText(data.pollId, 80);
+    if (!UUID_PATTERN.test(pollId)) throw new Error("Select a saved poll first.");
+    if (typeof data.isOpen !== "boolean") throw new Error("Invalid voting status.");
+
+    const sql = await getSql();
+    const rows = await sql.query<PollRow>(
+      `update polls
+          set is_open = $2,
+              closes_at = case
+                when $2 = true and closes_at is not null and closes_at <= now() then null
+                else closes_at
+              end,
+              updated_at = now()
+        where id = $1
+      returning id, share_code, title, description, allow_additions, is_open,
+                max_selections, require_discord_name,
+                closes_at::text as closes_at,
+                created_at::text as created_at, updated_at::text as updated_at`,
+      [pollId, data.isOpen],
+    );
+    if (!rows[0]) throw new Error("Poll was not found.");
+    return hydratePoll(rows[0], undefined, true);
+  });
+
 export const deleteLeadershipPoll = createServerFn({ method: "POST" })
   .inputValidator((input: { id: string }) => input)
   .handler(async ({ data }): Promise<boolean> => {

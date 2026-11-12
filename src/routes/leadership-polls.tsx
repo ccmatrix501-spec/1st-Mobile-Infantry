@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   BarChart3,
   Check,
+  CircleStop,
   Copy,
   ExternalLink,
   ImageIcon,
@@ -10,6 +11,7 @@ import {
   LockKeyhole,
   Plus,
   RefreshCw,
+  RotateCcw,
   Save,
   ShieldCheck,
   Trash2,
@@ -24,6 +26,7 @@ import {
   deleteLeadershipPoll,
   fetchLeadershipPolls,
   saveLeadershipPoll,
+  setLeadershipPollOpen,
 } from "@/lib/polls-fn";
 import type { LeadershipPoll, PollOptionInput } from "@/lib/polls";
 
@@ -122,6 +125,7 @@ function LeadershipPollsPage() {
   const [origin, setOrigin] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [statusSaving, setStatusSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -133,6 +137,8 @@ function LeadershipPollsPage() {
     () => [...polls].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
     [polls],
   );
+  const savedPoll = draft.id ? polls.find((poll) => poll.id === draft.id) : null;
+  const openPollCount = polls.filter((poll) => poll.isOpen).length;
 
   useEffect(() => {
     let cancelled = false;
@@ -246,6 +252,31 @@ function LeadershipPollsPage() {
     }
   }
 
+  async function changePollStatus(isOpen: boolean) {
+    if (!draft.id || saving || statusSaving) return;
+    const action = isOpen ? "Reopen" : "End";
+    const explanation = isOpen
+      ? "Voting will resume. If the closing deadline has passed, it will be cleared."
+      : "Voting will stop immediately. Existing votes and results will be kept.";
+    if (!window.confirm(`${action} “${savedPoll?.title || draft.title}”?\n\n${explanation}\n\nAny unsaved editor changes will be discarded.`)) return;
+
+    setStatusSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const updated = await setLeadershipPollOpen({ data: { pollId: draft.id, isOpen } });
+      setPolls((current) => current.map((poll) => poll.id === updated.id ? updated : poll));
+      setDraft(pollToDraft(updated));
+      setMessage(isOpen
+        ? "Poll reopened. Members can vote again."
+        : "Poll ended. Voting is closed and existing results remain visible.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not update poll voting status.");
+    } finally {
+      setStatusSaving(false);
+    }
+  }
+
   async function removePoll() {
     if (!draft.id) {
       setDraft(blankPoll());
@@ -295,7 +326,7 @@ function LeadershipPollsPage() {
         kicker="Leadership community tools"
         title="Poll Command"
         body="Create unlisted link-only polls, set how many answers each person may choose, attach images or icons, and optionally let voters add answers you missed."
-        meta="1ST MI DIV · POLL SYSTEM v1.1"
+        meta="1ST MI DIV · POLL SYSTEM v1.2"
       />
 
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
@@ -327,6 +358,7 @@ function LeadershipPollsPage() {
                 <div>
                   <p className="stencil text-[9px] tracking-[0.14em] text-primary">Poll archive</p>
                   <h2 className="mt-1 font-display text-xl font-semibold uppercase text-fg">{polls.length} Polls</h2>
+                  <p className="mt-1 text-xs text-muted">{openPollCount} open · {polls.length - openPollCount} closed</p>
                 </div>
                 <Vote className="h-5 w-5 text-primary" />
               </div>
@@ -368,10 +400,24 @@ function LeadershipPollsPage() {
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button type="button" disabled={saving} onClick={() => void savePoll()}>
+                  <Button type="button" disabled={saving || statusSaving} onClick={() => void savePoll()}>
                     <Save className="h-4 w-4" /> {saving ? "Saving…" : "Save Poll"}
                   </Button>
-                  <Button type="button" variant="secondary" disabled={saving} onClick={() => void removePoll()} className="border-red-400/30 text-red-200 hover:bg-red-500/10">
+                  {savedPoll ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={saving || statusSaving}
+                      onClick={() => void changePollStatus(!savedPoll.isOpen)}
+                      className={savedPoll.isOpen
+                        ? "border-amber-300/40 text-amber-100 hover:bg-amber-400/10"
+                        : "border-primary/40 text-primary hover:bg-primary/10"}
+                    >
+                      {savedPoll.isOpen ? <CircleStop className="h-4 w-4" /> : <RotateCcw className="h-4 w-4" />}
+                      {statusSaving ? "Updating…" : savedPoll.isOpen ? "End Poll" : "Reopen Poll"}
+                    </Button>
+                  ) : null}
+                  <Button type="button" variant="secondary" disabled={saving || statusSaving} onClick={() => void removePoll()} className="border-red-400/30 text-red-200 hover:bg-red-500/10">
                     <Trash2 className="h-4 w-4" /> {draft.id ? "Delete" : "Reset"}
                   </Button>
                 </div>
@@ -535,7 +581,7 @@ function LeadershipPollsPage() {
                   <p className="stencil text-[9px] tracking-[0.14em] text-primary">Live totals</p>
                   <h2 className="mt-1 font-display text-2xl font-semibold uppercase tracking-wide text-fg">{draft.totalVotes} Votes Recorded</h2>
                 </div>
-                <Button type="button" disabled={saving} onClick={() => void savePoll()}>
+                <Button type="button" disabled={saving || statusSaving} onClick={() => void savePoll()}>
                   <Save className="h-4 w-4" /> {saving ? "Saving…" : "Save Poll"}
                 </Button>
               </div>
