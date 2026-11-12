@@ -16,7 +16,6 @@ const publicNavLinks = [
   { to: "/store", label: "Store", requiresStore: true },
   { to: "/leadership", label: "Leadership" },
   { to: "/rules", label: "Rules" },
-  { to: "/join", label: "Join now" },
 ] as const;
 
 const commandLinks = [
