@@ -109,6 +109,20 @@ export function LiveSiteAdminAppearance() {
   }, [imagesKey, images.length, intervalSeconds, pageVisible, rotate]);
 
   const activeIndex = rotate ? Math.min(frame.index, images.length - 1) : 0;
+
+  // Warm the next scene after the first render so a crossfade does not reveal
+  // a late-loading image. Other slides remain unloaded until needed.
+  useEffect(() => {
+    if (!rotate || !pageVisible) return;
+    const next = new Image();
+    next.decoding = "async";
+    next.src = images[(activeIndex + 1) % images.length];
+    return () => {
+      next.onload = null;
+      next.onerror = null;
+    };
+  }, [activeIndex, imagesKey, images.length, pageVisible, rotate]);
+
   const activeImage = images[activeIndex];
   const previousImage =
     rotate && frame.previous !== null && frame.previous !== activeIndex
